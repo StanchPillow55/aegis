@@ -38,6 +38,13 @@ class Settings(BaseSettings):
     deepgram_api_key: str = Field(..., min_length=1)
     browserbase_api_key: str = Field(..., min_length=1)
 
+    # --- Model selection (optional; has a sane default) ---
+    # Extraction runs at temperature=0, so the model MUST accept sampling
+    # params. claude-opus-4-8 / 4.7 / fable-5 reject `temperature` with a 400,
+    # so the default is a Sonnet-tier model (also the project's cost-discipline
+    # tier). Override with ANTHROPIC_MODEL.
+    anthropic_model: str = "claude-sonnet-4-5"
+
 
 @lru_cache
 def get_settings() -> Settings:
