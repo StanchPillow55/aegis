@@ -1,6 +1,30 @@
+import os
 import time
 import statistics
 import pytest
+
+# SC-REDIS-01 needs the Redis stack (redis-stack + RediSearch) plus the heavy
+# vector deps. Skip the whole module — rather than erroring at collection — when
+# any of that is absent, so `make test` stays green in dev/CI without Redis.
+pytest.importorskip("redis", reason="redis client not installed")
+pytest.importorskip("redisvl", reason="redisvl not installed")
+pytest.importorskip("sentence_transformers", reason="sentence-transformers not installed")
+
+import redis as _redis
+
+
+def _redis_available() -> bool:
+    try:
+        _redis.from_url(
+            os.getenv("REDIS_URL", "redis://localhost:6379"),
+            socket_connect_timeout=1,
+        ).ping()
+        return True
+    except Exception:
+        return False
+
+
+pytestmark = pytest.mark.skipif(not _redis_available(), reason="Redis unavailable")
 
 from backend.intake.schema import IntakeResult, Soreness, Sleep, Meal, WOD
 from backend.memory.store import (
@@ -174,7 +198,18 @@ def test_retrieval_latency_p95(seed_synthetic_logs):
     print(f"  Median: {statistics.median(latencies):.2f}")
     print(f"  P95: {p95:.2f}")
     print(f"  Max: {max(latencies):.2f}")
-    
+
+    # Surface the latency stats as the SC-REDIS-01 evidence artifact when run in CI.
+    summary_path = os.getenv("GITHUB_STEP_SUMMARY")
+    if summary_path:
+        with open(summary_path, "a") as fh:
+            fh.write("### SC-REDIS-01 — vector retrieval latency\n\n")
+            fh.write(f"- Measurements: {len(latencies)} queries\n")
+            fh.write(f"- Min: {min(latencies):.2f} ms\n")
+            fh.write(f"- Median: {statistics.median(latencies):.2f} ms\n")
+            fh.write(f"- **P95: {p95:.2f} ms** (threshold: < 150 ms)\n")
+            fh.write(f"- Max: {max(latencies):.2f} ms\n")
+
     assert p95 < 150, f"P95 latency {p95:.2f}ms exceeds 150ms threshold"
 
 
