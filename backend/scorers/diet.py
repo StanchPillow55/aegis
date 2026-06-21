@@ -2,7 +2,7 @@
 
 Pure, rule-based, no LLM. Higher score = better-fuelled. Driven by how many
 meals were logged and how many of them carry a protein source (either the
-explicit `meal.protein` field or a protein keyword in the description).
+explicit `meal.protein_g` field or a protein keyword in the description).
 """
 
 from backend.intake.schema import IntakeResult, Meal
@@ -22,7 +22,7 @@ def _clamp(n: int) -> int:
 
 
 def _has_protein(meal: Meal) -> bool:
-    if meal.protein:
+    if meal.protein_g:
         return True
     desc = meal.description.lower()
     return any(w in desc for w in _PROTEIN_WORDS)
