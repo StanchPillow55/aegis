@@ -18,8 +18,8 @@ criteria:
     track: redis
     criterion: "Vector search returns prior grip/front-rack logs for a query; p95 < 150ms; uses Redis BEYOND caching (vector+memory+context retrieval)"
     verify: "pytest tests/test_redis_retrieval.py + Phoenix latency trace screenshot"
-    pass: false
-    artifact: null
+    pass: true
+    artifact: "#5"
   - id: SC-ANTH-01
     module: Intake/Extraction
     track: anthropic
@@ -81,8 +81,8 @@ criteria:
     track: browserbase
     criterion: "Browserbase+Stagehand fetches a gym WOD from a URL and feeds the extractor"
     verify: "integration test with a sample gym URL"
-    pass: false
-    artifact: null
+    pass: true
+    artifact: "#6"
   - id: SC-SIM-01
     module: Demo automation
     track: simular
