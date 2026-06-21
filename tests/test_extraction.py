@@ -44,11 +44,9 @@ class _FakeClient:
 
 def test_extract_binds_tool_output():
     canned = {
-        "soreness": [
-            {"area": "forearms", "severity": "moderate", "note": "still cooked from Tuesday"}
-        ],
+        "soreness": [{"body_part": "forearms", "severity": 4}],
         "sleep": {"quality": "poor"},
-        "meals": [{"description": "chicken and rice"}],
+        "meals": [{"description": "chicken and rice", "protein_g": 40}],
         "todays_wod": {"movements": ["cleans", "pull-ups", "biking"]},
         "subjective_readiness": "low",
     }
@@ -56,7 +54,8 @@ def test_extract_binds_tool_output():
 
     assert isinstance(result, IntakeResult)
     assert result.todays_wod.movements == ["cleans", "pull-ups", "biking"]
-    assert result.soreness and result.soreness[0].area == "forearms"
+    assert result.soreness and result.soreness[0].body_part == "forearms"
+    assert 1 <= result.soreness[0].severity <= 5
     assert result.sleep.quality == "poor"
     assert result.meals and "chicken" in result.meals[0].description.lower()
     assert result.subjective_readiness == "low"
@@ -94,7 +93,8 @@ def test_live_extraction_on_demo_log():
     assert "pull" in movements
     assert "bik" in movements or "bike" in movements
     # Recovery / nutrition / readiness all populated.
-    assert any("forearm" in s.area.lower() for s in result.soreness)
-    assert result.sleep.quality is not None
+    assert any("forearm" in s.body_part.lower() for s in result.soreness)
+    assert all(1 <= s.severity <= 5 for s in result.soreness)
+    assert result.sleep.quality.strip() != ""
     assert any("chicken" in m.description.lower() for m in result.meals)
     assert result.subjective_readiness.strip() != ""

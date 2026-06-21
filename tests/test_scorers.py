@@ -27,7 +27,7 @@ def make_intake(
     """Build an IntakeResult with sane defaults, overriding what a test cares about."""
     return IntakeResult(
         soreness=soreness or [],
-        sleep=sleep or Sleep(quality=None, hours=None),
+        sleep=sleep or Sleep(quality="unknown", hours=None),
         meals=meals or [],
         todays_wod=WOD(movements=["cleans", "pull-ups"]),
         subjective_readiness=subjective_readiness,
@@ -73,8 +73,8 @@ def test_high_soreness_scores_low():
     result = score_soreness(
         make_intake(
             soreness=[
-                Soreness(area="quads", severity="severe"),
-                Soreness(area="hamstrings", severity="severe"),
+                Soreness(body_part="quads", severity=5),
+                Soreness(body_part="hamstrings", severity=5),
             ]
         )
     )
@@ -84,10 +84,10 @@ def test_high_soreness_scores_low():
 
 def test_low_beats_high_soreness():
     low = score_soreness(
-        make_intake(soreness=[Soreness(area="calves", severity="mild")])
+        make_intake(soreness=[Soreness(body_part="calves", severity=1)])
     )["score"]
     high = score_soreness(
-        make_intake(soreness=[Soreness(area="back", severity="severe")])
+        make_intake(soreness=[Soreness(body_part="back", severity=5)])
     )["score"]
     assert low > high
 
@@ -126,7 +126,7 @@ def test_readiness_good_day_beats_bad_day():
     bad = score_readiness(
         make_intake(
             sleep=Sleep(quality="poor", hours=4),
-            soreness=[Soreness(area="quads", severity="severe")],
+            soreness=[Soreness(body_part="quads", severity=5)],
             meals=[],
             subjective_readiness="low",
         )
@@ -144,7 +144,7 @@ def test_score_all_returns_four_well_formed_dimensions():
     result = score_all(
         make_intake(
             sleep=Sleep(quality="poor", hours=5),
-            soreness=[Soreness(area="forearms", severity="moderate")],
+            soreness=[Soreness(body_part="forearms", severity=3)],
             meals=[Meal(description="chicken and rice")],
             subjective_readiness="low",
         )

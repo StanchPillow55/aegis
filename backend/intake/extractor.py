@@ -35,9 +35,12 @@ _SYSTEM = (
     "speaks a short daily update covering how they feel, how they slept, what "
     "they've eaten, and today's workout. Extract ONLY what is stated or clearly "
     "implied — do not invent details. Call the `record_intake` tool exactly "
-    "once with the structured result. For `subjective_readiness`, infer a short "
-    "label ('low' / 'moderate' / 'high') from the overall tone (poor sleep and "
-    "soreness imply lower readiness)."
+    "once with the structured result. Field rules: each soreness `severity` is "
+    "an integer 1 (barely sore) to 5 (severe); `protein_g` is grams of protein "
+    "as an integer, or omit it if not stated or estimable; set the WOD `raw` "
+    "field to the verbatim workout text when present. For `subjective_readiness`, "
+    "infer a short label ('low' / 'moderate' / 'high') from the overall tone "
+    "(poor sleep and soreness imply lower readiness)."
 )
 
 

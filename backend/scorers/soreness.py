@@ -6,14 +6,9 @@ LOWER score. No soreness reported -> fully recovered (100).
 
 from backend.intake.schema import IntakeResult, Soreness
 
-# Per-area penalty by severity keyword.
-_SEVERITY_PENALTY = {"mild": 10, "moderate": 30, "severe": 55}
-_UNKNOWN_SEVERITY_PENALTY = 25  # an area was named but no severity given
+# Per-area penalty by the 1-5 severity scale (frozen contract).
+_SEVERITY_PENALTY = {1: 8, 2: 18, 3: 30, 4: 45, 5: 60}
 _PENALTY_CAP = 90  # never drive recovery fully to 0 from soreness alone
-
-# Keyword escalation when severity isn't a clean label.
-_SEVERE_WORDS = {"severe", "cooked", "wrecked", "destroyed", "extreme", "intense", "very"}
-_MILD_WORDS = {"mild", "slight", "little", "minor", "bit"}
 
 
 def _clamp(n: int) -> int:
@@ -21,15 +16,8 @@ def _clamp(n: int) -> int:
 
 
 def _area_penalty(area: Soreness) -> int:
-    text = f"{area.severity or ''} {area.note or ''}".lower()
-    sev = (area.severity or "").lower().strip()
-    if sev in _SEVERITY_PENALTY:
-        return _SEVERITY_PENALTY[sev]
-    if any(w in text for w in _SEVERE_WORDS):
-        return _SEVERITY_PENALTY["severe"]
-    if any(w in text for w in _MILD_WORDS):
-        return _SEVERITY_PENALTY["mild"]
-    return _UNKNOWN_SEVERITY_PENALTY
+    sev = max(1, min(5, area.severity))  # defensive clamp to the 1-5 scale
+    return _SEVERITY_PENALTY[sev]
 
 
 def score(intake: IntakeResult) -> dict:
@@ -43,7 +31,7 @@ def score(intake: IntakeResult) -> dict:
         }
 
     per_area = [
-        {"area": s.area, "severity": s.severity, "penalty": _area_penalty(s)}
+        {"body_part": s.body_part, "severity": s.severity, "penalty": _area_penalty(s)}
         for s in soreness
     ]
     total_penalty = min(_PENALTY_CAP, sum(a["penalty"] for a in per_area))
@@ -57,7 +45,7 @@ def score(intake: IntakeResult) -> dict:
     worst = max(per_area, key=lambda a: a["penalty"])
     rationale = (
         f"Soreness scored {value}/100: {len(soreness)} sore area(s) "
-        f"(worst: {worst['area']}, penalty {worst['penalty']}), "
+        f"(worst: {worst['body_part']} sev {worst['severity']}, penalty {worst['penalty']}), "
         f"total penalty {total_penalty}."
     )
     return {"score": value, "factors": factors, "rationale": rationale}
