@@ -11,29 +11,29 @@ criteria:
     track: null
     criterion: "Repo runs end-to-end locally: backend boots, frontend serves, .env loaded"
     verify: "make dev starts both; smoke test green"
-    pass: false
-    artifact: null
+    pass: true
+    artifact: "#1"
   - id: SC-REDIS-01
     module: Memory/Retrieval
     track: redis
     criterion: "Vector search returns prior grip/front-rack logs for a query; p95 < 150ms; uses Redis BEYOND caching (vector+memory+context retrieval)"
     verify: "pytest tests/test_redis_retrieval.py + Phoenix latency trace screenshot"
-    pass: false
-    artifact: null
+    pass: true
+    artifact: "#5 (code) + #7 (green CI p95 evidence)"
   - id: SC-ANTH-01
     module: Intake/Extraction
     track: anthropic
     criterion: "Claude parses demo transcript into valid typed JSON (soreness, sleep, meals, todays_wod, readiness)"
     verify: "pytest tests/test_extraction.py against golden fixtures"
-    pass: false
-    artifact: null
+    pass: true
+    artifact: "#2"
   - id: SC-SCORE-01
     module: Scorers
     track: null
     criterion: "Deterministic 0-100 scores for sleep/diet/soreness/readiness; explainable + unit tested"
     verify: "pytest tests/test_scorers.py"
-    pass: false
-    artifact: null
+    pass: true
+    artifact: "#3"
   - id: SC-FETCH-01
     module: Orchestration
     track: fetch
@@ -81,8 +81,8 @@ criteria:
     track: browserbase
     criterion: "Browserbase+Stagehand fetches a gym WOD from a URL and feeds the extractor"
     verify: "integration test with a sample gym URL"
-    pass: false
-    artifact: null
+    pass: true
+    artifact: "#6"
   - id: SC-SIM-01
     module: Demo automation
     track: simular
@@ -95,8 +95,8 @@ criteria:
     track: cognition
     criterion: "At least one non-trivial module built with Devin; authorship evidence captured"
     verify: "Devin session link / PR authored by Devin"
-    pass: false
-    artifact: null
+    pass: true
+    artifact: "#5, #6 (Devin-authored)"
   - id: SC-DEMO-01
     module: Submission
     track: null
