@@ -32,6 +32,7 @@ orchestrator = Agent(
     seed="aegis-orchestrator-seed-v1",
     port=8000,
     endpoint=[os.getenv("AGENT_ENDPOINT", "http://127.0.0.1:8000/submit")],
+    network="testnet",
 )
 
 
