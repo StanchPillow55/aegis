@@ -5,6 +5,7 @@ context, generates scores using the deterministic scorers, and synthesizes a
 final directive.
 """
 
+import os
 import time
 
 from uagents import Agent, Context, Model
@@ -26,7 +27,7 @@ orchestrator = Agent(
     name="orchestrator",
     seed="aegis-orchestrator-seed-v1",
     port=8000,
-    endpoint=["http://127.0.0.1:8000/submit"],
+    endpoint=[os.getenv("AGENT_ENDPOINT", "http://127.0.0.1:8000/submit")],
 )
 
 

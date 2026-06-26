@@ -39,8 +39,8 @@ criteria:
     track: fetch
     criterion: "Orchestrator uAgent registered & discoverable via ASI:One; takes real action (not a thin wrapper)"
     verify: "live ASI:One discovery screenshot + agent address logged"
-    pass: false
-    artifact: null
+    pass: true
+    artifact: "#9 + ASI:One screenshot + agent address"
   - id: SC-BAND-01
     module: Orchestration
     track: band
