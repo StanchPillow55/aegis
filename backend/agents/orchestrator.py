@@ -9,6 +9,10 @@ import os
 import time
 
 from uagents import Agent, Context, Model
+from uagents_core.utils.registration import (
+    RegistrationRequestCredentials,
+    register_chat_agent,
+)
 
 from backend.intake.schema import IntakeResult
 from backend.memory.store import search_similar, store_log
@@ -35,6 +39,27 @@ orchestrator = Agent(
 async def startup(ctx: Context):
     ctx.logger.info("Orchestrator Agent started.")
     ctx.logger.info(f"Agent Address (ASI:One): {orchestrator.address}")
+
+    # Register on Agentverse/ASI:One if credentials are provided
+    agentverse_key = os.getenv("AGENTVERSE_KEY")
+    agent_seed = os.getenv("AGENT_SEED_PHRASE")
+    endpoint = os.getenv("AGENT_ENDPOINT")
+    
+    if agentverse_key and agent_seed and endpoint:
+        base_url = endpoint.replace("/submit", "")
+        try:
+            register_chat_agent(
+                "aegis-backend",
+                base_url,
+                active=True,
+                credentials=RegistrationRequestCredentials(
+                    agentverse_api_key=agentverse_key,
+                    agent_seed_phrase=agent_seed,
+                ),
+            )
+            ctx.logger.info("Successfully registered with Agentverse/ASI:One.")
+        except Exception as e:
+            ctx.logger.error(f"Failed to register with Agentverse: {e}")
 
 
 @orchestrator.on_message(model=ProcessIntake, replies=AgentDirective)
