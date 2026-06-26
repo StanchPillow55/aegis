@@ -30,7 +30,8 @@ def test_init_sentry_with_dsn():
             mock_init.assert_called_once()
             call_args = mock_init.call_args
             assert call_args[1]["dsn"] == "https://test@sentry.io/123"
-            assert call_args[1]["traces_sample_rate"] == 1.0
+            assert call_args[1]["traces_sample_rate"] == 0.5
+            assert call_args[1]["send_default_pii"] is True
 
 
 def test_init_sentry_without_dsn():
