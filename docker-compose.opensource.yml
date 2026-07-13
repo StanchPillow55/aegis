@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "16686:16686" # UI
+      - "4317:4317"   # OTLP gRPC default port
+      - "4318:4318"   # OTLP HTTP default port
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    networks:
+      - aegis-os
+
+networks:
+  aegis-os:
+    driver: bridge

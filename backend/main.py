@@ -1,33 +1,34 @@
-"""aegis FastAPI application entrypoint.
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 
-`/health` is a dependency-free liveness probe: it does not touch settings or any
-external service so the runtime is provably bootable on its own.
-"""
+from backend.providers.tracing import init_tracing
+from backend.providers.llm import extract_intake
+from backend.agents.orchestrator import orchestrator
 
-from contextlib import asynccontextmanager
+# Initialize OpenTelemetry tracing
+init_tracing()
 
-from fastapi import FastAPI
+app = FastAPI(title="aegis open-source runtime")
 
-from backend.obs.tracing import init_sentry
+class AudioTranscriptRequest(BaseModel):
+    transcript: str
 
+class DemoResponse(BaseModel):
+    directive: str
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """Application lifespan manager."""
-    init_sentry()
-    yield
-
-
-app = FastAPI(title="aegis", version="0.1.0", lifespan=lifespan)
-
+@app.post("/demo", response_model=DemoResponse)
+def run_demo(request: AudioTranscriptRequest):
+    try:
+        # Step 1: Extract intake from text
+        intake = extract_intake(request.transcript)
+        
+        # Step 2: Orchestrate (Memory, Scoring, Directive generation)
+        directive = orchestrator.process_intake(intake)
+        
+        return DemoResponse(directive=directive)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/health")
-def health() -> dict[str, str]:
-    """Liveness probe used by the SC-ENV-01 smoke test."""
+def health_check():
     return {"status": "ok"}
-
-
-@app.get("/sentry-debug")
-async def trigger_error():
-    """Debug endpoint to verify Sentry integration."""
-    division_by_zero = 1 / 0

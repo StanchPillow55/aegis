@@ -1,106 +1,162 @@
-# success_criteria.yaml — aegis single source of truth (Definition of Done)
-# Every module merges ONLY when its criteria flip to pass: true WITH a linked artifact.
-# QA/Validation node (llm-council + Phoenix + Sentry) enforces this. Fail closed.
 meta:
   project: aegis
   tagline: "Voice-first daily training-decision copilot for functional longevity"
   budget: { claude_credits_usd: 30, gemini: "free AI Studio key" }
+
 criteria:
-  - id: SC-ENV-01
+  - id: OS-ENV-01
     module: Environment
-    track: null
-    criterion: "Repo runs end-to-end locally: backend boots, frontend serves, .env loaded"
+    criterion: "local dev environment boots with no paid keys"
+    verify: "make os-smoke"
+    pass: false
+    artifact: null
+    notes: "Needs docker and python dependencies."
+  
+  - id: OS-LLM-01
+    module: Intake/Extraction
+    criterion: "default local or deterministic extractor produces valid IntakeResult from demo transcript"
+    verify: "pytest tests/test_extraction.py"
+    pass: false
+    artifact: null
+    notes: "Requires ollama running and llama3.2 pulled."
+
+  - id: OS-VOICE-01
+    module: Voice
+    criterion: "local STT/TTS adapters are wired and testable"
+    verify: "pytest tests/test_voice.py"
+    pass: false
+    artifact: null
+    notes: "Requires faster-whisper and piper. Mocks available via USE_MOCK_SPEECH=true."
+
+  - id: OS-MEMORY-01
+    module: Memory/Retrieval
+    criterion: "local vector retrieval returns relevant prior logs"
+    verify: "pytest tests/test_memory.py"
+    pass: false
+    artifact: null
+    notes: "Uses ChromaDB + SQLite locally."
+
+  - id: OS-ORCH-01
+    module: Orchestrator
+    criterion: "orchestrator runs full intake -> memory -> scorers -> directive loop locally"
+    verify: "pytest tests/test_orchestrator.py"
+    pass: false
+    artifact: null
+    notes: "Replaces uAgents."
+
+  - id: OS-BROWSER-01
+    module: WOD Importer
+    criterion: "local Playwright WOD importer extracts fixture WOD"
+    verify: "pytest tests/test_wod_importer.py"
+    pass: false
+    artifact: null
+    notes: "Requires playwright installed."
+
+  - id: OS-OBS-01
+    module: Observability
+    criterion: "OpenTelemetry spans emitted for full loop"
+    verify: "pytest tests/test_tracing.py"
+    pass: false
+    artifact: null
+    notes: "Does not strictly require Jaeger to pass tests."
+
+  - id: OS-DEMO-01
+    module: Demo loop
+    criterion: "one-command local demo loop works or reports missing setup cleanly"
+    verify: "make os-demo"
+    pass: false
+    artifact: null
+    notes: "Ensure OLLAMA_MODEL is pulled or mocked."
+
+  - id: OS-HARDWARE-01
+    module: Hardware
+    criterion: "default local path documented and tested for M2/16 GB assumptions, with M4 stretch alternatives documented"
+    verify: "make os-model-info and README.md check"
+    pass: false
+    artifact: null
+
+  # --- Legacy Sponsor Tracks ---
+  - id: LEGACY-SC-ENV-01
+    module: Environment
+    criterion: "[LEGACY] Repo runs end-to-end locally: backend boots, frontend serves, .env loaded"
     verify: "make dev starts both; smoke test green"
     pass: true
     artifact: "#1"
-  - id: SC-REDIS-01
+  - id: LEGACY-SC-REDIS-01
     module: Memory/Retrieval
-    track: redis
-    criterion: "Vector search returns prior grip/front-rack logs for a query; p95 < 150ms; uses Redis BEYOND caching (vector+memory+context retrieval)"
+    criterion: "[LEGACY] Vector search returns prior grip/front-rack logs for a query; p95 < 150ms; uses Redis BEYOND caching"
     verify: "pytest tests/test_redis_retrieval.py + Phoenix latency trace screenshot"
     pass: true
     artifact: "#5 (code) + #7 (green CI p95 evidence)"
-  - id: SC-ANTH-01
+  - id: LEGACY-SC-ANTH-01
     module: Intake/Extraction
-    track: anthropic
-    criterion: "Claude parses demo transcript into valid typed JSON (soreness, sleep, meals, todays_wod, readiness)"
+    criterion: "[LEGACY] Claude parses demo transcript into valid typed JSON"
     verify: "pytest tests/test_extraction.py against golden fixtures"
     pass: true
     artifact: "#2"
-  - id: SC-SCORE-01
+  - id: LEGACY-SC-SCORE-01
     module: Scorers
-    track: null
-    criterion: "Deterministic 0-100 scores for sleep/diet/soreness/readiness; explainable + unit tested"
+    criterion: "[LEGACY] Deterministic 0-100 scores for sleep/diet/soreness/readiness; explainable + unit tested"
     verify: "pytest tests/test_scorers.py"
     pass: true
     artifact: "#3"
-  - id: SC-FETCH-01
+  - id: LEGACY-SC-FETCH-01
     module: Orchestration
-    track: fetch
-    criterion: "Orchestrator uAgent registered & discoverable via ASI:One; takes real action (not a thin wrapper)"
+    criterion: "[LEGACY] Orchestrator uAgent registered & discoverable via ASI:One"
     verify: "live ASI:One discovery screenshot + agent address logged"
     pass: false
     artifact: null
-  - id: SC-BAND-01
+  - id: LEGACY-SC-BAND-01
     module: Orchestration
-    track: band
-    criterion: "Agent-to-agent messages flow over Band bus between orchestrator and tool agents"
+    criterion: "[LEGACY] Agent-to-agent messages flow over Band bus between orchestrator and tool agents"
     verify: "integration test showing Band message round-trip"
     pass: false
     artifact: null
-  - id: SC-DG-01
+  - id: LEGACY-SC-DG-01
     module: Intake (voice)
-    track: deepgram
-    criterion: "Voice is the ONLY primary input; Deepgram STT->struct and TTS->directive work end-to-end on demo log"
+    criterion: "[LEGACY] Voice is the ONLY primary input; Deepgram STT->struct and TTS->directive work end-to-end on demo log"
     verify: "Stagehand UI e2e test + recorded demo rehearsal"
     pass: false
     artifact: null
-  - id: SC-UI-01
+  - id: LEGACY-SC-UI-01
     module: Frontend
-    track: null
-    criterion: "Mic capture + decision card renders directive with evidence citations"
+    criterion: "[LEGACY] Mic capture + decision card renders directive with evidence citations"
     verify: "Stagehand UI test screenshot"
     pass: false
     artifact: null
-  - id: SC-SENTRY-01
+  - id: LEGACY-SC-SENTRY-01
     module: Observability
-    track: sentry
-    criterion: "Every agent hop + external call wrapped in Sentry spans; errors captured with context"
+    criterion: "[LEGACY] Every agent hop + external call wrapped in Sentry spans"
     verify: "Sentry dashboard screenshot of a traced multi-agent run"
     pass: false
     artifact: null
-  - id: SC-ARIZE-01
+  - id: LEGACY-SC-ARIZE-01
     module: Eval
-    track: arize
-    criterion: "Directive grounding score improves >=20% with retrieval vs without; logged in Phoenix"
+    criterion: "[LEGACY] Directive grounding score improves >=20% with retrieval vs without; logged in Phoenix"
     verify: "phoenix-evals run + before/after delta artifact"
     pass: false
     artifact: null
-  - id: SC-BB-01
+  - id: LEGACY-SC-BB-01
     module: WOD Importer
-    track: browserbase
-    criterion: "Browserbase+Stagehand fetches a gym WOD from a URL and feeds the extractor"
+    criterion: "[LEGACY] Browserbase+Stagehand fetches a gym WOD from a URL and feeds the extractor"
     verify: "integration test with a sample gym URL"
     pass: true
     artifact: "#6"
-  - id: SC-SIM-01
+  - id: LEGACY-SC-SIM-01
     module: Demo automation
-    track: simular
-    criterion: "Sai/SimuLang drives the full UI loop end-to-end; social post tagging Simular published"
+    criterion: "[LEGACY] Sai/SimuLang drives the full UI loop end-to-end"
     verify: "demo recording + link to X/LinkedIn post"
     pass: false
     artifact: null
-  - id: SC-COGN-01
+  - id: LEGACY-SC-COGN-01
     module: Build tooling
-    track: cognition
-    criterion: "At least one non-trivial module built with Devin; authorship evidence captured"
+    criterion: "[LEGACY] At least one non-trivial module built with Devin; authorship evidence captured"
     verify: "Devin session link / PR authored by Devin"
     pass: true
     artifact: "#5, #6 (Devin-authored)"
-  - id: SC-DEMO-01
+  - id: LEGACY-SC-DEMO-01
     module: Submission
-    track: null
-    criterion: "The one demo loop (speak->STT->extract->orchestrate->retrieve->directive->TTS) works reliably 3x in a row"
+    criterion: "[LEGACY] The one demo loop works reliably 3x in a row"
     verify: "3 consecutive clean demo runs recorded"
     pass: false
     artifact: null
