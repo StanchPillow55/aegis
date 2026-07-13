@@ -1,5 +1,7 @@
 def extract_fallback(transcript: str) -> dict:
-    """Deterministic fallback for LLM extraction."""
+    """
+    Deterministic fallback for LLM extraction.
+    """
     return {"status": "ok", "mock": True}
 
 class OllamaClient:
@@ -12,4 +14,5 @@ class OllamaClient:
         pass
 
     def generate(self, prompt: str) -> str:
+        """Generate response."""
         return "mock response"
