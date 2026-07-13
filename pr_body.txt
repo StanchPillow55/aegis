@@ -1,33 +1,17 @@
-This PR establishes the OS migration foundation with explicit validation gates.
-
-**Exact command outputs:**
-```
-$ python -m compileall backend importer tests scripts
+python -m compileall backend importer tests scripts
 Listing 'backend'...
 Listing 'backend/agents'...
 Listing 'backend/intake'...
 Listing 'backend/memory'...
-Listing 'backend/providers'...
 Listing 'backend/scorers'...
 Listing 'importer'...
 Listing 'tests'...
 Listing 'tests/fixtures'...
 Listing 'scripts'...
-$ python scripts/check_file_sanity.py
+python scripts/check_file_sanity.py
 File sanity check passed.
-$ python scripts/validate_success_criteria.py
+python scripts/validate_success_criteria.py
 success_criteria.yaml OK
-$ python -m pytest tests/ -q
+python -m pytest tests/ -q
 .                                                                        [100%]
-1 passed in 0.27s
-$ make os-model-info
-Local Model Info: Using foundational models placeholder
-$ make os-test
-pytest tests/ -q
-.                                                                        [100%]
-1 passed in 0.23s
-$ make os-smoke
-Smoke test placeholder. Ensure os-dev is running if using curl.
-python -c "import httpx; print(httpx.get('http://127.0.0.1:8000/health').json())" || echo "TestClient handles this in CI for now"
-TestClient handles this in CI for now
-```
+1 passed in 0.18s
