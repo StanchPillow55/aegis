@@ -1,48 +1,28 @@
 # Agent Handoff
 
-## What was completed
-- **Legacy Migration**: Moved all existing sponsor-integrated code into `legacy_hackathon/`. Created `legacy_hackathon/README.md` to explain the history.
-- **Provider Interface Layer**: Built open-source, local-first replacements for LLM (Ollama), STT/TTS (faster-whisper, piper), Memory (ChromaDB + SQLite), Browser (Playwright), and Tracing (OpenTelemetry/Jaeger).
-- **Core Orchestrator**: Replaced Fetch.ai uAgents with a local Python orchestrator `backend/agents/orchestrator.py`.
-- **FastAPI Endpoint**: Exposed the demo loop through a FastAPI app in `backend/main.py`.
-- **Success Criteria**: Added local OS metrics (`OS-*`) to `success_criteria.yaml` and marked legacy tracks as `[LEGACY]`.
-- **Setup Bucket List**: Created `AUTH_AND_SETUP_BUCKET_LIST.md` containing all setup requirements and dependencies.
-- **Docker Compose & Env**: Created `docker-compose.opensource.yml` for Jaeger and `.env.opensource.example`.
-- **Makefile**: Updated `Makefile` to include `os-*` targets for the new local-first runtime.
-- **Unit Tests**: Wrote tests for local extraction, memory, orchestrator, tracing, and browser. The tests are configured with skip guards or mocked components to pass without the full heavy models loaded.
+## Repair Pass Completed
+A foundation repair pass was completed to normalize the formatting of the open-source runtime migration branch and ensure validity for subagents.
 
-## What remains blocked
-- Running the full live pipeline end-to-end with the heavy local models requires downloading `llama3.2`, `faster-whisper (tiny.en)`, and `piper` models, which should be done by the user on their native machine (Metal acceleration).
-- OpenTelemetry tracing visualization requires starting Jaeger.
+### Files Repaired
+- Stripped hidden/bidirectional Unicode characters (`U+202A`, `U+202B`, etc.) from all Python files, markdown files, `requirements.txt`, `Makefile`, and `success_criteria.yaml`.
+- Verified formatting across all files.
 
-## Setup Bucket List Needed from User
-Please refer to `AUTH_AND_SETUP_BUCKET_LIST.md` for the full list. Highlights:
-1. Install and run `ollama` with `ollama run llama3.2`.
-2. Run `playwright install chromium` to ensure the local browser can run.
-3. Install `docker` and run `make os-up` to spin up Jaeger for tracing.
+### Commands Run & Results
+1. `python3 -m compileall backend importer tests` -> **PASS**
+2. `python3 -c 'import yaml; ...'` (YAML validation) -> **PASS** (success_criteria.yaml is valid)
+3. `make os-model-info` -> **PASS**
+4. `make os-smoke` -> Updated Makefile to warn that `make os-dev` must run first, since it's a curl to the server.
+5. `python3 -m pip install -r requirements.txt` -> **PASS**
+6. `USE_MOCK_SPEECH=true OLLAMA_MODEL=mock python3 -m pytest tests/ -q` -> **PASS** (9 passed)
 
-## Commands to run when back
-1. Check model status: `make os-model-info`
-2. Start background Jaeger: `make os-up`
-3. Run test suite: `make os-test`
-4. Start dev server: `make os-dev`
-5. Send smoke demo: `make os-demo`
+### Success Criteria
+- Kept `OS-*` success criteria as `pass: false` since the full verification commands (involving real local models and docker) have not been run in a live integrated environment yet.
 
-## Success criteria passable
-All `OS-*` criteria should now be passable once the models are downloaded by the user, as the architectural scaffolding and tests are fully built.
-- `OS-ENV-01`: Backend boots.
-- `OS-LLM-01`: Deterministic fallback works.
-- `OS-VOICE-01`: Mock works.
-- `OS-MEMORY-01`: Local memory logic is in place.
-- `OS-ORCH-01`: Orchestrator fully implemented.
-- `OS-BROWSER-01`: Local playwright logic in place.
-- `OS-OBS-01`: OTel spans implemented.
-- `OS-DEMO-01`: Demo endpoint functional.
-- `OS-HARDWARE-01`: Docs reflect M2/16GB.
+### Subagent Safety
+- **Subagents are now SAFE to launch.** The codebase is syntactically valid, stripped of hidden characters, cleanly compiled, and the mock tests run successfully. 
+- You can now parallelize tasks or hand off modular improvements.
 
-## Known Risks
-- Running ChromaDB and Ollama concurrently on 16GB RAM might consume significant resources. `llama3.2` and `tiny.en` were specifically chosen to mitigate this, but if the machine feels sluggish, consider dropping Chroma for pure SQLite.
-
-## Hardware Review
-- **M2/16GB**: Expected to be comfortable given the `llama3.2` default which takes ~2-3 GB of RAM.
-- **M4/32GB+ (Stretch)**: Can easily upgrade to `qwen2.5:14b` or `llama3:8b` by just changing `OLLAMA_MODEL` in `.env`.
+### Exact Next Subagent Scopes
+- Subagent 1: Finalize local Playwright `wod_importer` integration tests against a static mock server instead of a live gym URL.
+- Subagent 2: Test the Jaeger/OpenTelemetry export loop locally (requires Docker).
+- Subagent 3: Write comprehensive edge-case extraction unit tests using the mock deterministic fallback.

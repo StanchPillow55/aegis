@@ -13,6 +13,7 @@ os-dev:
 	uvicorn backend.main:app --reload --port 8000
 
 os-smoke:
+	@echo "Ensure 'make os-dev' is running in another terminal before running this."
 	curl -s http://localhost:8000/health
 
 os-demo:
