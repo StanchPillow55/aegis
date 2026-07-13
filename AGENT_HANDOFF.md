@@ -1,21 +1,30 @@
 # Agent Handoff Document
 
 ## Current Status
-- OS Migration Foundation is completely solid.
-- Local LLM skeletons (fallback shapes) have been designed and implemented in isolation.
-- Provider interfaces have been defined with clean separation.
-- Formatting bug causing single-line files has been resolved by using direct Python file writes.
 
-## Tests Passed
-- `make os-test`
-- Schema-compliant extraction in Local LLM fallback
-- Provider interface imports
-- Foundation Validation Gate (`scripts/validate_success_criteria.yaml`)
+- OS migration foundation has been merged into `master`.
+- Provider skeletons have been added.
+- Local LLM fallback now returns an IntakeResult-compatible dictionary shape.
+- Redis workflow trigger has been narrowed so OS migration branches should not be blocked by Redis checks.
 
-## Blockers
-- None at this time. 
+## Validation Status
+
+Current blocker:
+- `make os-test` failed because `success_criteria.yaml` did not parse with `criteria` as a list.
+
+Required before next wave:
+- `python scripts/validate_success_criteria.py` must pass.
+- `make os-test` must pass.
 
 ## Next Recommended Branches
-- `feat/os-memory`: Implement SQLite/Chroma local store.
-- `feat/os-voice`: Add local voice recognition/synthesis.
-- `feat/os-tracing`: Set up OpenTelemetry local tracing.
+
+Only start these after `make os-test` passes on `master`:
+
+- `feat/os-memory`: SQLite/Chroma local memory.
+- `feat/os-voice`: faster-whisper and Piper skeletons.
+- `feat/os-tracing`: OpenTelemetry and Jaeger skeleton.
+
+## Rules
+
+- Do not mark success criteria `pass: true` unless the verify command passed and the artifact field is non-null.
+- Missing local services should become skip guards and bucket-list entries, not hard failures.

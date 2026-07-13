@@ -1,17 +1,64 @@
-global:
-  name: "aegis"
-  version: "0.1.0"
-  status: "open-source-migration-in-progress"
+meta:
+  project: aegis
+  description: OS Migration Foundation
 
 criteria:
-  OS-ENV-01:
-    description: "Multimodal offline support exists (audio+llm)"
-    verify_command: "pytest tests/test_health.py -k test_multimodal_offline"
-    artifact: "tests/test_health.py"
+  - id: AGENT-VALIDATION-01
+    criterion: Validation scripts run locally and in CI.
+    verify: python scripts/check_file_sanity.py
     pass: false
+    artifact: null
 
-  OS-LLM:
-    description: "Ollama LLM local execution"
-    verify_command: "pytest tests/test_local_llm.py"
-    artifact: "tests/test_local_llm.py"
+  - id: AGENT-FORMAT-01
+    criterion: No collapsed or malformed generated files exist.
+    verify: python scripts/check_file_sanity.py
     pass: false
+    artifact: null
+
+  - id: AGENT-YAML-01
+    criterion: success_criteria.yaml parses and contains required fields.
+    verify: python scripts/validate_success_criteria.py
+    pass: false
+    artifact: null
+
+  - id: OS-ENV-01
+    criterion: Basic FastAPI environment boots in open-source foundation mode.
+    verify: python -m pytest tests/test_health.py -q
+    pass: false
+    artifact: null
+
+  - id: OS-PROVIDER-01
+    criterion: Local-first provider skeletons import and compile.
+    verify: python -m pytest tests/test_provider_interfaces.py -q
+    pass: false
+    artifact: null
+
+  - id: OS-LLM-01
+    criterion: Local LLM fallback returns IntakeResult-compatible data without paid APIs.
+    verify: python -m pytest tests/test_local_llm.py -q
+    pass: false
+    artifact: null
+
+  - id: OS-MEMORY-01
+    criterion: Local memory provider stores and retrieves logs without Redis Cloud.
+    verify: python -m pytest tests/test_memory.py -q
+    pass: false
+    artifact: null
+
+  - id: OS-VOICE-01
+    criterion: Local STT/TTS adapters are scaffolded and testable without Deepgram.
+    verify: python -m pytest tests/test_voice.py -q
+    pass: false
+    artifact: null
+
+  - id: OS-OBS-01
+    criterion: Local OpenTelemetry tracing scaffold emits spans without Sentry.
+    verify: python -m pytest tests/test_tracing.py -q
+    pass: false
+    artifact: null
+
+  - id: OS-DEMO-01
+    criterion: Local demo loop runs or reports missing setup cleanly.
+    verify: make os-demo
+    pass: false
+    artifact: null
