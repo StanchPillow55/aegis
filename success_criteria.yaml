@@ -24,5 +24,5 @@ criteria:
   - id: OS-ENV-01
     criterion: Basic FastAPI environment boots in open-source foundation mode.
     verify: python -m pytest tests/test_health.py -q
-    pass: true
+    pass: false
     artifact: null
