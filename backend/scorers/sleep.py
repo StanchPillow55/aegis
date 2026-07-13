@@ -7,9 +7,28 @@ qualitative read of `sleep.quality` with `sleep.hours` when reported.
 from backend.intake.schema import IntakeResult
 
 # Quality keyword buckets (substring match, lowercased).
-_POSITIVE = {"great", "excellent", "amazing", "good", "solid", "deep", "well", "restful"}
+_POSITIVE = {
+    "great",
+    "excellent",
+    "amazing",
+    "good",
+    "solid",
+    "deep",
+    "well",
+    "restful",
+}
 _NEUTRAL = {"ok", "okay", "fair", "decent", "average", "meh", "fine", "alright"}
-_NEGATIVE = {"poor", "bad", "terrible", "awful", "horrible", "broken", "rough", "badly", "barely"}
+_NEGATIVE = {
+    "poor",
+    "bad",
+    "terrible",
+    "awful",
+    "horrible",
+    "broken",
+    "rough",
+    "badly",
+    "barely",
+}
 
 
 def _clamp(n: int) -> int:

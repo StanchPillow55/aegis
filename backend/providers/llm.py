@@ -16,29 +16,29 @@ OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.2")
 def _deterministic_extractor(text: str) -> IntakeResult:
     """Fallback extractor for tests or when local model is unavailable."""
     text_lower = text.lower()
-    
+
     # Dummy mock logic
     sleep_quality = "good" if "good" in text_lower else "poor"
     readiness = "high" if "ready" in text_lower else "moderate"
-    
+
     soreness = []
     if "sore" in text_lower and "back" in text_lower:
         soreness.append(Soreness(body_part="lower back", severity=3))
-        
+
     meals = []
     if "chicken" in text_lower:
         meals.append(Meal(description="chicken and rice", protein_g=40))
-        
+
     wod_movements = []
     if "pull-up" in text_lower or "pullup" in text_lower:
         wod_movements.append("pull-ups")
-        
+
     return IntakeResult(
         soreness=soreness,
         sleep=Sleep(quality=sleep_quality, hours=8.0),
         meals=meals,
         todays_wod=WOD(movements=wod_movements, raw=text[:100]),
-        subjective_readiness=readiness
+        subjective_readiness=readiness,
     )
 
 
@@ -49,7 +49,7 @@ def extract_intake(transcript: str, use_fallback: bool = False) -> IntakeResult:
         return _deterministic_extractor(transcript)
 
     schema_json = IntakeResult.model_json_schema()
-    
+
     prompt = f"""
 You are an expert sports science extractor. Parse the following athlete's daily update into the exact JSON schema provided.
 Ensure you return ONLY valid JSON matching the schema, with no markdown formatting or extra text.
@@ -69,20 +69,21 @@ JSON Schema:
                     "prompt": prompt,
                     "format": "json",
                     "stream": False,
-                }
+                },
             )
             response.raise_for_status()
             data = response.json()
             response_text = data.get("response", "{}")
-            
+
             # The model should return valid JSON
             parsed_json = json.loads(response_text)
             return IntakeResult.model_validate(parsed_json)
-            
+
     except Exception as e:
         logger.error(f"Failed to extract with Ollama ({OLLAMA_MODEL}): {e}")
         logger.info("Falling back to deterministic extractor")
         return _deterministic_extractor(transcript)
+
 
 def generate_directive(intake: IntakeResult, context_logs: list, scores: dict) -> str:
     """Synthesize a daily training directive."""
@@ -108,7 +109,7 @@ Write ONLY the one-sentence directive.
                     "model": OLLAMA_MODEL,
                     "prompt": prompt,
                     "stream": False,
-                }
+                },
             )
             response.raise_for_status()
             data = response.json()

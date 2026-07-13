@@ -38,7 +38,9 @@ class Sleep(BaseModel):
 class Meal(BaseModel):
     """A single meal or food item."""
 
-    description: str = Field(..., description="What was eaten, e.g. 'chicken and rice'.")
+    description: str = Field(
+        ..., description="What was eaten, e.g. 'chicken and rice'."
+    )
     protein_g: int | None = Field(
         None, description="Protein in grams, if stated or confidently estimable."
     )

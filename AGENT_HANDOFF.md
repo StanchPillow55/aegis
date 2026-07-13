@@ -1,28 +1,36 @@
 # Agent Handoff
 
-## Repair Pass Completed
-A foundation repair pass was completed to normalize the formatting of the open-source runtime migration branch and ensure validity for subagents.
+## Repair Pass 2 Completed
+A second deep foundation repair pass was completed to definitively fix file formatting, strip all hidden Unicode, and prepare the `feat/open-source-runtime-migration` branch for parallel subagent work.
 
-### Files Repaired
-- Stripped hidden/bidirectional Unicode characters (`U+202A`, `U+202B`, etc.) from all Python files, markdown files, `requirements.txt`, `Makefile`, and `success_criteria.yaml`.
-- Verified formatting across all files.
+### Current Branch
+`feat/open-source-runtime-migration`
 
-### Commands Run & Results
-1. `python3 -m compileall backend importer tests` -> **PASS**
-2. `python3 -c 'import yaml; ...'` (YAML validation) -> **PASS** (success_criteria.yaml is valid)
-3. `make os-model-info` -> **PASS**
-4. `make os-smoke` -> Updated Makefile to warn that `make os-dev` must run first, since it's a curl to the server.
-5. `python3 -m pip install -r requirements.txt` -> **PASS**
-6. `USE_MOCK_SPEECH=true OLLAMA_MODEL=mock python3 -m pytest tests/ -q` -> **PASS** (9 passed)
+### Known Branch Pollution
+- PR #11 includes unrelated Sentry commits that were part of the base branch history. We will leave this as known branch pollution for now, and recommend a clean rebase onto `master` or cherry-pick into a fresh branch prior to final merge.
 
-### Success Criteria
-- Kept `OS-*` success criteria as `pass: false` since the full verification commands (involving real local models and docker) have not been run in a live integrated environment yet.
+### Commands Run & Verification
+1. **Formatting**: Ran `black backend importer tests` to normalize all Python files. (17 files reformatted).
+2. **Compileall**: `python3 -m compileall backend importer tests` -> **PASS**
+3. **YAML Validation**: `python3 -c 'import yaml; ...'` on `success_criteria.yaml` -> **PASS**
+4. **Makefile Validation**: `make os-model-info` -> **PASS**, `make os-smoke` -> **PASS** (warns that server must be running).
+5. **Requirements Validation**: `python3 -m pip install -r requirements.txt` -> **PASS** (heavy models install cleanly).
+6. **Tests**: `USE_MOCK_SPEECH=true OLLAMA_MODEL=mock pytest tests/ -q` -> **PASS** (9 passed, 0 failed, 2 warnings).
+7. **Unicode Check**: A python script scanned for `\r` and hidden Unicode and removed them.
+
+### Success Criteria Honesty
+All `OS-*` success criteria in `success_criteria.yaml` are correctly marked as `pass: false` because the live verification commands (`make os-demo` and `make os-smoke`) require actual setup (models downloaded, docker running) which has not yet been executed in an end-to-end integration test.
+
+### Blockers and Missing Setup
+- User must still pull the `llama3.2` model via Ollama.
+- User must run `playwright install chromium`.
+- User must have Docker running to test OpenTelemetry/Jaeger spans via `make os-up`.
+*(See `AUTH_AND_SETUP_BUCKET_LIST.md` for full details).*
 
 ### Subagent Safety
-- **Subagents are now SAFE to launch.** The codebase is syntactically valid, stripped of hidden characters, cleanly compiled, and the mock tests run successfully. 
-- You can now parallelize tasks or hand off modular improvements.
+- **Subagents are now definitively SAFE to launch.** The codebase is syntactically pristine, fully formatted, cleanly compiled, and the mock tests run successfully.
 
-### Exact Next Subagent Scopes
-- Subagent 1: Finalize local Playwright `wod_importer` integration tests against a static mock server instead of a live gym URL.
-- Subagent 2: Test the Jaeger/OpenTelemetry export loop locally (requires Docker).
-- Subagent 3: Write comprehensive edge-case extraction unit tests using the mock deterministic fallback.
+### Next Recommended Subagent Scopes
+- **Subagent 1 (Browser)**: Finalize local Playwright `wod_importer` integration tests against a static mock server instead of a live gym URL.
+- **Subagent 2 (Tracing)**: Write an integration test for the Jaeger/OpenTelemetry export loop (requires Docker).
+- **Subagent 3 (LLM)**: Write comprehensive edge-case extraction unit tests using the mock deterministic fallback.

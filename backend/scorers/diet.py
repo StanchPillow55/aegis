@@ -8,9 +8,24 @@ explicit `meal.protein_g` field or a protein keyword in the description).
 from backend.intake.schema import IntakeResult, Meal
 
 _PROTEIN_WORDS = {
-    "chicken", "beef", "steak", "fish", "salmon", "tuna", "egg", "eggs",
-    "tofu", "beans", "lentils", "turkey", "pork", "yogurt", "whey",
-    "protein", "shake", "cottage",
+    "chicken",
+    "beef",
+    "steak",
+    "fish",
+    "salmon",
+    "tuna",
+    "egg",
+    "eggs",
+    "tofu",
+    "beans",
+    "lentils",
+    "turkey",
+    "pork",
+    "yogurt",
+    "whey",
+    "protein",
+    "shake",
+    "cottage",
 }
 
 # Meal-count base score (a logged eating pattern across the day).

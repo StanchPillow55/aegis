@@ -23,19 +23,19 @@ _tracer = trace.get_tracer(__name__)
 
 def init_tracing() -> None:
     """Initialize OpenTelemetry SDK.
-    
+
     If OTEL_EXPORTER_OTLP_ENDPOINT is not set, tracing falls back to console or no-op.
     """
     global _otel_initialized, _tracer
-    
+
     if _otel_initialized:
         return
-        
+
     resource = Resource.create({"service.name": "aegis"})
     provider = TracerProvider(resource=resource)
-    
+
     endpoint = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317")
-    
+
     try:
         exporter = OTLPSpanExporter(endpoint=endpoint)
         processor = BatchSpanProcessor(exporter)
@@ -50,11 +50,12 @@ def init_tracing() -> None:
 
 def traced_span(name: str, **context: Any) -> Callable:
     """Decorator to wrap a function in an OpenTelemetry span.
-    
+
     Args:
         name: Span name
         **context: Additional context to attach to the span
     """
+
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -66,8 +67,9 @@ def traced_span(name: str, **context: Any) -> Callable:
                 for key, value in context.items():
                     span.set_attribute(key, str(value))
                 return func(*args, **kwargs)
-        
+
         return wrapper
+
     return decorator
 
 
@@ -76,7 +78,7 @@ def traced_span_context(name: str, **context: Any):
     """Context manager to wrap a block in an OpenTelemetry span."""
     if not _otel_initialized:
         init_tracing()
-        
+
     with _tracer.start_as_current_span(name) as span:
         for key, value in context.items():
             span.set_attribute(key, str(value))

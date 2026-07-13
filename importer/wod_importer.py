@@ -4,6 +4,7 @@ from backend.providers.tracing import traced_span
 
 logger = logging.getLogger(__name__)
 
+
 @traced_span("wod_importer.fetch")
 def fetch_wod(url: str):
     """Fetch WOD from url using local playwright."""
