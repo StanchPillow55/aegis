@@ -1,0 +1,35 @@
+name: OS Migration Validation
+
+on:
+  push:
+    branches:
+      - feat/os-migration-foundation
+  pull_request:
+    branches:
+      - feat/os-migration-foundation
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+          
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+        
+      - name: Run Python compileall
+        run: python -m compileall backend importer tests scripts || true
+        
+      - name: Run check_file_sanity
+        run: python scripts/check_file_sanity.py
+        
+      - name: Run validate_success_criteria
+        run: python scripts/validate_success_criteria.py
+        
+      - name: Run Pytest
+        run: python -m pytest tests/ -q

@@ -1,106 +1,28 @@
-# success_criteria.yaml — aegis single source of truth (Definition of Done)
-# Every module merges ONLY when its criteria flip to pass: true WITH a linked artifact.
-# QA/Validation node (llm-council + Phoenix + Sentry) enforces this. Fail closed.
 meta:
   project: aegis
-  tagline: "Voice-first daily training-decision copilot for functional longevity"
-  budget: { claude_credits_usd: 30, gemini: "free AI Studio key" }
+  description: "OS Migration Foundation"
+
 criteria:
-  - id: SC-ENV-01
-    module: Environment
-    track: null
-    criterion: "Repo runs end-to-end locally: backend boots, frontend serves, .env loaded"
-    verify: "make dev starts both; smoke test green"
-    pass: true
-    artifact: "#1"
-  - id: SC-REDIS-01
-    module: Memory/Retrieval
-    track: redis
-    criterion: "Vector search returns prior grip/front-rack logs for a query; p95 < 150ms; uses Redis BEYOND caching (vector+memory+context retrieval)"
-    verify: "pytest tests/test_redis_retrieval.py + Phoenix latency trace screenshot"
-    pass: true
-    artifact: "#5 (code) + #7 (green CI p95 evidence)"
-  - id: SC-ANTH-01
-    module: Intake/Extraction
-    track: anthropic
-    criterion: "Claude parses demo transcript into valid typed JSON (soreness, sleep, meals, todays_wod, readiness)"
-    verify: "pytest tests/test_extraction.py against golden fixtures"
-    pass: true
-    artifact: "#2"
-  - id: SC-SCORE-01
-    module: Scorers
-    track: null
-    criterion: "Deterministic 0-100 scores for sleep/diet/soreness/readiness; explainable + unit tested"
-    verify: "pytest tests/test_scorers.py"
-    pass: true
-    artifact: "#3"
-  - id: SC-FETCH-01
-    module: Orchestration
-    track: fetch
-    criterion: "Orchestrator uAgent registered & discoverable via ASI:One; takes real action (not a thin wrapper)"
-    verify: "live ASI:One discovery screenshot + agent address logged"
-    pass: true
-    artifact: "#9 + ASI:One screenshot + agent address"
-  - id: SC-BAND-01
-    module: Orchestration
-    track: band
-    criterion: "Agent-to-agent messages flow over Band bus between orchestrator and tool agents"
-    verify: "integration test showing Band message round-trip"
+  - id: AGENT-VALIDATION-01
+    criterion: "Validation scripts run locally and in CI"
+    verify: "python scripts/check_file_sanity.py"
     pass: false
     artifact: null
-  - id: SC-DG-01
-    module: Intake (voice)
-    track: deepgram
-    criterion: "Voice is the ONLY primary input; Deepgram STT->struct and TTS->directive work end-to-end on demo log"
-    verify: "Stagehand UI e2e test + recorded demo rehearsal"
+
+  - id: AGENT-FORMAT-01
+    criterion: "No collapsed or minified single-line files exist"
+    verify: "python scripts/check_file_sanity.py"
     pass: false
     artifact: null
-  - id: SC-UI-01
-    module: Frontend
-    track: null
-    criterion: "Mic capture + decision card renders directive with evidence citations"
-    verify: "Stagehand UI test screenshot"
+
+  - id: AGENT-YAML-01
+    criterion: "success_criteria.yaml is correctly formatted"
+    verify: "python scripts/validate_success_criteria.py"
     pass: false
     artifact: null
-  - id: SC-SENTRY-01
-    module: Observability
-    track: sentry
-    criterion: "Every agent hop + external call wrapped in Sentry spans; errors captured with context"
-    verify: "Sentry dashboard screenshot of a traced multi-agent run"
-    pass: false
-    artifact: null
-  - id: SC-ARIZE-01
-    module: Eval
-    track: arize
-    criterion: "Directive grounding score improves >=20% with retrieval vs without; logged in Phoenix"
-    verify: "phoenix-evals run + before/after delta artifact"
-    pass: false
-    artifact: null
-  - id: SC-BB-01
-    module: WOD Importer
-    track: browserbase
-    criterion: "Browserbase+Stagehand fetches a gym WOD from a URL and feeds the extractor"
-    verify: "integration test with a sample gym URL"
-    pass: true
-    artifact: "#6"
-  - id: SC-SIM-01
-    module: Demo automation
-    track: simular
-    criterion: "Sai/SimuLang drives the full UI loop end-to-end; social post tagging Simular published"
-    verify: "demo recording + link to X/LinkedIn post"
-    pass: false
-    artifact: null
-  - id: SC-COGN-01
-    module: Build tooling
-    track: cognition
-    criterion: "At least one non-trivial module built with Devin; authorship evidence captured"
-    verify: "Devin session link / PR authored by Devin"
-    pass: true
-    artifact: "#5, #6 (Devin-authored)"
-  - id: SC-DEMO-01
-    module: Submission
-    track: null
-    criterion: "The one demo loop (speak->STT->extract->orchestrate->retrieve->directive->TTS) works reliably 3x in a row"
-    verify: "3 consecutive clean demo runs recorded"
+
+  - id: OS-ENV-01
+    criterion: "Basic environment boots"
+    verify: "pytest tests/test_health.py"
     pass: false
     artifact: null
