@@ -1,3 +1,4 @@
-def generate_text(prompt: str) -> str:
-    """Generate text from local LLM."""
-    return ""
+class LLMProvider:
+    """Base interface for LLM operations."""
+    def generate_text(self, prompt: str) -> str:
+        return ""
