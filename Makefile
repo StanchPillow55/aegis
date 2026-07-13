@@ -1,11 +1,16 @@
 .PHONY: os-model-info os-test os-smoke
 
 os-model-info:
-	@echo "Local Model Info: Using foundational models placeholder"
+	@echo "Local model info:"
+	@echo "  default_model: not selected in foundation branch"
+	@echo "  hardware_target: Apple Silicon M2, 16 GB RAM"
+	@echo "  status: foundation validation only"
 
 os-test:
-	pytest tests/ -q
+	python -m compileall backend importer tests scripts
+	python scripts/check_file_sanity.py
+	python scripts/validate_success_criteria.py
+	python -m pytest tests/ -q
 
 os-smoke:
-	@echo "Smoke test placeholder. Ensure os-dev is running if using curl."
-	python -c "import httpx; print(httpx.get('http://127.0.0.1:8000/health').json())" || echo "TestClient handles this in CI for now"
+	python -m pytest tests/test_health.py -q

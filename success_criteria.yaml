@@ -1,28 +1,28 @@
 meta:
   project: aegis
-  description: "OS Migration Foundation"
+  description: OS Migration Foundation
 
 criteria:
   - id: AGENT-VALIDATION-01
-    criterion: "Validation scripts run locally and in CI"
-    verify: "python scripts/check_file_sanity.py"
+    criterion: Validation scripts run locally and in CI.
+    verify: python scripts/check_file_sanity.py
     pass: false
     artifact: null
 
   - id: AGENT-FORMAT-01
-    criterion: "No collapsed or minified single-line files exist"
-    verify: "python scripts/check_file_sanity.py"
+    criterion: No collapsed or malformed generated files exist.
+    verify: python scripts/check_file_sanity.py
     pass: false
     artifact: null
 
   - id: AGENT-YAML-01
-    criterion: "success_criteria.yaml is correctly formatted"
-    verify: "python scripts/validate_success_criteria.py"
+    criterion: success_criteria.yaml parses and contains required fields.
+    verify: python scripts/validate_success_criteria.py
     pass: false
     artifact: null
 
   - id: OS-ENV-01
-    criterion: "Basic environment boots"
-    verify: "pytest tests/test_health.py"
+    criterion: Basic FastAPI environment boots in open-source foundation mode.
+    verify: python -m pytest tests/test_health.py -q
     pass: false
     artifact: null

@@ -1,49 +1,65 @@
-import os
+from __future__ import annotations
+
 import ast
-import glob
+from pathlib import Path
 import sys
 
-def check_file_sanity():
-    patterns = ["backend/**/*.py", "importer/**/*.py", "tests/**/*.py", "scripts/**/*.py", "*.txt", "Makefile", "*.yaml", "*.md", "docs/**/*.md"]
-    files = []
-    for p in patterns:
-        files.extend(glob.glob(p, recursive=True))
 
-    hidden_chars = ["\u202A", "\u202B", "\u202C", "\u202D", "\u202E", "\uFEFF"]
-    
-    has_error = False
+ROOT = Path(__file__).resolve().parents[1]
+HIDDEN_CHARS = ["\u202a", "\u202b", "\u202c", "\u202d", "\u202e", "\ufeff"]
 
-    for file_path in files:
-        if not os.path.isfile(file_path):
-            continue
-            
-        with open(file_path, "r", encoding="utf-8") as f:
-            content = f.read()
-            
-        # Check for hidden characters
-        for char in hidden_chars:
-            if char in content:
-                print(f"ERROR: Hidden character {repr(char)} found in {file_path}")
-                has_error = True
+PATTERNS = [
+    "backend/**/*.py",
+    "importer/**/*.py",
+    "tests/**/*.py",
+    "scripts/**/*.py",
+    "*.txt",
+    "Makefile",
+    "*.yaml",
+    "*.yml",
+    "*.md",
+    ".github/workflows/*.yml",
+]
 
-        # Check for suspiciously long single lines
-        lines = content.splitlines()
-        if len(lines) == 1 and len(content) > 500:
-            print(f"ERROR: File suspiciously one-line long (>500 chars) in {file_path}")
-            has_error = True
 
-        # Check for python AST parsing
-        if file_path.endswith(".py"):
+def iter_files() -> list[Path]:
+    files: set[Path] = set()
+    for pattern in PATTERNS:
+        files.update(ROOT.glob(pattern))
+    return sorted(p for p in files if p.is_file())
+
+
+def main() -> int:
+    failed = False
+
+    for path in iter_files():
+        rel = path.relative_to(ROOT)
+        text = path.read_text(encoding="utf-8")
+
+        for char in HIDDEN_CHARS:
+            if char in text:
+                print(f"ERROR: hidden unicode {char!r} in {rel}")
+                failed = True
+
+        lines = text.splitlines()
+        if path.suffix in {".py", ".yaml", ".yml", ".md", ".txt"} or path.name == "Makefile":
+            if len(lines) == 1 and len(text) > 120:
+                print(f"ERROR: suspicious one-line file: {rel}")
+                failed = True
+
+        if path.suffix == ".py":
             try:
-                ast.parse(content)
-            except SyntaxError as e:
-                print(f"ERROR: SyntaxError parsing {file_path}: {e}")
-                has_error = True
+                ast.parse(text)
+            except SyntaxError as exc:
+                print(f"ERROR: Python syntax error in {rel}: {exc}")
+                failed = True
 
-    if has_error:
-        sys.exit(1)
-    else:
-        print("File sanity check passed.")
+    if failed:
+        return 1
+
+    print("File sanity check passed.")
+    return 0
+
 
 if __name__ == "__main__":
-    check_file_sanity()
+    raise SystemExit(main())

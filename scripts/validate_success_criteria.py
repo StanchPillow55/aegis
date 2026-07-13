@@ -1,26 +1,35 @@
-import yaml
+from __future__ import annotations
+
+from pathlib import Path
 import sys
 
-def validate_success_criteria():
-    try:
-        with open("success_criteria.yaml", "r") as f:
-            data = yaml.safe_load(f)
-            
-        assert isinstance(data, dict), "success_criteria.yaml root must be a dict"
-        assert "criteria" in data, "success_criteria.yaml must have a 'criteria' key"
-        assert isinstance(data["criteria"], list), "'criteria' must be a list"
-        
-        for criterion in data["criteria"]:
-            assert "id" in criterion, "Missing 'id' field"
-            assert "criterion" in criterion, "Missing 'criterion' field"
-            assert "verify" in criterion, "Missing 'verify' field"
-            assert "pass" in criterion, "Missing 'pass' field"
-            assert "artifact" in criterion, "Missing 'artifact' field"
-            
-        print("success_criteria.yaml OK")
-    except Exception as e:
-        print(f"ERROR: success_criteria.yaml validation failed: {e}")
-        sys.exit(1)
+import yaml
+
+
+ROOT = Path(__file__).resolve().parents[1]
+REQUIRED_FIELDS = {"id", "criterion", "verify", "pass", "artifact"}
+
+
+def main() -> int:
+    path = ROOT / "success_criteria.yaml"
+    data = yaml.safe_load(path.read_text(encoding="utf-8"))
+
+    assert isinstance(data, dict), "success_criteria.yaml root must be a dict"
+    assert "criteria" in data, "success_criteria.yaml must contain criteria"
+    assert isinstance(data["criteria"], list), "criteria must be a list"
+
+    for index, criterion in enumerate(data["criteria"]):
+        assert isinstance(criterion, dict), f"criterion {index} must be a dict"
+        missing = REQUIRED_FIELDS - set(criterion)
+        assert not missing, f"criterion {criterion.get('id', index)} missing {sorted(missing)}"
+
+    print("success_criteria.yaml OK")
+    return 0
+
 
 if __name__ == "__main__":
-    validate_success_criteria()
+    try:
+        raise SystemExit(main())
+    except Exception as exc:
+        print(f"ERROR: {exc}")
+        raise SystemExit(1)
