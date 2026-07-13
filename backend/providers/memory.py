@@ -1,14 +1,5 @@
-from typing import Any, Dict, List, Optional
+def store_memory(data: dict) -> None:
+    pass
 
-class MemoryProvider:
-    def __init__(self, config: Dict[str, Any]) -> None:
-        self.config = config
-
-    def store(self, key: str, value: Any, **kwargs: Any) -> None:
-        pass
-
-    def retrieve(self, key: str, **kwargs: Any) -> Optional[Any]:
-        return None
-        
-    def delete(self, key: str, **kwargs: Any) -> None:
-        pass
+def retrieve_memory(query: str) -> list:
+    return []
