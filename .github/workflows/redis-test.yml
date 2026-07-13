@@ -9,16 +9,12 @@ on:
     branches: [ci/redis-evidence, master]
     paths:
       - "backend/memory/**"
-      - "backend/intake/schema.py"
       - "tests/test_redis_retrieval.py"
-      - "requirements.txt"
       - ".github/workflows/redis-test.yml"
   pull_request:
     paths:
       - "backend/memory/**"
-      - "backend/intake/schema.py"
       - "tests/test_redis_retrieval.py"
-      - "requirements.txt"
       - ".github/workflows/redis-test.yml"
   workflow_dispatch:
 
