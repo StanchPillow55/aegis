@@ -1,7 +1,16 @@
-.PHONY: dev test
+.PHONY: os-model-info os-test os-smoke
 
-dev:
-	uvicorn backend.main:app --reload
+os-model-info:
+	@echo "Local model info:"
+	@echo "  default_model: not selected in foundation branch"
+	@echo "  hardware_target: Apple Silicon M2, 16 GB RAM"
+	@echo "  status: foundation validation only"
 
-test:
-	pytest -q
+os-test:
+	python -m compileall backend importer tests scripts
+	python scripts/check_file_sanity.py
+	python scripts/validate_success_criteria.py
+	python -m pytest tests/ -q
+
+os-smoke:
+	python -m pytest tests/test_health.py -q
