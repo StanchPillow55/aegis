@@ -1,15 +1,48 @@
 # aegis
-Voice-first daily training-decision copilot for functional longevity. Cal Hacks 2026.
+
+**Daily training-decision copilot for functional longevity** — expanding into a **local-first personal health copilot**.
+
+Still centered on one evidence-bound daily training directive:
+
+`Intake → structured health data → evidence → scores → WOD/training context → directive`
+
+## Docs (read in order)
+1. [`docs/PRODUCT_SPEC.md`](docs/PRODUCT_SPEC.md) — canonical product + architecture spec  
+2. [`success_criteria.yaml`](success_criteria.yaml) — Definition of Done  
+3. [`AGENT_HANDOFF.md`](AGENT_HANDOFF.md) — current state + next slice  
+4. [`CLAUDE.md`](CLAUDE.md) — build contract  
+
+## Quickstart (Apple Silicon M2 or Linux)
+```bash
+cp .env.example .env
+python3 -m pip install -r requirements.txt
+make os-test
+make os-demo
+make os-dev   # prints http://127.0.0.1:8000/
+make os-health  # same-host proof the server is up
+```
+
+Then open **`http://127.0.0.1:8000/`** in a browser **on the same machine** that is running `make os-dev`.
+
+### Browser cannot connect? (`ERR_CONNECTION_REFUSED`)
+
+`127.0.0.1` means **this computer only**.
+
+| Where `make os-dev` runs | Where Chrome runs | Result |
+|---|---|---|
+| Your M2 Mac | Same Mac | Works at `http://127.0.0.1:8000/` |
+| Cursor Cloud Agent / remote VM | Your laptop | **Fails** — laptop localhost ≠ agent localhost |
+
+Also include the port: `http://127.0.0.1:8000/` — bare `http://127.0.0.1/` hits port 80 and will refuse.
+
+See bug spec: [`docs/bugs/BUG-LOCALHOST-01.md`](docs/bugs/BUG-LOCALHOST-01.md).  
+Remote phone/PWA access: [`docs/TAILSCALE.md`](docs/TAILSCALE.md).
+
+Optional: `ollama pull llama3.2`  
+Override bind for tunnels (behind auth): `make os-dev DEV_HOST=0.0.0.0`
+
+## Local-first boundary
+LLM, storage, scoring, and reasoning are local. External connectors are optional and fail soft. No cloud LLM/DB required.
 
 ## Build philosophy
-Agentic loop (Planner/Prompter -> Coder -> Tester -> QA) governed by `success_criteria.yaml`.
-Multi-model `llm-council` (`council/council.py`) provides judgment at the Planner & QA gates.
-See `CLAUDE.md` for the full build contract.
-
-## Local-First Architecture Goals
-Ollama, SQLite/Chroma, and OpenTelemetry are planned targets unless otherwise explicitly implemented as cloud services.
-
-## Quickstart
-1. `cp .env.example .env` (Add API keys if using cloud fallbacks)
-2. `pip install -r requirements.txt`
-3. Council sanity check: `python -m council.council "Reply with a one-line plan."`
+Agentic loop governed by `success_criteria.yaml`. See `CLAUDE.md`.

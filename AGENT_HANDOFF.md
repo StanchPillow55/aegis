@@ -1,30 +1,52 @@
-# Agent Handoff Document
+# AGENT_HANDOFF — aegis
 
-## Current Status
+**Read first:** `docs/PRODUCT_SPEC.md` · `success_criteria.yaml` · `CLAUDE.md`
 
-- OS migration foundation has been merged into `master`.
-- Provider skeletons have been added.
-- Local LLM fallback now returns an IntakeResult-compatible dictionary shape.
-- Redis workflow trigger has been narrowed so OS migration branches should not be blocked by Redis checks.
+## Current state
 
-## Validation Status
+Autonomous plan execution complete through stacked PRs:
 
-Current blocker:
-- `make os-test` failed because `success_criteria.yaml` did not parse with `criteria` as a list.
+| Slice | Branch / PR | Status |
+|---|---|---|
+| 0 Schema/evidence | #24 | Done |
+| 1 Source registry | #25 | Done (CI green) |
+| 2–5 Ingestion + fixture connectors | #26 | Done |
+| 6–11 Alerts/goals/scores/tools/charts/PWA/Tailscale | `cursor/slice6-alerts-goals-scores-766c` | Done locally; CI pending |
 
-Required before next wave:
-- `python scripts/validate_success_criteria.py` must pass.
-- `make os-test` must pass.
+**43/43** success criteria marked with artifacts after local verification (`pytest` 87 passed, `make mvp-demo`).
 
-## Next Recommended Branches
+## Known limitations
 
-Only start these after `make os-test` passes on `master`:
+- Fitbit/Calendar/Takeout = **fixture mode** (no live OAuth credentials in this environment)
+- Chat / vision / AIContext are thin stubs (memory search proxy; no full floating chat UI)
+- Open-Meteo returns offline fixture
+- Full Grafana-style dashboard shell not built (composer UI + rich APIs + PWA manifest)
+- Tailscale mesh setup is operator-owned; security contract documented in `docs/TAILSCALE.md`
+- Browser E2E against a live `os-dev` server not automated in CI
+- **Cloud Agent UI trap:** `make os-dev` on the agent does **not** make laptop `http://127.0.0.1:8000` work. See `docs/bugs/BUG-LOCALHOST-01.md`. Run on the M2 host for local Chrome, or use Tailscale.
 
-- `feat/os-memory`: SQLite/Chroma local memory.
-- `feat/os-voice`: faster-whisper and Piper skeletons.
-- `feat/os-tracing`: OpenTelemetry and Jaeger skeleton.
+## How to open the UI
+
+1. On the **same machine** as the browser: `make os-dev` then open `http://127.0.0.1:8000/` (port required).
+2. Prove the server on that host: `make os-health`.
+3. If the shell is a Cloud Agent and Chrome is on your laptop → expected refuse; not an app crash.
+
+## Next implementation order
+
+1. ~~Canonical schema / provenance / SQLite~~  
+2. ~~Source registry + sync~~  
+3. ~~Manual/fixture ingestion~~  
+4. ~~Fitbit/Calendar adapters (fixture)~~  
+5. ~~FITINDEX CSV/manual~~  
+6. ~~Alerts + staleness~~  
+7. ~~Goals~~  
+8. ~~LLM tools + charts~~  
+9. ~~Canonical four-score + WOD~~  
+10. ~~PWA manifest + Tailscale docs~~  
+11. Optional hardening: live OAuth when secrets available, richer chat/llava, dashboard shell, Playwright E2E  
+
+**Slice 0 complete.** Continue optional hardening only when credentials or UI scope expand.
 
 ## Rules
 
-- Do not mark success criteria `pass: true` unless the verify command passed and the artifact field is non-null.
-- Missing local services should become skip guards and bucket-list entries, not hard failures.
+Pass criteria only with verify + artifact. Distinguish UI presence ≠ backend ≠ live integration ≠ E2E.

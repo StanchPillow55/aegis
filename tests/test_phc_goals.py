@@ -1,0 +1,1 @@
+from tests.test_mvp_product_wave import test_goals_confirm_flow as test_phc_goals
