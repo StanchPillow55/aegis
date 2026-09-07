@@ -2,27 +2,24 @@
 
 ## Current Status
 
-- OS migration foundation has been merged into `master`.
-- Provider skeletons have been added.
-- Local LLM fallback now returns an IntakeResult-compatible dictionary shape.
-- Redis workflow trigger has been narrowed so OS migration branches should not be blocked by Redis checks.
+- Local-only OS foundation is the active track (no paid cloud APIs required).
+- FastAPI serves health + intake/directive APIs and the text-first frontend.
+- Providers: local LLM (Ollama/heuristic), SQLite memory, speech scaffolds, OTel-style tracing.
+- Target hardware: Apple Silicon M2 / 16GB; Linux CI for foundation tests.
 
-## Validation Status
+## Validation
 
-Current blocker:
-- `make os-test` failed because `success_criteria.yaml` did not parse with `criteria` as a list.
+```bash
+make os-test
+make os-demo
+```
 
-Required before next wave:
-- `python scripts/validate_success_criteria.py` must pass.
-- `make os-test` must pass.
+## Next waves (optional)
 
-## Next Recommended Branches
-
-Only start these after `make os-test` passes on `master`:
-
-- `feat/os-memory`: SQLite/Chroma local memory.
-- `feat/os-voice`: faster-whisper and Piper skeletons.
-- `feat/os-tracing`: OpenTelemetry and Jaeger skeleton.
+- Richer Ollama prompting / structured JSON grammar
+- Chroma or true embedding model behind the memory provider
+- Piper CLI TTS path
+- Kubernetes + MoE serving experiments (out of foundation scope)
 
 ## Rules
 

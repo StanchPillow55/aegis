@@ -6,3 +6,7 @@ node_modules/
 dist/
 .phoenix/
 *.log
+data/*.sqlite3
+data/*.wav
+data/*.txt
+!data/.gitkeep
