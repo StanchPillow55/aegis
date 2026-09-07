@@ -43,11 +43,26 @@
   <section id="result" class="result" hidden>
     <h2>Today’s directive</h2>
     <p id="directive-text" class="directive"></p>
+    <p id="disclaimer-text" class="disclaimer"></p>
     <div class="score-row" id="score-row"></div>
-    <details>
-      <summary>Intake + evidence</summary>
-      <pre id="evidence-pre"></pre>
-    </details>
+    <div class="evidence-panels">
+      <details open>
+        <summary>Today</summary>
+        <pre id="today-pre"></pre>
+      </details>
+      <details open>
+        <summary>History</summary>
+        <pre id="history-pre"></pre>
+      </details>
+      <details>
+        <summary>Conflicts</summary>
+        <pre id="conflicts-pre"></pre>
+      </details>
+      <details>
+        <summary>Raw evidence</summary>
+        <pre id="evidence-pre"></pre>
+      </details>
+    </div>
   </section>
 
   <footer class="foot">

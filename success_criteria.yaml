@@ -81,20 +81,20 @@ criteria:
       Evidence payload separates today vs history, deduplicates hits, excludes the
       just-written log, and records conflicts with today-wins resolution.
     verify: python -m pytest tests/test_mvp_evidence.py -q
-    pass: false
-    artifact: null
+    pass: true
+    artifact: artifacts/slice0-schema-evidence.txt
 
   - id: MVP-PERSIST-01
     criterion: SQLite memory survives process restart and returns prior log IDs.
     verify: python -m pytest tests/test_mvp_persist.py -q
-    pass: false
-    artifact: null
+    pass: true
+    artifact: artifacts/slice0-schema-evidence.txt
 
   - id: MVP-DISCLAIMER-01
     criterion: Safety disclaimer is present in /api/directive and the result UI.
     verify: python -m pytest tests/test_mvp_disclaimer.py -q
-    pass: false
-    artifact: null
+    pass: true
+    artifact: artifacts/slice0-schema-evidence.txt
 
   - id: MVP-WOD-01
     criterion: >
@@ -199,14 +199,14 @@ criteria:
   - id: PHC-SQLITE-01
     criterion: Health DB survives process restart with intact records and provenance fields.
     verify: python -m pytest tests/test_phc_sqlite_durability.py -q
-    pass: false
-    artifact: null
+    pass: true
+    artifact: artifacts/slice0-schema-evidence.txt
 
   - id: PHC-PROVENANCE-01
     criterion: Stored records include source, timestamp, and data-quality/provenance metadata.
     verify: python -m pytest tests/test_phc_provenance.py -q
-    pass: false
-    artifact: null
+    pass: true
+    artifact: artifacts/slice0-schema-evidence.txt
 
   - id: PHC-TOOLS-01
     criterion: >

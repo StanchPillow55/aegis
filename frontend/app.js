@@ -6,7 +6,11 @@ const dictateStatus = document.getElementById("dictate-status");
 const speakToggle = document.getElementById("speak-toggle");
 const result = document.getElementById("result");
 const directiveText = document.getElementById("directive-text");
+const disclaimerText = document.getElementById("disclaimer-text");
 const scoreRow = document.getElementById("score-row");
+const todayPre = document.getElementById("today-pre");
+const historyPre = document.getElementById("history-pre");
+const conflictsPre = document.getElementById("conflicts-pre");
 const evidencePre = document.getElementById("evidence-pre");
 
 let recognizing = false;
@@ -75,15 +79,27 @@ form.addEventListener("submit", async (event) => {
     }
     const data = await res.json();
     directiveText.textContent = data.directive;
+    disclaimerText.textContent = data.disclaimer || "";
     const scores = data.scores || {};
+    // Transitional labels until canonical four-score UI lands.
     scoreRow.innerHTML = ["readiness", "sleep", "soreness", "diet"]
       .map((key) => {
         const value = scores[key]?.score ?? "—";
         return `<span>${key}<strong>${value}</strong></span>`;
       })
       .join("");
+    const ev = data.evidence || {};
+    todayPre.textContent = JSON.stringify(ev.today || data.intake, null, 2);
+    historyPre.textContent = JSON.stringify(ev.history || [], null, 2);
+    conflictsPre.textContent = JSON.stringify(ev.conflicts || [], null, 2);
     evidencePre.textContent = JSON.stringify(
-      { intake: data.intake, evidence: data.evidence, log_id: data.log_id, tts: data.tts },
+      {
+        extractor: data.extractor,
+        log_id: data.log_id,
+        resolution_policy: ev.resolution_policy,
+        tts: data.tts,
+        scores_note: ev.note,
+      },
       null,
       2
     );
@@ -97,7 +113,11 @@ form.addEventListener("submit", async (event) => {
     }
   } catch (err) {
     directiveText.textContent = err.message || "Something went wrong.";
+    disclaimerText.textContent = "";
     scoreRow.innerHTML = "";
+    todayPre.textContent = "";
+    historyPre.textContent = "";
+    conflictsPre.textContent = "";
     evidencePre.textContent = "";
     result.hidden = false;
   } finally {

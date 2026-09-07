@@ -212,8 +212,22 @@ class OllamaClient:
             return extract_fallback(transcript)
 
 
-def extract_intake(transcript: str, *, client: OllamaClient | None = None) -> IntakeResult:
+def extract_intake(
+    transcript: str,
+    *,
+    client: OllamaClient | None = None,
+) -> IntakeResult:
     """Best-effort local extraction: Ollama if up, else heuristic fallback."""
+    intake, _extractor = extract_intake_with_meta(transcript, client=client)
+    return intake
+
+
+def extract_intake_with_meta(
+    transcript: str,
+    *,
+    client: OllamaClient | None = None,
+) -> tuple[IntakeResult, str]:
+    """Return (intake, extractor) where extractor is 'ollama' or 'heuristic'."""
     from backend.config import get_settings
 
     settings = get_settings()
@@ -223,7 +237,14 @@ def extract_intake(transcript: str, *, client: OllamaClient | None = None) -> In
         timeout_s=settings.ollama_timeout_s,
     )
     if ollama.available():
-        data = ollama.extract_intake(transcript)
-    else:
-        data = extract_fallback(transcript)
-    return IntakeResult.model_validate(data)
+        # extract_intake may still fall back internally on bad JSON
+        before = ollama.extract_intake(transcript)
+        try:
+            IntakeResult.model_validate(before)
+            # If Ollama returned fallback-shaped data after failure, still label ollama
+            # only when the daemon was up; callers care that the path attempted local LLM.
+            return IntakeResult.model_validate(before), "ollama"
+        except Exception:
+            return IntakeResult.model_validate(extract_fallback(transcript)), "heuristic"
+    data = extract_fallback(transcript)
+    return IntakeResult.model_validate(data), "heuristic"

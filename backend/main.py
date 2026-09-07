@@ -11,6 +11,8 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from backend.config import get_settings
+from backend.health.evidence import build_evidence_bundle
+from backend.health.schema import SAFETY_DISCLAIMER, DataQuality, DataSource
 from backend.intake.schema import IntakeResult
 from backend.providers.llm import LocalLLMProvider
 from backend.providers.memory import LocalMemoryProvider
@@ -20,7 +22,7 @@ from backend.reasoner import compose_directive
 
 FRONTEND_DIR = Path(__file__).resolve().parents[1] / "frontend"
 
-app = FastAPI(title="aegis", version="0.1.0")
+app = FastAPI(title="aegis", version="0.2.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -42,9 +44,11 @@ class TextUpdate(BaseModel):
 class DirectiveResponse(BaseModel):
     intake: IntakeResult
     directive: str
+    disclaimer: str
     scores: dict
     evidence: dict
     log_id: str
+    extractor: str
     tts: dict | None = None
 
 
@@ -62,6 +66,7 @@ def health_check() -> dict:
     return {
         "status": "ok",
         "mode": settings.aegis_mode,
+        "schema_version": _memory.schema_version(),
         "voice": {
             "stt": {"enabled": _speech.stt_enabled, "ready": stt.ok, "detail": stt.detail},
             "tts": {"enabled": _speech.tts_enabled, "ready": tts.ok, "detail": tts.detail},
@@ -72,25 +77,45 @@ def health_check() -> dict:
 @app.post("/api/intake", response_model=IntakeResult)
 def api_intake(body: TextUpdate) -> IntakeResult:
     with start_span("api.intake", chars=len(body.text)) as span:
-        intake = _llm.extract_intake(body.text)
+        intake, extractor = _llm.extract_intake_with_meta(body.text)
         span.set_attribute("readiness", intake.subjective_readiness)
+        span.set_attribute("extractor", extractor)
         return intake
 
 
 @app.post("/api/directive", response_model=DirectiveResponse)
 def api_directive(body: TextUpdate) -> DirectiveResponse:
     with start_span("api.directive", chars=len(body.text)) as span:
-        intake = _llm.extract_intake(body.text)
-        log_id = _memory.store(intake)
-        hits = _memory.search(
-            f"Readiness: {intake.subjective_readiness}",
-            k=3,
+        intake, extractor = _llm.extract_intake_with_meta(body.text)
+        source = (
+            DataSource.OLLAMA_EXTRACT
+            if extractor == "ollama"
+            else DataSource.HEURISTIC_EXTRACT
         )
-        # exclude the just-written log from context notes when identical
-        context_notes = [
-            h.content for h in hits if h.log_id != log_id
-        ][:3]
-        composed = compose_directive(intake, context_notes=context_notes)
+        log_id = _memory.store(
+            intake,
+            source=source,
+            extractor=extractor,
+            quality=DataQuality.MEDIUM if extractor == "ollama" else DataQuality.LOW,
+        )
+        hits = _memory.search(
+            f"Readiness: {intake.subjective_readiness} sleep {intake.sleep.quality}",
+            k=5,
+            exclude_ids={log_id},
+            dedupe=True,
+        )
+        history = [h.to_history_hit() for h in hits]
+        bundle = build_evidence_bundle(
+            intake=intake,
+            log_id=log_id,
+            history=history,
+            extractor=extractor,
+        )
+        composed = compose_directive(
+            intake,
+            context_notes=[h.content for h in hits],
+            evidence_bundle=bundle,
+        )
         tts_payload = None
         if body.speak:
             spoken = _speech.synthesize(composed["directive"])
@@ -99,14 +124,23 @@ def api_directive(body: TextUpdate) -> DirectiveResponse:
                 "detail": spoken.detail,
                 "audio_path": spoken.audio_path,
             }
+        else:
+            tts_payload = {
+                "ok": False,
+                "detail": "TTS not requested (speak=false).",
+                "audio_path": None,
+            }
         span.set_attribute("log_id", log_id)
+        span.set_attribute("extractor", extractor)
         span.set_attribute("readiness_score", composed["evidence"]["readiness"])
         return DirectiveResponse(
             intake=intake,
             directive=composed["directive"],
+            disclaimer=composed.get("disclaimer") or SAFETY_DISCLAIMER,
             scores=composed["scores"],
             evidence=composed["evidence"],
             log_id=log_id,
+            extractor=extractor,
             tts=tts_payload,
         )
 
@@ -122,6 +156,8 @@ def api_recent_logs(n: int = 10) -> dict:
                 "timestamp": h.timestamp,
                 "content": h.content,
                 "intake": h.intake,
+                "provenance": h.provenance,
+                "content_hash": h.content_hash,
             }
             for h in hits
         ]

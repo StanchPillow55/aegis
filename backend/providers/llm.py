@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from backend.intake.schema import IntakeResult
-from backend.local_llm import OllamaClient, extract_fallback, extract_intake
+from backend.local_llm import OllamaClient, extract_fallback, extract_intake_with_meta
 
 
 class LLMProvider:
@@ -14,6 +14,9 @@ class LLMProvider:
 
     def extract_intake(self, transcript: str) -> IntakeResult:
         return IntakeResult.model_validate(extract_fallback(transcript))
+
+    def extract_intake_with_meta(self, transcript: str) -> tuple[IntakeResult, str]:
+        return IntakeResult.model_validate(extract_fallback(transcript)), "heuristic"
 
 
 class LocalLLMProvider(LLMProvider):
@@ -40,4 +43,8 @@ class LocalLLMProvider(LLMProvider):
         return client.generate(prompt)
 
     def extract_intake(self, transcript: str) -> IntakeResult:
-        return extract_intake(transcript, client=self.client)
+        intake, _ = self.extract_intake_with_meta(transcript)
+        return intake
+
+    def extract_intake_with_meta(self, transcript: str) -> tuple[IntakeResult, str]:
+        return extract_intake_with_meta(transcript, client=self.client)

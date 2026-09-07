@@ -168,11 +168,19 @@ button.ghost {
   font-weight: 500;
 }
 
-.directive {
-  margin: 0 0 1.25rem;
-  font-size: 1.12rem;
-  line-height: 1.55;
+.disclaimer {
+  margin: 0 0 1.1rem;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: rgba(26, 36, 33, 0.7);
+  border-left: 3px solid var(--leaf);
+  padding-left: 0.75rem;
 }
+
+.evidence-panels details {
+  margin-bottom: 0.5rem;
+}
+
 
 .score-row {
   display: grid;

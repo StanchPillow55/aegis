@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from backend.health.schema import SAFETY_DISCLAIMER, EvidenceBundle
 from backend.intake.schema import IntakeResult
 from backend.scorers import score_all
 
@@ -10,8 +11,9 @@ def compose_directive(
     intake: IntakeResult,
     *,
     context_notes: list[str] | None = None,
+    evidence_bundle: EvidenceBundle | None = None,
 ) -> dict:
-    """Return scores + one plain-language directive string."""
+    """Return scores + one plain-language directive string + disclaimer."""
     scores = score_all(intake)
     readiness = scores["readiness"]["score"]
     sleep_s = scores["sleep"]["score"]
@@ -47,11 +49,21 @@ def compose_directive(
             "planned movements: " + ", ".join(intake.todays_wod.movements[:6])
         )
 
+    hist_n = 0
+    conflict_n = 0
+    if evidence_bundle is not None:
+        hist_n = len(evidence_bundle.history)
+        conflict_n = len(evidence_bundle.conflicts)
+    elif context_notes:
+        hist_n = len(context_notes)
+
     evidence = (
         f"readiness {readiness}/100 (sleep {sleep_s}, soreness {soreness_s}, diet {diet_s})"
     )
-    if context_notes:
-        evidence += f"; memory hits: {len(context_notes)}"
+    if hist_n:
+        evidence += f"; history hits: {hist_n}"
+    if conflict_n:
+        evidence += f"; conflicts: {conflict_n} (today wins)"
 
     directive = (
         f"{action} Focus: "
@@ -59,14 +71,26 @@ def compose_directive(
         f"Evidence: {evidence}."
     )
 
+    score_evidence = {
+        "readiness": readiness,
+        "sleep": sleep_s,
+        "soreness": soreness_s,
+        "diet": diet_s,
+        "context": context_notes or [],
+        "note": (
+            "Top-level readiness/soreness labels are transitional; "
+            "canonical scores are front_rack/sleep/diet/workout_preparation/overall."
+        ),
+    }
+    if evidence_bundle is not None:
+        score_evidence["today"] = evidence_bundle.today
+        score_evidence["history"] = [h.model_dump() for h in evidence_bundle.history]
+        score_evidence["conflicts"] = [c.model_dump() for c in evidence_bundle.conflicts]
+        score_evidence["resolution_policy"] = evidence_bundle.resolution_policy
+
     return {
         "directive": directive,
+        "disclaimer": SAFETY_DISCLAIMER,
         "scores": scores,
-        "evidence": {
-            "readiness": readiness,
-            "sleep": sleep_s,
-            "soreness": soreness_s,
-            "diet": diet_s,
-            "context": context_notes or [],
-        },
+        "evidence": score_evidence,
     }

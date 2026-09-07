@@ -13,6 +13,7 @@ def test_health() -> None:
     assert payload["status"] == "ok"
     assert payload["mode"] == "open-source-foundation"
     assert "voice" in payload
+    assert "schema_version" in payload
 
 
 def test_frontend_index() -> None:
@@ -24,13 +25,10 @@ def test_frontend_index() -> None:
 def test_directive_roundtrip(tmp_path, monkeypatch) -> None:
     monkeypatch.setenv("MEMORY_DB_PATH", str(tmp_path / "t.sqlite3"))
     from backend.config import get_settings
-    from backend.main import _memory
+    import backend.main as main_mod
     from backend.providers.memory import LocalMemoryProvider
 
     get_settings.cache_clear()
-    # Re-bind app memory to isolated DB for this test.
-    import backend.main as main_mod
-
     main_mod._memory = LocalMemoryProvider(tmp_path / "t.sqlite3")
 
     response = client.post(
@@ -44,4 +42,8 @@ def test_directive_roundtrip(tmp_path, monkeypatch) -> None:
     data = response.json()
     assert data["directive"]
     assert data["log_id"]
+    assert data["disclaimer"]
     assert "readiness" in data["scores"]
+    assert data["evidence"]["today"]["authoritative"] is True
+    assert isinstance(data["evidence"]["history"], list)
+    assert data["extractor"] in {"heuristic", "ollama"}

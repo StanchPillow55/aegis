@@ -17,8 +17,9 @@ Still centered on one evidence-bound daily training directive:
 - Text intake → structured fields → **transitional** scores (`readiness` / `sleep` / `soreness` / `diet`) → directive
 - SQLite memory with basic retrieval (dedup / provenance incomplete)
 - Optional Ollama; heuristic fallback when Ollama is down
-- Simple text-first UI (Dictate / Speak controls present; voice not E2E-proven)
-- OS foundation gates green; **14** automated tests (`make os-test`)
+- Simple text-first UI with Today / History / Conflicts + disclaimer
+- Slice 0: provenance, SQLite durability, evidence dedup, today-wins conflicts
+- OS foundation + Slice 0 gates green; **23** automated tests
 
 **Not in this tree yet** (specified, not implemented): Fitbit, FITINDEX, Calendar, chat/vision, LLM metric tools, charts, alerts, goals, sync registry, PWA/Tailscale, canonical Front-rack / Workout-prep / Overall scores.
 

@@ -97,11 +97,11 @@ Legend: **IT** = Implemented & tested · **IL** = Implemented but limited/incomp
 | Front-rack score | P | Missing |
 | Workout-preparation score | P | Missing |
 | Overall health/fitness score | P | Missing |
-| SQLite log store | IL | Works in-process; restart durability / provenance incomplete |
-| Memory retrieval | IL | Wired; duplicates & today/history conflicts unresolved |
-| Evidence provenance | P | Need source, timestamp, quality flags |
+| SQLite log store | IT | Restart durability + schema_version proven (Slice 0) |
+| Memory retrieval | IL | Dedup + exclude-self + today/history/conflicts wired; relevance still basic |
+| Evidence provenance | IT | source / recorded_at / quality / extractor / content_hash |
+| Safety disclaimer | IT | API + UI (MVP-DISCLAIMER-01); broader PHC-SAFETY-01 still open |
 | WOD negotiation | P | Parse only today |
-| Safety disclaimer | P | Missing from UI/API |
 | Macro Pool ledger | P | Meal-count heuristic only |
 | Dictation UI control | IL | Browser API; not E2E verified |
 | Opt-in TTS | IL | Often `tts: null`; not reliable |
@@ -118,7 +118,7 @@ Legend: **IT** = Implemented & tested · **IL** = Implemented but limited/incomp
 | Geolocation + weather/AQI | P | Not in this tree |
 | Grafana-style dashboard | P | Current UI is single composer page |
 | PWA / Tailscale remote | P | Not documented or implemented |
-| `make dev` / 48 tests | NV | This tree: `make os-dev`, **14** tests |
+| Automated tests | IT | **23** passed in this tree (`make os-test` / pytest) |
 
 ---
 
@@ -324,8 +324,8 @@ External connectors are adapters; core reasoning never hard-depends on them.
 
 ## 14. Implementation order (next)
 
-1. Canonical schema, provenance, SQLite durability  
-2. Source registry + sync status  
+1. Canonical schema, provenance, SQLite durability — **done (Slice 0)**  
+2. Source registry + sync status ← **next**  
 3. Complete manual/fixture ingestion  
 4. Fitbit + Calendar adapters  
 5. FITINDEX OCR/manual review workflow  
@@ -336,9 +336,8 @@ External connectors are adapters; core reasoning never hard-depends on them.
 10. Mobile/PWA + Tailscale hardening  
 11. End-to-end acceptance testing  
 
-**First implementation slice (after this docs gate):**  
-**Slice 0 — Canonical health schema + provenance + SQLite restart durability + today/history evidence separation**  
-(unblocks every connector and the directive contract; no OAuth yet)
+**First implementation slice after docs:** Slice 0 complete.  
+**Next:** Source registry + sync status (fixture/manual sources; no OAuth yet).
 
 ---
 
