@@ -114,7 +114,7 @@ Legend: **IT** = Implemented & tested · **IL** = Implemented but limited/incomp
 | Inline charts | P | Not in this tree |
 | Alerts / custom thresholds | P | Not in this tree |
 | Goals + confirmation | P | Not in this tree |
-| Sync registry / staleness | P | Not in this tree |
+| Sync registry / staleness | IT | Fixture/manual sync; externals registered disabled; 24h stale warnings |
 | Geolocation + weather/AQI | P | Not in this tree |
 | Grafana-style dashboard | P | Current UI is single composer page |
 | PWA / Tailscale remote | P | Not documented or implemented |

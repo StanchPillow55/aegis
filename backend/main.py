@@ -20,10 +20,15 @@ from backend.providers.speech import LocalSpeechProvider
 from backend.providers.tracing import init_tracing, start_span
 from backend.reasoner import compose_directive
 from backend.sync import SourceRegistry, SyncConfig
+from backend.health.store import (
+    FitindexManualIn,
+    HealthMetricsStore,
+    ManualMetricIn,
+)
 
 FRONTEND_DIR = Path(__file__).resolve().parents[1] / "frontend"
 
-app = FastAPI(title="aegis", version="0.3.0")
+app = FastAPI(title="aegis", version="0.4.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -36,6 +41,7 @@ _llm = LocalLLMProvider()
 _memory = LocalMemoryProvider()
 _speech = LocalSpeechProvider()
 _sync = SourceRegistry()
+_metrics = HealthMetricsStore()
 
 
 class TextUpdate(BaseModel):
@@ -238,6 +244,75 @@ def api_sync_history(source_id: str | None = None, limit: int = 50) -> dict:
 @app.get("/api/sync/stale")
 def api_sync_stale() -> dict:
     return {"stale": [s.model_dump() for s in _sync.stale_sources()]}
+
+
+@app.get("/api/metrics")
+def api_list_metrics() -> dict:
+    return {"metrics": _metrics.list_metrics(), "count": _metrics.count()}
+
+
+@app.get("/api/metrics/{metric}/latest")
+def api_metric_latest(metric: str) -> dict:
+    point = _metrics.latest(metric)
+    if point is None:
+        raise HTTPException(status_code=404, detail=f"No data for metric {metric}")
+    return point.model_dump()
+
+
+@app.get("/api/metrics/{metric}/series")
+def api_metric_series(metric: str, limit: int = 100) -> dict:
+    points = _metrics.series(metric, limit=limit)
+    return {"metric": metric, "points": [p.model_dump() for p in points]}
+
+
+@app.post("/api/metrics/manual")
+def api_manual_metric(body: ManualMetricIn) -> dict:
+    point = _metrics.add_manual(body)
+    # bump manual source success
+    try:
+        _sync.sync_one("manual", force=True)
+    except Exception:
+        pass
+    return point.model_dump()
+
+
+@app.post("/api/ingest/fixture")
+def api_ingest_fixture() -> dict:
+    result = _metrics.ingest_fixture()
+    _sync.sync_one("fixture", force=True)
+    return result
+
+
+@app.post("/api/fitindex/manual")
+def api_fitindex_manual(body: FitindexManualIn) -> dict:
+    """Create a FITINDEX draft for user review (not saved until confirm)."""
+    draft = _metrics.fitindex_propose(body)
+    return draft.model_dump()
+
+
+@app.post("/api/fitindex/confirm/{draft_id}")
+def api_fitindex_confirm(draft_id: str, body: FitindexManualIn | None = None) -> dict:
+    try:
+        if body is None:
+            body = FitindexManualIn(confirmed=True)
+        elif not body.confirmed:
+            body = body.model_copy(update={"confirmed": True})
+        return _metrics.fitindex_confirm(draft_id, body)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Unknown draft") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/api/fitindex/csv")
+def api_fitindex_csv(body: dict) -> dict:
+    """CSV text → review draft (must confirm before save)."""
+    text = body.get("csv") or body.get("text") or ""
+    try:
+        draft = _metrics.ingest_fitindex_csv(text)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return draft.model_dump()
 
 
 @app.get("/")

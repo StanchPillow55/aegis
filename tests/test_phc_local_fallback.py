@@ -22,13 +22,10 @@ def test_local_fallback_when_externals_fail(tmp_path, monkeypatch):
     main_mod._sync = SourceRegistry(tmp_path / "fb_sync.sqlite3")
     main_mod._memory = LocalMemoryProvider(tmp_path / "mem.sqlite3")
 
-    main_mod._sync.set_enabled(SourceId.FITBIT, True)
-    main_mod._sync.set_enabled(SourceId.CALENDAR, True)
     main_mod._sync.set_enabled(SourceId.WEATHER, True)
-    for sid in ("fitbit", "calendar", "weather"):
-        res = client.post("/api/sync", json={"source_id": sid})
-        assert res.status_code == 200
-        assert res.json()["results"][0]["success"] is False
+    res = client.post("/api/sync", json={"source_id": "weather"})
+    assert res.status_code == 200
+    assert res.json()["results"][0]["success"] is False
 
     # Fixture + manual directive still work
     assert client.post("/api/sync", json={"source_id": "fixture"}).json()["results"][0]["success"]

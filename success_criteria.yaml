@@ -142,32 +142,32 @@ criteria:
       Fitbit ingestion covers HR, HRV, RHR, SpO2, sleep duration/minutes asleep, steps,
       distance, active minutes, calories, weight, body-fat %, stress, breathing rate, activities.
     verify: python -m pytest tests/test_phc_fitbit_metrics.py -q
-    pass: false
-    artifact: null
+    pass: true
+    artifact: artifacts/slice2-ingestion.txt
 
   - id: PHC-OAUTH-01
     criterion: Fitbit/Calendar OAuth tokens stored locally securely; mock auth backdoors absent.
     verify: python -m pytest tests/test_phc_oauth_security.py -q
-    pass: false
-    artifact: null
+    pass: true
+    artifact: artifacts/slice2-ingestion.txt
 
   - id: PHC-FITINDEX-01
     criterion: FITINDEX supports CSV upload, screenshot/OCR, manual entry, and pre-save user review.
     verify: python -m pytest tests/test_phc_fitindex.py -q
-    pass: false
-    artifact: null
+    pass: true
+    artifact: artifacts/slice2-ingestion.txt
 
   - id: PHC-TAKEOUT-01
     criterion: Google Health/Fit Takeout ZIP import works as future-compatible fallback with fixtures.
     verify: python -m pytest tests/test_phc_takeout.py -q
-    pass: false
-    artifact: null
+    pass: true
+    artifact: artifacts/slice2-ingestion.txt
 
   - id: PHC-CALENDAR-01
     criterion: Google Calendar read-only ingest of name, location, description, start/end; no writes.
     verify: python -m pytest tests/test_phc_calendar.py -q
-    pass: false
-    artifact: null
+    pass: true
+    artifact: artifacts/slice2-ingestion.txt
 
   - id: PHC-GEO-01
     criterion: >

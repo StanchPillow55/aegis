@@ -1,4 +1,4 @@
-"""Health domain package — schema, provenance, evidence (Slice 0)."""
+"""Health domain package — schema, provenance, evidence, metrics store."""
 
 from backend.health.evidence import build_evidence_bundle, detect_conflicts
 from backend.health.schema import (
@@ -12,6 +12,7 @@ from backend.health.schema import (
     HistoryHit,
     Provenance,
 )
+from backend.health.store import HealthMetricsStore, ManualMetricIn
 
 __all__ = [
     "SAFETY_DISCLAIMER",
@@ -21,7 +22,9 @@ __all__ = [
     "EvidenceBundle",
     "EvidenceConflict",
     "HealthRecord",
+    "HealthMetricsStore",
     "HistoryHit",
+    "ManualMetricIn",
     "Provenance",
     "build_evidence_bundle",
     "detect_conflicts",

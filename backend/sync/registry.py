@@ -154,6 +154,13 @@ class SourceRegistry:
         self._ensure_defaults()
         self.register_handler(SourceId.FIXTURE, _sync_fixture)
         self.register_handler(SourceId.MANUAL, _sync_manual_noop)
+        # Fixture-mode connectors (OAuth later)
+        try:
+            from backend.connectors import register_fixture_connectors
+
+            register_fixture_connectors(self)
+        except Exception:
+            pass
 
     def _connect(self) -> sqlite3.Connection:
         conn = sqlite3.connect(str(self.db_path))
@@ -413,22 +420,26 @@ class SourceRegistry:
 
 
 def _sync_fixture(registry: SourceRegistry, source_id: SourceId) -> SyncResult:
-    """Load bundled fixture metrics into coverage counts (no OAuth)."""
+    """Load bundled fixture metrics into the health metrics store."""
+    from backend.health.store import HealthMetricsStore
     from backend.sync.fixtures import load_fixture_bundle
 
     bundle = load_fixture_bundle()
+    store = HealthMetricsStore()
+    ingested = store.ingest_fixture()
     status = registry._load(source_id.value)
     status.coverage = {
         "modes": ["json_fixture"],
         "metrics": sorted(bundle.get("metrics", {}).keys()),
         "sample_days": bundle.get("sample_days", 0),
+        "stored_metrics": ingested.get("metrics", []),
     }
-    count = int(bundle.get("record_count", 0))
+    count = int(ingested.get("written") or bundle.get("record_count", 0))
     return SyncResult(
         source_id=source_id,
         success=True,
         record_count=count,
-        detail=f"Loaded fixture bundle with {count} records",
+        detail=f"Ingested fixture bundle ({count} points)",
         status=status,
     )
 

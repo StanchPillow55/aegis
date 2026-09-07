@@ -50,11 +50,11 @@ def test_disabled_source_skips_unless_forced(tmp_path: Path):
 
 def test_external_unconfigured_fails_soft(tmp_path: Path):
     reg = SourceRegistry(tmp_path / "sync3.sqlite3")
-    reg.set_enabled(SourceId.FITBIT, True)
-    result = reg.sync_one(SourceId.FITBIT)
+    # weather has no handler yet — soft fail
+    reg.set_enabled(SourceId.WEATHER, True)
+    result = reg.sync_one(SourceId.WEATHER)
     assert result.success is False
     assert result.error and result.error.code == "not_configured"
-    # App registry still lists other sources — local path intact
     assert any(s.source_id == SourceId.MANUAL for s in reg.list_sources())
 
 
@@ -99,9 +99,13 @@ def test_api_sources_and_sync(tmp_path, monkeypatch):
     assert hist.status_code == 200
     assert hist.json()["history"]
 
-    # Fitbit enabled but unconfigured — soft fail, app still healthy
+    # Fitbit fixture-mode works offline; weather still soft-fails without handler
     client.post("/api/sources/fitbit/enable", json={"enabled": True})
-    soft = client.post("/api/sync", json={"source_id": "fitbit"})
+    fit = client.post("/api/sync", json={"source_id": "fitbit"})
+    assert fit.status_code == 200
+    assert fit.json()["results"][0]["success"] is True
+    client.post("/api/sources/weather/enable", json={"enabled": True})
+    soft = client.post("/api/sync", json={"source_id": "weather"})
     assert soft.status_code == 200
     assert soft.json()["results"][0]["success"] is False
     assert client.get("/health").json()["status"] == "ok"

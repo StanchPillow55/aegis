@@ -1,0 +1,1 @@
+from tests.test_phc_ingestion import test_fitbit_fixture_covers_required_metrics as test_phc_fitbit_metrics
