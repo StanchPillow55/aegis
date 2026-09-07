@@ -1,64 +1,293 @@
 meta:
   project: aegis
-  description: OS Migration Foundation
+  description: >
+    Local-first daily training-decision copilot for functional longevity,
+    expanding into a personal health copilot. Canonical spec: docs/PRODUCT_SPEC.md.
+    OS foundation rows are closed; MVP-* and PHC-* rows are open until verified.
 
 criteria:
+  # --- Closed: OS foundation ---
   - id: AGENT-VALIDATION-01
     criterion: Validation scripts run locally and in CI.
     verify: python scripts/check_file_sanity.py
-    pass: false
-    artifact: null
+    pass: true
+    artifact: artifacts/os-foundation-verify.txt
 
   - id: AGENT-FORMAT-01
     criterion: No collapsed or malformed generated files exist.
     verify: python scripts/check_file_sanity.py
-    pass: false
-    artifact: null
+    pass: true
+    artifact: artifacts/os-foundation-verify.txt
 
   - id: AGENT-YAML-01
     criterion: success_criteria.yaml parses and contains required fields.
     verify: python scripts/validate_success_criteria.py
-    pass: false
-    artifact: null
+    pass: true
+    artifact: artifacts/os-foundation-verify.txt
 
   - id: OS-ENV-01
     criterion: Basic FastAPI environment boots in open-source foundation mode.
     verify: python -m pytest tests/test_health.py -q
-    pass: false
-    artifact: null
+    pass: true
+    artifact: artifacts/os-foundation-verify.txt
 
   - id: OS-PROVIDER-01
     criterion: Local-first provider skeletons import and compile.
     verify: python -m pytest tests/test_provider_interfaces.py -q
-    pass: false
-    artifact: null
+    pass: true
+    artifact: artifacts/os-foundation-verify.txt
 
   - id: OS-LLM-01
     criterion: Local LLM fallback returns IntakeResult-compatible data without paid APIs.
     verify: python -m pytest tests/test_local_llm.py -q
-    pass: false
-    artifact: null
+    pass: true
+    artifact: artifacts/os-foundation-verify.txt
 
   - id: OS-MEMORY-01
     criterion: Local memory provider stores and retrieves logs without Redis Cloud.
     verify: python -m pytest tests/test_memory.py -q
-    pass: false
-    artifact: null
+    pass: true
+    artifact: artifacts/os-foundation-verify.txt
 
   - id: OS-VOICE-01
     criterion: Local STT/TTS adapters are scaffolded and testable without Deepgram.
     verify: python -m pytest tests/test_voice.py -q
-    pass: false
-    artifact: null
+    pass: true
+    artifact: artifacts/os-foundation-verify.txt
 
   - id: OS-OBS-01
     criterion: Local OpenTelemetry tracing scaffold emits spans without Sentry.
     verify: python -m pytest tests/test_tracing.py -q
-    pass: false
-    artifact: null
+    pass: true
+    artifact: artifacts/os-foundation-verify.txt
 
   - id: OS-DEMO-01
     criterion: Local demo loop runs or reports missing setup cleanly.
     verify: make os-demo
+    pass: true
+    artifact: artifacts/os-foundation-verify.txt
+
+  # --- Open: training-directive MVP contract ---
+  - id: MVP-SCORE-01
+    criterion: >
+      API/UI expose canonical scores front_rack, sleep, diet, workout_preparation,
+      and overall (not transitional readiness/soreness as permanent top-level labels).
+    verify: python -m pytest tests/test_mvp_scores.py -q
     pass: false
     artifact: null
+
+  - id: MVP-EVIDENCE-01
+    criterion: >
+      Evidence payload separates today vs history, deduplicates hits, excludes the
+      just-written log, and records conflicts with today-wins resolution.
+    verify: python -m pytest tests/test_mvp_evidence.py -q
+    pass: false
+    artifact: null
+
+  - id: MVP-PERSIST-01
+    criterion: SQLite memory survives process restart and returns prior log IDs.
+    verify: python -m pytest tests/test_mvp_persist.py -q
+    pass: false
+    artifact: null
+
+  - id: MVP-DISCLAIMER-01
+    criterion: Safety disclaimer is present in /api/directive and the result UI.
+    verify: python -m pytest tests/test_mvp_disclaimer.py -q
+    pass: false
+    artifact: null
+
+  - id: MVP-WOD-01
+    criterion: >
+      WOD negotiation returns as_prescribed|scaled|substituted|deferred with reasons
+      and the directive cites the decision.
+    verify: python -m pytest tests/test_mvp_wod.py -q
+    pass: false
+    artifact: null
+
+  - id: MVP-FRONTRACK-01
+    criterion: Front-rack mobility factors influence front_rack score and WOD negotiation.
+    verify: python -m pytest tests/test_mvp_frontrack.py -q
+    pass: false
+    artifact: null
+
+  - id: MVP-MACRO-01
+    criterion: Diet score uses a Macro Pool ledger (not meal-count only).
+    verify: python -m pytest tests/test_mvp_macro.py -q
+    pass: false
+    artifact: null
+
+  - id: MVP-VOICE-01
+    criterion: >
+      Opt-in speak path returns explicit tts status when enabled; UI reflects actual
+      voice readiness (no unexplained null).
+    verify: python -m pytest tests/test_mvp_voice.py -q
+    pass: false
+    artifact: null
+
+  - id: MVP-EXTRACT-01
+    criterion: Response reports extractor=ollama|heuristic; Ollama path validated when daemon up.
+    verify: python -m pytest tests/test_mvp_extract.py -q
+    pass: false
+    artifact: null
+
+  - id: MVP-DEMO-01
+    criterion: End-to-end local MVP demo script passes offline (heuristic) and documents Ollama.
+    verify: make mvp-demo
+    pass: false
+    artifact: null
+
+  # --- Open: personal health copilot (PHC) expansion ---
+  - id: PHC-FITBIT-01
+    criterion: >
+      Fitbit ingestion covers HR, HRV, RHR, SpO2, sleep duration/minutes asleep, steps,
+      distance, active minutes, calories, weight, body-fat %, stress, breathing rate, activities.
+    verify: python -m pytest tests/test_phc_fitbit_metrics.py -q
+    pass: false
+    artifact: null
+
+  - id: PHC-OAUTH-01
+    criterion: Fitbit/Calendar OAuth tokens stored locally securely; mock auth backdoors absent.
+    verify: python -m pytest tests/test_phc_oauth_security.py -q
+    pass: false
+    artifact: null
+
+  - id: PHC-FITINDEX-01
+    criterion: FITINDEX supports CSV upload, screenshot/OCR, manual entry, and pre-save user review.
+    verify: python -m pytest tests/test_phc_fitindex.py -q
+    pass: false
+    artifact: null
+
+  - id: PHC-TAKEOUT-01
+    criterion: Google Health/Fit Takeout ZIP import works as future-compatible fallback with fixtures.
+    verify: python -m pytest tests/test_phc_takeout.py -q
+    pass: false
+    artifact: null
+
+  - id: PHC-CALENDAR-01
+    criterion: Google Calendar read-only ingest of name, location, description, start/end; no writes.
+    verify: python -m pytest tests/test_phc_calendar.py -q
+    pass: false
+    artifact: null
+
+  - id: PHC-GEO-01
+    criterion: >
+      Geolocation is opt-in default-off, revocable, minimally stored, and never sent to a cloud LLM.
+    verify: python -m pytest tests/test_phc_geolocation_privacy.py -q
+    pass: false
+    artifact: null
+
+  - id: PHC-ENV-01
+    criterion: Optional Open-Meteo weather/AQI context caches locally and degrades cleanly offline.
+    verify: python -m pytest tests/test_phc_environment.py -q
+    pass: false
+    artifact: null
+
+  - id: PHC-SYNC-01
+    criterion: >
+      Hybrid sync supports configurable background sync, per-source toggles, on-demand UI/chat/voice
+      sync, history, last success/attempt, errors, coverage, and retries.
+    verify: python -m pytest tests/test_phc_sync.py -q
+    pass: false
+    artifact: null
+
+  - id: PHC-STALE-01
+    criterion: Per-source staleness warnings fire when last successful sync is older than 24 hours.
+    verify: python -m pytest tests/test_phc_staleness.py -q
+    pass: false
+    artifact: null
+
+  - id: PHC-SQLITE-01
+    criterion: Health DB survives process restart with intact records and provenance fields.
+    verify: python -m pytest tests/test_phc_sqlite_durability.py -q
+    pass: false
+    artifact: null
+
+  - id: PHC-PROVENANCE-01
+    criterion: Stored records include source, timestamp, and data-quality/provenance metadata.
+    verify: python -m pytest tests/test_phc_provenance.py -q
+    pass: false
+    artifact: null
+
+  - id: PHC-TOOLS-01
+    criterion: >
+      LLM queries health data via structured tools (metrics list/latest/series/baseline/range,
+      freshness, alerts, goals, conversation search, evidence) without dumping the full DB.
+    verify: python -m pytest tests/test_phc_llm_tools.py -q
+    pass: false
+    artifact: null
+
+  - id: PHC-CHARTS-01
+    criterion: >
+      Validated chart specs render trends (metric/sleep/body-comp/activity/goals/compare)
+      without allowing arbitrary HTML/script from the LLM.
+    verify: python -m pytest tests/test_phc_charts.py -q
+    pass: false
+    artifact: null
+
+  - id: PHC-ALERTS-01
+    criterion: >
+      Default alert thresholds (HR>200, SpO2<90, RHR>+15% baseline, HRV<-30% baseline)
+      plus user overrides/custom alerts/severity/history and duplicate suppression.
+    verify: python -m pytest tests/test_phc_alerts.py -q
+    pass: false
+    artifact: null
+
+  - id: PHC-GOALS-01
+    criterion: >
+      Goals support create (UI/NL/edit), statuses, evidence-based completion detection,
+      user confirmation before complete, permanent history, and chart reference bands.
+    verify: python -m pytest tests/test_phc_goals.py -q
+    pass: false
+    artifact: null
+
+  - id: PHC-CHAT-01
+    criterion: Conversation search, image attach/preview/remove, and history thumbnails work locally.
+    verify: python -m pytest tests/test_phc_chat.py -q
+    pass: false
+    artifact: null
+
+  - id: PHC-VISION-01
+    criterion: Optional local vision (e.g. Ollama llava) extracts image facts into reasoning context.
+    verify: python -m pytest tests/test_phc_vision.py -q
+    pass: false
+    artifact: null
+
+  - id: PHC-CONTEXT-01
+    criterion: AIContextProvider supplies current dashboard/screen context into chat requests.
+    verify: python -m pytest tests/test_phc_aicontext.py -q
+    pass: false
+    artifact: null
+
+  - id: PHC-PWA-01
+    criterion: Installable PWA with usable mobile layout; text fallback without Web Speech.
+    verify: python -m pytest tests/test_phc_pwa.py -q
+    pass: false
+    artifact: null
+
+  - id: PHC-TAILSCALE-01
+    criterion: >
+      Tailscale remote access docs + config expose only auth-aware frontend/API proxy;
+      SQLite/Ollama remain localhost-only (no public Funnel to raw DB/services).
+    verify: python -m pytest tests/test_phc_tailscale_security.py -q
+    pass: false
+    artifact: null
+
+  - id: PHC-FALLBACK-01
+    criterion: App remains usable with fixtures/manual entry when Fitbit/Calendar/weather/AQI are down.
+    verify: python -m pytest tests/test_phc_local_fallback.py -q
+    pass: false
+    artifact: null
+
+  - id: PHC-SAFETY-01
+    criterion: >
+      Safety copy states non-diagnostic/non-prescriptive posture; alerts labeled observations;
+      stale/uncertain data flagged in assistant answers.
+    verify: python -m pytest tests/test_phc_safety_copy.py -q
+    pass: false
+    artifact: null
+
+  - id: PHC-DOCS-01
+    criterion: PRODUCT_SPEC, AGENT_HANDOFF, README, and success_criteria stay consistent on identity and scores.
+    verify: python scripts/validate_product_docs.py
+    pass: true
+    artifact: artifacts/product-docs-verify.txt

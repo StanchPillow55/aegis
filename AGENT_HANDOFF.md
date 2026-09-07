@@ -1,30 +1,79 @@
-# Agent Handoff Document
+# AGENT_HANDOFF — aegis
 
-## Current Status
+**Read first:** `docs/PRODUCT_SPEC.md` (canonical) · `success_criteria.yaml` (DoD) · `CLAUDE.md` (build contract)
 
-- OS migration foundation has been merged into `master`.
-- Provider skeletons have been added.
-- Local LLM fallback now returns an IntakeResult-compatible dictionary shape.
-- Redis workflow trigger has been narrowed so OS migration branches should not be blocked by Redis checks.
+---
 
-## Validation Status
+## Current state
 
-Current blocker:
-- `make os-test` failed because `success_criteria.yaml` did not parse with `criteria` as a list.
+Aegis is a **daily training-decision copilot for functional longevity**, expanding into a **local-first personal health copilot** (wearables, body composition, calendar, NL + image logging, environment, scoring, goals, alerts, conversational dashboard).
 
-Required before next wave:
-- `python scripts/validate_success_criteria.py` must pass.
-- `make os-test` must pass.
+**In this repository today:** a working **local text-based health-log / directive path**:
 
-## Next Recommended Branches
+`Text → structured intake → local scores → memory hits → one daily directive`
 
-Only start these after `make os-test` passes on `master`:
+plus OS-foundation scaffolding (local providers, optional Ollama, SQLite memory, simple frontend).
 
-- `feat/os-memory`: SQLite/Chroma local memory.
-- `feat/os-voice`: faster-whisper and Piper skeletons.
-- `feat/os-tracing`: OpenTelemetry and Jaeger skeleton.
+**It is not complete** against the expanded personal-health-copilot specification.
+
+### Verified in this tree (2026-09-07)
+
+| Item | State |
+|---|---|
+| `make os-test` | **14 passed** (not 48/48) |
+| `make os-dev` / `os-demo` | Works; Ollama optional |
+| Scores shown | **Transitional:** readiness, sleep, soreness, diet |
+| Canonical scores | Front-rack / Sleep / Diet / Workout-prep / Overall — **not implemented** |
+| Fitbit / Calendar / FITINDEX / chat / llava / charts / alerts / goals / PWA / Tailscale | **Not present in this tree** (planned; see status table in PRODUCT_SPEC) |
+
+> Do not treat “tests passing” as “product complete.” The suite only covers the current foundation slice.
+
+---
+
+## Known limitations
+
+- Temporary score-label mismatch (`readiness`/`soreness` vs canonical model)
+- Evidence retrieval can duplicate hits; today vs history / conflicts not modeled
+- SQLite durability/provenance not E2E proven across restart
+- WOD negotiation missing
+- Safety disclaimer missing
+- Macro Pool missing
+- Voice: UI controls exist; reliable STT/TTS not demonstrated (`tts: null` observed)
+- Missing Fitbit metric coverage + OAuth/token security
+- Missing FITINDEX CSV / OCR / manual review workflow
+- Missing configurable background + on-demand sync registry
+- Missing alert management (defaults + custom)
+- Missing goal system with confirmation
+- Missing chart-aware LLM tool responses
+- Missing conversation search / floating chat / `AIContextProvider`
+- Missing mobile PWA + Tailscale hardening
+- No E2E acceptance suite for the expanded product
+- Dead/legacy cloud modules (Redis/Anthropic/Browserbase paths) may still exist but are out of local-first core
+
+---
+
+## Next implementation order
+
+1. Canonical schema, provenance, and SQLite durability  
+2. Source registry and sync status  
+3. Complete manual/fixture ingestion  
+4. Fitbit and Calendar adapters  
+5. FITINDEX OCR/manual ingestion  
+6. Alerts and staleness  
+7. Goals and progress tracking  
+8. LLM query tools and inline charts  
+9. Restore the canonical four-score / WOD-directive contract  
+10. Mobile/PWA and Tailscale hardening  
+11. End-to-end acceptance testing  
+
+**Start next (Slice 0):** schema + provenance + SQLite restart durability + today/history evidence separation.  
+Docs/planning gate first — **do not claim connector features until adapters land with `PHC-*` verify commands.**
+
+---
 
 ## Rules
 
-- Do not mark success criteria `pass: true` unless the verify command passed and the artifact field is non-null.
-- Missing local services should become skip guards and bucket-list entries, not hard failures.
+- Never mark `MVP-*` or `PHC-*` criteria `pass: true` without a green verify command and non-null artifact.
+- Stay local-first: no cloud LLM/DB on the core path.
+- External connectors must fail gracefully; fixtures/manual entry keep the app usable.
+- Distinguish UI presence vs backend vs live integration vs E2E verification in all status reports.
