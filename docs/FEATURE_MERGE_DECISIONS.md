@@ -2,7 +2,8 @@
 
 **Date:** 2026-09-07  
 **Target:** current Cursor workspace (`/workspace`)  
-**Older prototype:** `/Users/bradleyharaguchi/Downloads/aegis` (**not readable on Cloud Agent**)
+**Shared legacy snapshot:** `/workspace/legacy-aegis` on `cursor/legacy-aegis-semantic-merge-e5a8` (GitHub `master` @ `0492758`)  
+**Mac older prototype:** `/Users/bradleyharaguchi/Downloads/aegis` (**still not mounted**; upload zip if it differs from GitHub master)
 
 ---
 
@@ -25,7 +26,7 @@
 
 | Conflict | Resolution |
 |---|---|
-| Older prototype unreachable on agent | Document blocker; continue independent ports from PRODUCT_SPEC + matrix; re-audit when tree provided |
+| Older Mac prototype unreachable on agent | Shared GitHub `master` into `/workspace/legacy-aegis` on `cursor/legacy-aegis-semantic-merge-e5a8`; re-audit found **no unique older-only files**. Mac `~/Downloads/aegis` still needs zip/upload if it differs |
 | PRODUCT_SPEC §3–4 status table stale vs code | Refresh status table to match AGENT_HANDOFF + matrix |
 | Macro Pool exists only in tests | Wire into production diet/canonical scoring |
 | Takeout ZIP parser only in tests | Promote to `backend/connectors/takeout.py` + API |

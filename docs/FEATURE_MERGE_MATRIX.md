@@ -1,24 +1,21 @@
 # Aegis Feature Merge Matrix
 
 **Target (canonical):** `/workspace` — Cursor Cloud workspace / `github.com/StanchPillow55/aegis`  
-**Older prototype (read-only source):** `/Users/bradleyharaguchi/Downloads/aegis`  
+**Shared legacy snapshot (this branch):** `/workspace/legacy-aegis` ← GitHub `master` @ `0492758`  
+**Mac older prototype (still unread):** `/Users/bradleyharaguchi/Downloads/aegis`  
 **Matrix date:** 2026-09-07  
 **Merge type:** Semantic feature aggregation (not a Git merge)
 
-## Blocker — older prototype unavailable on this agent
+## Shared tree status — `legacy-aegis/` on `cursor/legacy-aegis-semantic-merge-e5a8`
 
 | Item | Detail |
 |---|---|
-| Requested path | `/Users/bradleyharaguchi/Downloads/aegis` |
-| Agent host check | **Path does not exist** on the Cloud Agent VM (Mac filesystem is not mounted) |
-| GitHub search | No second public Aegis prototype repo found under `StanchPillow55` |
-| User action requested | Zip/upload the tree, push to a cloneable repo, or sync to `/workspace/legacy-aegis` |
-| Impact | “Older prototype status” columns below cannot be file-verified. They use **U** = Unavailable for inspection. Where prior planning mentioned reported features, marked **R** = Reported historically (not verified in this run). |
-
-Until the older tree is provided, aggregation proceeds by:
-1. Preserving all current-workspace functionality.
-2. Closing remaining PRODUCT_SPEC gaps that do not require the older tree.
-3. Updating this matrix when the prototype becomes readable.
+| Shared path | `/workspace/legacy-aegis` (read-only source snapshot) |
+| Share branch | `cursor/legacy-aegis-semantic-merge-e5a8` |
+| Snapshot source | `origin/master` @ `0492758552d392a14efc0259169ab58b3936b114` |
+| File inventory | 44 files; **0 unique feature files** vs canonical root (only older/smaller revisions of the same paths) |
+| Mac path | `/Users/bradleyharaguchi/Downloads/aegis` still **not mounted** on this VM |
+| Impact | Columns that depended on the Mac Downloads tree remain **U/R** until that zip/tree is uploaded. The GitHub-master share is now inspectable at `legacy-aegis/` and does not unlock additional older-only ports. |
 
 ### Status codes
 
