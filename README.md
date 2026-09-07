@@ -1,16 +1,26 @@
 # aegis
-Voice-capable daily training-decision copilot for functional longevity — **local-first / open-source**.
 
-Text UI is primary. Browser dictation and spoken TTS are opt-in. No paid cloud APIs required.
+**Daily training-decision copilot for functional longevity** — expanding into a **local-first personal health copilot** (wearables, body composition, calendar/lifestyle context, natural-language + image logging, environmental context, health scoring, goals, alerts, conversational dashboard).
 
-## What works now
-- FastAPI app with `/health`, `/api/intake`, `/api/directive`, `/api/logs/recent`
-- Local intake extraction via **Ollama** when running, else a deterministic heuristic
-- SQLite memory with hashing-vector retrieval (no Redis Cloud)
-- Deterministic readiness / sleep / soreness / diet scorers → one daily directive
-- OpenTelemetry-style local span scaffold (console exporter)
-- Optional STT/TTS adapters (faster-whisper / Piper / pyttsx3) behind feature flags
-- Text-first frontend at `/`
+Still centered on one evidence-bound daily training directive:
+
+`Intake → structured health data → evidence → scores → WOD/training context → directive`
+
+## Docs (read in order)
+1. [`docs/PRODUCT_SPEC.md`](docs/PRODUCT_SPEC.md) — canonical product + architecture spec  
+2. [`success_criteria.yaml`](success_criteria.yaml) — Definition of Done  
+3. [`AGENT_HANDOFF.md`](AGENT_HANDOFF.md) — current state + next slice  
+4. [`CLAUDE.md`](CLAUDE.md) — build contract  
+
+## What works in this repository now
+- FastAPI app: `/health`, `/api/intake`, `/api/directive`, `/api/logs/recent`
+- Text intake → structured fields → **transitional** scores (`readiness` / `sleep` / `soreness` / `diet`) → directive
+- SQLite memory with basic retrieval (dedup / provenance incomplete)
+- Optional Ollama; heuristic fallback when Ollama is down
+- Simple text-first UI (Dictate / Speak controls present; voice not E2E-proven)
+- OS foundation gates green; **14** automated tests (`make os-test`)
+
+**Not in this tree yet** (specified, not implemented): Fitbit, FITINDEX, Calendar, chat/vision, LLM metric tools, charts, alerts, goals, sync registry, PWA/Tailscale, canonical Front-rack / Workout-prep / Overall scores.
 
 ## Quickstart (Apple Silicon M2 or Linux)
 ```bash
@@ -21,25 +31,10 @@ make os-demo
 make os-dev   # http://127.0.0.1:8000
 ```
 
-### Optional local LLM
-```bash
-# Install Ollama, then:
-ollama pull llama3.2
-```
+Optional: `ollama pull llama3.2`
 
-### Optional voice
-Set `VOICE_STT_ENABLED=true` / `VOICE_TTS_ENABLED=true` in `.env` and install
-`faster-whisper` and/or `pyttsx3` (or a Piper model path). The UI also supports
-browser dictation and browser `speechSynthesis` without those packages.
-
-## Product status
-- **Done:** local vertical slice (text → intake → scores → memory → directive). See Sept 7 QA.
-- **Not done:** full local MVP (four contract scores, WOD negotiation, evidence conflicts, Macro Pool, functional voice, disclaimer).
-- Spec: [`docs/MVP_SPEC.md`](docs/MVP_SPEC.md)
+## Local-first boundary
+LLM, storage, scoring, and reasoning are local. Fitbit / Google Calendar / Open-Meteo are optional external connectors whose data is cached locally. The app must remain usable with fixtures and manual entry when those services are unavailable. No cloud LLM or cloud database is required.
 
 ## Build philosophy
 Agentic loop governed by `success_criteria.yaml`. See `CLAUDE.md`.
-
-## Future notes
-Linux/CI is supported for foundation tests. Kubernetes + MoE serving is a later
-scaling track — not required for local foundation readiness.

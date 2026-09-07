@@ -12,6 +12,7 @@ PATTERNS = [
     "importer/**/*.py",
     "tests/**/*.py",
     "scripts/**/*.py",
+    "docs/**/*.md",
     "*.txt",
     "Makefile",
     "*.yaml",
