@@ -1,27 +1,35 @@
 # Agent Handoff Document
 
-## Current Status
+## Current Status (2026-09-07)
 
-- Local-only OS foundation is the active track (no paid cloud APIs required).
-- FastAPI serves health + intake/directive APIs and the text-first frontend.
-- Providers: local LLM (Ollama/heuristic), SQLite memory, speech scaffolds, OTel-style tracing.
-- Target hardware: Apple Silicon M2 / 16GB; Linux CI for foundation tests.
+- Local vertical slice is runnable and screenshot-proven:
+  text → structured intake → scores → memory hits → daily directive.
+- OS foundation success criteria are `pass: true`.
+- Product is still an early local alpha vs the original MVP contract.
+
+## Spec
+
+Read **`docs/MVP_SPEC.md`** before implementing features.
+
+Key gaps called out by QA:
+- Restore scores to Front-rack / Sleep / Diet / Workout preparation
+- Dedup + today-vs-history evidence model
+- WOD negotiation
+- Macro Pool
+- Functional optional voice (TTS not `null` when enabled)
+- Safety disclaimer
+- Proven durable SQLite persistence
 
 ## Validation
 
 ```bash
 make os-test
 make os-demo
+# MVP gates (fail until implemented):
+python3 scripts/validate_success_criteria.py
 ```
-
-## Next waves (optional)
-
-- Richer Ollama prompting / structured JSON grammar
-- Chroma or true embedding model behind the memory provider
-- Piper CLI TTS path
-- Kubernetes + MoE serving experiments (out of foundation scope)
 
 ## Rules
 
-- Do not mark success criteria `pass: true` unless the verify command passed and the artifact field is non-null.
-- Missing local services should become skip guards and bucket-list entries, not hard failures.
+- Do not mark `MVP-*` criteria `pass: true` without a passing verify command and non-null artifact.
+- Stay local-only: no paid cloud APIs on the core path.

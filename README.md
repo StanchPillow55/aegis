@@ -32,6 +32,11 @@ Set `VOICE_STT_ENABLED=true` / `VOICE_TTS_ENABLED=true` in `.env` and install
 `faster-whisper` and/or `pyttsx3` (or a Piper model path). The UI also supports
 browser dictation and browser `speechSynthesis` without those packages.
 
+## Product status
+- **Done:** local vertical slice (text → intake → scores → memory → directive). See Sept 7 QA.
+- **Not done:** full local MVP (four contract scores, WOD negotiation, evidence conflicts, Macro Pool, functional voice, disclaimer).
+- Spec: [`docs/MVP_SPEC.md`](docs/MVP_SPEC.md)
+
 ## Build philosophy
 Agentic loop governed by `success_criteria.yaml`. See `CLAUDE.md`.
 

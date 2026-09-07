@@ -1,8 +1,11 @@
 meta:
   project: aegis
-  description: OS Migration Foundation (local-only)
+  description: >
+    Local-only aegis. OS foundation is complete; MVP feature completion is gated
+    by MVP-* criteria. Product contract: docs/MVP_SPEC.md (2026-09-07 screenshot QA).
 
 criteria:
+  # --- Closed: OS foundation (Sept 2026) ---
   - id: AGENT-VALIDATION-01
     criterion: Validation scripts run locally and in CI.
     verify: python scripts/check_file_sanity.py
@@ -62,3 +65,72 @@ criteria:
     verify: make os-demo
     pass: true
     artifact: artifacts/os-foundation-verify.txt
+
+  # --- Open: local MVP feature completion (docs/MVP_SPEC.md) ---
+  - id: MVP-SCORE-01
+    criterion: >
+      Directive API/UI expose the contract four scores
+      (front_rack, sleep, diet, workout_preparation), not readiness/soreness as top-level.
+    verify: python -m pytest tests/test_mvp_scores.py -q
+    pass: false
+    artifact: null
+
+  - id: MVP-EVIDENCE-01
+    criterion: >
+      Evidence payload separates today vs history, deduplicates hits, excludes the
+      just-written log, and records conflicts with today-wins resolution.
+    verify: python -m pytest tests/test_mvp_evidence.py -q
+    pass: false
+    artifact: null
+
+  - id: MVP-PERSIST-01
+    criterion: SQLite memory survives process restart and returns prior log IDs.
+    verify: python -m pytest tests/test_mvp_persist.py -q
+    pass: false
+    artifact: null
+
+  - id: MVP-DISCLAIMER-01
+    criterion: Safety disclaimer is present in /api/directive and the result UI.
+    verify: python -m pytest tests/test_mvp_disclaimer.py -q
+    pass: false
+    artifact: null
+
+  - id: MVP-WOD-01
+    criterion: >
+      WOD negotiation returns as_prescribed|scaled|substituted|deferred with reasons
+      and the directive cites the decision.
+    verify: python -m pytest tests/test_mvp_wod.py -q
+    pass: false
+    artifact: null
+
+  - id: MVP-FRONTRACK-01
+    criterion: Front-rack mobility factors influence front_rack score and WOD negotiation.
+    verify: python -m pytest tests/test_mvp_frontrack.py -q
+    pass: false
+    artifact: null
+
+  - id: MVP-MACRO-01
+    criterion: Diet score uses a Macro Pool ledger (not meal-count only).
+    verify: python -m pytest tests/test_mvp_macro.py -q
+    pass: false
+    artifact: null
+
+  - id: MVP-VOICE-01
+    criterion: >
+      Opt-in speak path returns non-null tts status when a local/browser backend is
+      available; UI reflects actual voice readiness.
+    verify: python -m pytest tests/test_mvp_voice.py -q
+    pass: false
+    artifact: null
+
+  - id: MVP-EXTRACT-01
+    criterion: Response reports extractor=ollama|heuristic; Ollama path validated when daemon up.
+    verify: python -m pytest tests/test_mvp_extract.py -q
+    pass: false
+    artifact: null
+
+  - id: MVP-DEMO-01
+    criterion: End-to-end local MVP demo script passes offline (heuristic) and documents Ollama.
+    verify: make mvp-demo
+    pass: false
+    artifact: null
