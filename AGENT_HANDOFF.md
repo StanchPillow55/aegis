@@ -23,6 +23,13 @@ Autonomous plan execution complete through stacked PRs:
 - Full Grafana-style dashboard shell not built (composer UI + rich APIs + PWA manifest)
 - Tailscale mesh setup is operator-owned; security contract documented in `docs/TAILSCALE.md`
 - Browser E2E against a live `os-dev` server not automated in CI
+- **Cloud Agent UI trap:** `make os-dev` on the agent does **not** make laptop `http://127.0.0.1:8000` work. See `docs/bugs/BUG-LOCALHOST-01.md`. Run on the M2 host for local Chrome, or use Tailscale.
+
+## How to open the UI
+
+1. On the **same machine** as the browser: `make os-dev` then open `http://127.0.0.1:8000/` (port required).
+2. Prove the server on that host: `make os-health`.
+3. If the shell is a Cloud Agent and Chrome is on your laptop → expected refuse; not an app crash.
 
 ## Next implementation order
 

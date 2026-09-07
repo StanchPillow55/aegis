@@ -1,6 +1,6 @@
 # aegis
 
-**Daily training-decision copilot for functional longevity** — expanding into a **local-first personal health copilot** (wearables, body composition, calendar/lifestyle context, natural-language + image logging, environmental context, health scoring, goals, alerts, conversational dashboard).
+**Daily training-decision copilot for functional longevity** — expanding into a **local-first personal health copilot**.
 
 Still centered on one evidence-bound daily training directive:
 
@@ -12,30 +12,37 @@ Still centered on one evidence-bound daily training directive:
 3. [`AGENT_HANDOFF.md`](AGENT_HANDOFF.md) — current state + next slice  
 4. [`CLAUDE.md`](CLAUDE.md) — build contract  
 
-## What works in this repository now
-- FastAPI app: `/health`, `/api/intake`, `/api/directive`, `/api/logs/recent`
-- Text intake → structured fields → **transitional** scores (`readiness` / `sleep` / `soreness` / `diet`) → directive
-- SQLite memory with basic retrieval (dedup / provenance incomplete)
-- Optional Ollama; heuristic fallback when Ollama is down
-- Simple text-first UI with Today / History / Conflicts + disclaimer
-- Slice 0: provenance, SQLite durability, evidence dedup, today-wins conflicts
-- OS foundation + Slice 0 gates green; **23** automated tests
-
-**Not in this tree yet** (specified, not implemented): Fitbit, FITINDEX, Calendar, chat/vision, LLM metric tools, charts, alerts, goals, sync registry, PWA/Tailscale, canonical Front-rack / Workout-prep / Overall scores.
-
 ## Quickstart (Apple Silicon M2 or Linux)
 ```bash
 cp .env.example .env
 python3 -m pip install -r requirements.txt
 make os-test
 make os-demo
-make os-dev   # http://127.0.0.1:8000
+make os-dev   # prints http://127.0.0.1:8000/
+make os-health  # same-host proof the server is up
 ```
 
-Optional: `ollama pull llama3.2`
+Then open **`http://127.0.0.1:8000/`** in a browser **on the same machine** that is running `make os-dev`.
+
+### Browser cannot connect? (`ERR_CONNECTION_REFUSED`)
+
+`127.0.0.1` means **this computer only**.
+
+| Where `make os-dev` runs | Where Chrome runs | Result |
+|---|---|---|
+| Your M2 Mac | Same Mac | Works at `http://127.0.0.1:8000/` |
+| Cursor Cloud Agent / remote VM | Your laptop | **Fails** — laptop localhost ≠ agent localhost |
+
+Also include the port: `http://127.0.0.1:8000/` — bare `http://127.0.0.1/` hits port 80 and will refuse.
+
+See bug spec: [`docs/bugs/BUG-LOCALHOST-01.md`](docs/bugs/BUG-LOCALHOST-01.md).  
+Remote phone/PWA access: [`docs/TAILSCALE.md`](docs/TAILSCALE.md).
+
+Optional: `ollama pull llama3.2`  
+Override bind for tunnels (behind auth): `make os-dev DEV_HOST=0.0.0.0`
 
 ## Local-first boundary
-LLM, storage, scoring, and reasoning are local. Fitbit / Google Calendar / Open-Meteo are optional external connectors whose data is cached locally. The app must remain usable with fixtures and manual entry when those services are unavailable. No cloud LLM or cloud database is required.
+LLM, storage, scoring, and reasoning are local. External connectors are optional and fail soft. No cloud LLM/DB required.
 
 ## Build philosophy
 Agentic loop governed by `success_criteria.yaml`. See `CLAUDE.md`.
