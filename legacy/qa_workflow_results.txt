@@ -1,0 +1,127 @@
+======================================
+========== Workflow Fix Check ==========
+======================================
+--- git log ---
+commit 2aca4cf4c6441a77561812907835a2fdbb68aa8f
+Author: StanchPillow55 <bgoochi12@gmail.com>
+Date:   Mon Jul 13 11:17:36 2026 -0700
+
+    chore: remove broader files from redis push workflow trigger
+
+diff --git a/.github/workflows/redis-test.yml b/.github/workflows/redis-test.yml
+index 020ae5f..b80110c 100644
+--- a/.github/workflows/redis-test.yml
++++ b/.github/workflows/redis-test.yml
+@@ -9,18 +9,12 @@ on:
+     branches: [ci/redis-evidence, master]
+     paths:
+       - "backend/memory/**"
+-      - "backend/intake/schema.py"
+       - "tests/test_redis_retrieval.py"
+-      - "requirements.txt"
+       - ".github/workflows/redis-test.yml"
+   pull_request:
+-    branches-ignore:
+-      - "feat/os-*"
+     paths:
+       - "backend/memory/**"
+-      - "backend/intake/schema.py"
+       - "tests/test_redis_retrieval.py"
+-      - "requirements.txt"
+       - ".github/workflows/redis-test.yml"
+   workflow_dispatch:
+ 
+--- file sanity ---
+Listing 'backend'...
+Listing 'backend/agents'...
+Listing 'backend/intake'...
+Listing 'backend/memory'...
+Listing 'backend/providers'...
+Listing 'backend/scorers'...
+Listing 'importer'...
+Listing 'tests'...
+Listing 'tests/fixtures'...
+Listing 'scripts'...
+File sanity check passed.
+success_criteria.yaml OK
+..                                                                       [100%]
+2 passed in 0.28s
+python -m compileall backend importer tests scripts
+Listing 'backend'...
+Listing 'backend/agents'...
+Listing 'backend/intake'...
+Listing 'backend/memory'...
+Listing 'backend/providers'...
+Listing 'backend/scorers'...
+Listing 'importer'...
+Listing 'tests'...
+Listing 'tests/fixtures'...
+Listing 'scripts'...
+python scripts/check_file_sanity.py
+File sanity check passed.
+python scripts/validate_success_criteria.py
+success_criteria.yaml OK
+python -m pytest tests/ -q
+..                                                                       [100%]
+2 passed in 0.25s
+--- remote file verification (on master) ---
+name: SC-REDIS-01 Redis retrieval
+
+# The green run of this workflow IS the SC-REDIS-01 evidence artifact:
+# it runs the vector-retrieval suite against a real redis-stack (RediSearch)
+# and publishes the p95 retrieval latency to the job summary.
+
+on:
+  push:
+    branches: [ci/redis-evidence, master]
+    paths:
+      - "backend/memory/**"
+      - "tests/test_redis_retrieval.py"
+      - ".github/workflows/redis-test.yml"
+  pull_request:
+    paths:
+      - "backend/memory/**"
+      - "tests/test_redis_retrieval.py"
+      - ".github/workflows/redis-test.yml"
+  workflow_dispatch:
+
+jobs:
+  redis-retrieval:
+    runs-on: ubuntu-latest
+
+    services:
+      redis:
+        image: redis/redis-stack:latest   # Redis + RediSearch (vector search) on 6379
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 30
+
+    env:
+      # store.py reads settings via the fail-loud config, which requires all six
+      # keys. Only REDIS_URL is real; the retrieval path never calls the others.
+      REDIS_URL: redis://localhost:6379
+      ANTHROPIC_API_KEY: ci-dummy
+      GEMINI_API_KEY: ci-dummy
+      SENTRY_DSN: ci-dummy
+      DEEPGRAM_API_KEY: ci-dummy
+      BROWSERBASE_API_KEY: ci-dummy
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run SC-REDIS-01 retrieval suite
+        run: python -m pytest tests/test_redis_retrieval.py -v

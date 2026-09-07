@@ -1,7 +1,33 @@
-fastapi
-uvicorn
-pydantic
-pydantic-settings
-pytest
-httpx
-pyyaml
+# Core
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+pydantic==2.9.2
+pydantic-settings==2.5.2
+
+# Storage
+chromadb==0.5.7
+aiosqlite==0.20.0
+
+# Extraction
+httpx==0.27.2
+ollama==0.3.3
+Pillow==10.4.0
+
+# Optional cloud extraction
+anthropic==0.34.2
+
+# Utilities
+python-multipart==0.0.9
+python-dotenv==1.0.1
+
+# Testing
+pytest==8.3.3
+pytest-asyncio==0.24.0
+apscheduler==3.10.4
+cryptography>=42.0.0
+google-auth>=2.29.0
+google-auth-oauthlib>=1.2.0
+google-api-python-client>=2.130.0
+pytest-mock>=3.14.0
+dateparser>=1.2.0
+geopy>=2.4.1

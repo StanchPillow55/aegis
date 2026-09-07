@@ -4,5 +4,7 @@ __pycache__/
 node_modules/
 .venv/
 dist/
-.phoenix/
+.next/
+data/
 *.log
+.DS_Store

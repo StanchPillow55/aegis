@@ -1,0 +1,5 @@
+import os
+os.makedirs("backend", exist_ok=True)
+os.makedirs("tests", exist_ok=True)
+open("backend/local_llm.py", "w").write('def extract_fallback(transcript: str) -> dict:\n    """\n    Deterministic fallback for LLM extraction.\n    """\n    return {"status": "ok", "mock": True}\n\nclass OllamaClient:\n    """\n    Skeleton for Ollama Client.\n    Default model: llama3.2 (M2/16GB)\n    Alternatives: qwen2.5:14b, mistral:7b\n    """\n    def __init__(self):\n        pass\n\n    def generate(self, prompt: str) -> str:\n        """Generate response."""\n        return "mock response"\n')
+open("tests/test_local_llm.py", "w").write('from backend.local_llm import extract_fallback, OllamaClient\n\ndef test_extract_fallback():\n    """Test fallback extraction logic."""\n    result = extract_fallback("test transcript")\n    assert result["mock"] is True\n    assert result["status"] == "ok"\n\ndef test_ollama_client():\n    """Test Ollama client skeleton."""\n    client = OllamaClient()\n    assert client.generate("test prompt") == "mock response"\n')

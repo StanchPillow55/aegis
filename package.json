@@ -1,0 +1,11 @@
+{
+  "name": "aegis",
+  "version": "2.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "npm run dev --prefix src/frontend",
+    "build": "npm run build --prefix src/frontend",
+    "start": "npm run start --prefix src/frontend",
+    "install:frontend": "npm install --prefix src/frontend"
+  }
+}
