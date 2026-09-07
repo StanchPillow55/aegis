@@ -75,6 +75,8 @@ def extract_heuristic(transcript: str) -> dict[str, Any]:
         "rice": None, "oats": None, "banana": None, "salad": None,
     }
     for food, protein in protein_words.items():
+        if food == "egg" and "eggs" in lower:
+            continue  # prefer plural match
         if food in lower:
             meal: dict[str, Any] = {"description": food}
             if protein is not None:
