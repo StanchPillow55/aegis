@@ -19,10 +19,11 @@ from backend.providers.memory import LocalMemoryProvider
 from backend.providers.speech import LocalSpeechProvider
 from backend.providers.tracing import init_tracing, start_span
 from backend.reasoner import compose_directive
+from backend.sync import SourceRegistry, SyncConfig
 
 FRONTEND_DIR = Path(__file__).resolve().parents[1] / "frontend"
 
-app = FastAPI(title="aegis", version="0.2.0")
+app = FastAPI(title="aegis", version="0.3.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -34,6 +35,7 @@ _tracer = init_tracing()
 _llm = LocalLLMProvider()
 _memory = LocalMemoryProvider()
 _speech = LocalSpeechProvider()
+_sync = SourceRegistry()
 
 
 class TextUpdate(BaseModel):
@@ -172,6 +174,70 @@ def api_voice_status() -> dict:
         "stt": {"enabled": _speech.stt_enabled, "ready": stt.ok, "detail": stt.detail},
         "tts": {"enabled": _speech.tts_enabled, "ready": tts.ok, "detail": tts.detail},
     }
+
+
+class SourceEnableBody(BaseModel):
+    enabled: bool
+
+
+class SyncRequest(BaseModel):
+    source_id: str | None = Field(
+        None, description="Optional single source; omit to sync all enabled non-manual sources"
+    )
+    force: bool = False
+
+
+@app.get("/api/sources")
+def api_list_sources() -> dict:
+    return _sync.snapshot()
+
+
+@app.post("/api/sources/{source_id}/enable")
+def api_enable_source(source_id: str, body: SourceEnableBody) -> dict:
+    try:
+        status = _sync.set_enabled(source_id, body.enabled)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=f"Unknown source: {source_id}") from exc
+    return status.model_dump()
+
+
+@app.get("/api/sync/config")
+def api_get_sync_config() -> dict:
+    return _sync.get_config().model_dump()
+
+
+@app.put("/api/sync/config")
+def api_put_sync_config(body: SyncConfig) -> dict:
+    return _sync.set_config(body).model_dump()
+
+
+@app.post("/api/sync")
+def api_sync(body: SyncRequest | None = None) -> dict:
+    """On-demand sync. External sources fail soft when not configured."""
+    req = body or SyncRequest()
+    with start_span("api.sync", source=req.source_id or "all"):
+        if req.source_id:
+            try:
+                result = _sync.sync_one(req.source_id, force=req.force)
+            except ValueError as exc:
+                raise HTTPException(status_code=400, detail=str(exc)) from exc
+            return {"results": [result.model_dump()], "stale": [s.source_id.value for s in _sync.stale_sources()]}
+        results = _sync.sync_all(only_enabled=not req.force)
+        return {
+            "results": [r.model_dump() for r in results],
+            "stale": [s.source_id.value for s in _sync.stale_sources()],
+        }
+
+
+@app.get("/api/sync/history")
+def api_sync_history(source_id: str | None = None, limit: int = 50) -> dict:
+    entries = _sync.history(source_id=source_id, limit=limit)
+    return {"history": [e.model_dump() for e in entries]}
+
+
+@app.get("/api/sync/stale")
+def api_sync_stale() -> dict:
+    return {"stale": [s.model_dump() for s in _sync.stale_sources()]}
 
 
 @app.get("/")

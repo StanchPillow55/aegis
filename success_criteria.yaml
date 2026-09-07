@@ -187,14 +187,14 @@ criteria:
       Hybrid sync supports configurable background sync, per-source toggles, on-demand UI/chat/voice
       sync, history, last success/attempt, errors, coverage, and retries.
     verify: python -m pytest tests/test_phc_sync.py -q
-    pass: false
-    artifact: null
+    pass: true
+    artifact: artifacts/slice1-source-registry.txt
 
   - id: PHC-STALE-01
     criterion: Per-source staleness warnings fire when last successful sync is older than 24 hours.
     verify: python -m pytest tests/test_phc_staleness.py -q
-    pass: false
-    artifact: null
+    pass: true
+    artifact: artifacts/slice1-source-registry.txt
 
   - id: PHC-SQLITE-01
     criterion: Health DB survives process restart with intact records and provenance fields.
@@ -275,8 +275,8 @@ criteria:
   - id: PHC-FALLBACK-01
     criterion: App remains usable with fixtures/manual entry when Fitbit/Calendar/weather/AQI are down.
     verify: python -m pytest tests/test_phc_local_fallback.py -q
-    pass: false
-    artifact: null
+    pass: true
+    artifact: artifacts/slice1-source-registry.txt
 
   - id: PHC-SAFETY-01
     criterion: >
