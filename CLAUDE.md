@@ -1,33 +1,33 @@
 # CLAUDE.md — aegis build contract (read this first, every session)
 
 ## What aegis is
-Voice-first AI copilot. User speaks a daily training/recovery/nutrition update;
-aegis emits ONE evidence-bound daily training directive for functional longevity.
+**Daily training-decision copilot for functional longevity**, expanding into a
+local-first personal health copilot (wearables, body composition, calendar,
+NL/image logging, environment, scoring, goals, alerts, conversational dashboard).
+
+Core loop (preserved):
+`Intake → structured health data → evidence → scores → WOD/training context → ONE evidence-bound daily directive`
+
+Canonical scores: **Front-rack, Sleep, Diet, Workout preparation, Overall**.
+Current code may still show transitional `readiness`/`soreness` labels — treat as debt.
+
+## Canonical docs
+- `docs/PRODUCT_SPEC.md` — product + architecture (single source for “what”)
+- `success_criteria.yaml` — Definition of Done (single source for “done”)
+- `AGENT_HANDOFF.md` — current state + next implementation slice
+
+## Runtime posture
+**Local-first.** LLM inference, storage, normalization, scoring, reasoning: local
+(Ollama + SQLite on Apple Silicon M2). Fitbit / Google Calendar / Open-Meteo are
+optional external connectors; cache locally; degrade to fixtures/manual entry.
+No cloud LLM or cloud DB on the core path. Location is opt-in and never sent to a cloud LLM.
 
 ## The accountability contract (NON-NEGOTIABLE)
-1. `success_criteria.yaml` is the single source of truth ("Definition of Done").
-2. NEVER mark a module complete until its SC rows are `pass: true` WITH a linked artifact.
-3. Use the agentic loop: Planner/Prompter -> Coder -> Tester -> QA/Validation.
-   - Planner & QA = llm-council (multi-model deliberation, see /council).
-   - Coder & Tester = you (Claude Code), single-model for speed.
-   - QA fails closed: no merge without passing evidence.
-4. Every external call MUST emit a Sentry span. Every LLM call MUST be Phoenix-traced.
-
-## Mandatory tooling per module (sponsor track requirements)
-- Redis: use redis/agent-skills; vector/memory/context retrieval, NOT plain caching.
-- Anthropic: Claude does extraction + directive composition.
-- Fetch AI: orchestrator must be REGISTERED and discoverable via ASI:One.
-- Band: agent-to-agent messages flow over Band bus.
-- Deepgram: voice is the only primary input (STT + TTS). Text is fallback only.
-- Arize/Phoenix: ship a before/after grounding eval that shows measurable improvement.
-- Sentry: traces + error capture on all hops.
-- Browserbase/Stagehand: WOD importer + UI e2e tests.
-- Simular/Sai: drives the demo loop; remember the mandatory social post.
-
-## Cost discipline ($30 Claude credits + free Gemini)
-- Inner-loop coding: Claude (Sonnet tier).
-- Council members default to Gemini Flash (free) + Claude Haiku; Chairman = Claude Sonnet.
-- Reserve Claude Opus / full council ONLY for major gates (plan approval, final QA).
+1. `success_criteria.yaml` is the Definition of Done.
+2. NEVER mark a criterion `pass: true` until its verify command passes WITH a linked artifact.
+3. Agentic loop: Planner/Prompter → Coder → Tester → QA (fails closed).
+4. Status reports must distinguish: UI presence ≠ backend ≠ live integration ≠ E2E verification.
+5. Do not implement expanded connectors until schema/provenance/sync docs gates are understood; prefer Slice 0 in AGENT_HANDOFF.
 
 ## Repo map
-backend/{intake,memory,scorers,agents,reasoner,obs} importer/ frontend/ evals/ tests/ council/
+backend/{intake,memory,scorers,agents,reasoner,obs,providers} importer/ frontend/ docs/ tests/ council/ scripts/

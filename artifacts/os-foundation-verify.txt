@@ -1,0 +1,101 @@
+# OS foundation verification 2026-09-07T08:53:01Z
+
+## make os-test
+python3 -m compileall backend importer tests scripts
+Listing 'backend'...
+Listing 'backend/agents'...
+Listing 'backend/intake'...
+Listing 'backend/memory'...
+Listing 'backend/obs'...
+Listing 'backend/providers'...
+Listing 'backend/reasoner'...
+Listing 'backend/scorers'...
+Listing 'importer'...
+Listing 'tests'...
+Listing 'tests/fixtures'...
+Listing 'scripts'...
+python3 scripts/check_file_sanity.py
+File sanity check passed.
+python3 scripts/validate_success_criteria.py
+success_criteria.yaml OK
+python3 -m pytest tests/ -q
+..............                                                           [100%]
+=============================== warnings summary ===============================
+../home/ubuntu/.local/lib/python3.12/site-packages/fastapi/testclient.py:1
+  /home/ubuntu/.local/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+../home/ubuntu/.local/lib/python3.12/site-packages/starlette/testclient.py:53
+  /home/ubuntu/.local/lib/python3.12/site-packages/starlette/testclient.py:53: DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.
+    _PortalFactoryType = Callable[[], AbstractContextManager[anyio.abc.BlockingPortal]]
+
+backend/main.py:51
+  /workspace/backend/main.py:51: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("startup")
+
+../home/ubuntu/.local/lib/python3.12/site-packages/fastapi/applications.py:4681
+  /home/ubuntu/.local/lib/python3.12/site-packages/fastapi/applications.py:4681: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)  # ty: ignore[deprecated]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+14 passed, 4 warnings in 0.27s
+
+## make os-demo
+python3 scripts/os_demo.py
+[os-demo] Ollama not running — using heuristic fallback. To enable local LLM: install Ollama, `ollama pull llama3.2`, then re-run `make os-demo`.
+[otel] service=aegis span=os-demo.run status=ok duration_ms=2.45
+[os-demo] log_id: d7f792a50d8ca656
+[os-demo] readiness: 56
+[os-demo] directive: Train, but cap intensity. Keep skill/technique work, reduce volume ~20–30%, and stop short of failure. Focus: protect a longer sleep window tonight; planned movements: squats, row. Evidence: readiness 56/100 (sleep 48, soreness 70, diet 95); memory hits: 1.
+[os-demo] intake: {
+  "soreness": [
+    {
+      "body_part": "quads",
+      "severity": 3
+    }
+  ],
+  "sleep": {
+    "quality": "poor",
+    "hours": 6.0
+  },
+  "meals": [
+    {
+      "description": "eggs",
+      "protein_g": 24
+    },
+    {
+      "description": "egg",
+      "protein_g": 12
+    },
+    {
+      "description": "rice",
+      "protein_g": null
+    }
+  ],
+  "todays_wod": {
+    "movements": [
+      "squats",
+      "row"
+    ],
+    "raw": "Slept about 6 hours, sleep was rough. Quads sore 3/5. Had eggs and rice. Squats and rowing today. Feeling tired."
+  },
+  "subjective_readiness": "low"
+}
+
+## make os-model-info
+Local model info:
+  default_model: llama3.2 (Ollama)
+  alternatives: qwen2.5:14b, mistral:7b
+  hardware_target: Apple Silicon M2, 16 GB RAM
+  fallback: deterministic heuristic extractor (no network)
+  status: open-source foundation

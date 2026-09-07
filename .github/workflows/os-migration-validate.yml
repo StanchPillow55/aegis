@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - feat/os-migration-foundation
+      - "cursor/**"
+      - master
   pull_request:
     branches:
       - master
@@ -34,3 +36,6 @@ jobs:
 
       - name: Run tests
         run: python -m pytest tests/ -q
+
+      - name: OS demo (offline-safe)
+        run: make os-demo

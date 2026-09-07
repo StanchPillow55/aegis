@@ -1,0 +1,1 @@
+from tests.test_phc_ingestion import test_calendar_fixture_readonly as test_phc_calendar
