@@ -10,14 +10,20 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/static/styles.css" />
+  <title>aegis</title>
 </head>
 <body>
   <div class="atmosphere" aria-hidden="true"></div>
   <header class="top">
     <p class="brand">aegis</p>
+    <nav class="nav-jump" aria-label="Sections">
+      <a href="#composer">Update</a>
+      <a href="#dashboard">Overview</a>
+      <a href="#settings">Settings</a>
+    </nav>
   </header>
 
-  <main class="hero">
+  <main class="hero" id="composer">
     <h1 class="brand-hero">aegis</h1>
     <p class="lede">One evidence-bound training directive from today’s update.</p>
 
@@ -67,9 +73,99 @@
     </div>
   </section>
 
+  <section id="dashboard" class="dash">
+    <h2>Overview</h2>
+    <p class="dash-lede">Sync freshness, environment, alerts, and a local metric chart.</p>
+
+    <div id="sync-panel" class="sync-panel" aria-live="polite">
+      <div class="panel-head">
+        <h3>Sync status</h3>
+        <button type="button" id="sync-now-btn" class="ghost">Sync now</button>
+      </div>
+      <ul id="source-list" class="source-list"></ul>
+      <p id="sync-hint" class="hint"></p>
+    </div>
+
+    <div class="dash-grid">
+      <div>
+        <h3>Environment</h3>
+        <pre id="env-pre" class="panel-pre"></pre>
+      </div>
+      <div>
+        <h3>Alerts &amp; goals</h3>
+        <pre id="alerts-pre" class="panel-pre"></pre>
+      </div>
+    </div>
+
+    <div class="chart-block">
+      <div class="panel-head">
+        <h3>Metric trend</h3>
+        <label class="chart-metric-label">
+          <span class="sr-only">Metric</span>
+          <select id="chart-metric">
+            <option value="steps">steps</option>
+            <option value="sleep_hours">sleep_hours</option>
+            <option value="resting_hr">resting_hr</option>
+            <option value="weight_kg">weight_kg</option>
+          </select>
+        </label>
+      </div>
+      <svg id="chart-svg" viewBox="0 0 320 120" role="img" aria-label="Metric trend chart"></svg>
+      <p id="chart-note" class="hint"></p>
+    </div>
+  </section>
+
+  <section id="settings" class="settings">
+    <h2>Settings &amp; imports</h2>
+    <p class="dash-lede">External OAuth stays disabled until credentials exist. Local imports work offline.</p>
+    <div class="settings-grid">
+      <div>
+        <h3>Fitbit</h3>
+        <p id="fitbit-status" class="hint">Loading…</p>
+        <button type="button" id="fitbit-fixture-btn" class="ghost">Run Fitbit fixture sync</button>
+      </div>
+      <div>
+        <h3>FITINDEX CSV</h3>
+        <textarea id="fitindex-csv" rows="3" placeholder="date,weight_kg,body_fat_pct&#10;2026-09-07,78.2,18.5"></textarea>
+        <button type="button" id="fitindex-upload-btn" class="ghost">Upload CSV draft</button>
+        <p id="fitindex-hint" class="hint"></p>
+      </div>
+      <div>
+        <h3>Google Takeout ZIP</h3>
+        <input type="file" id="takeout-file" accept=".zip,application/zip" />
+        <button type="button" id="takeout-upload-btn" class="ghost">Import ZIP</button>
+        <p id="takeout-hint" class="hint"></p>
+      </div>
+      <div>
+        <h3>Add log (manual metric)</h3>
+        <div class="manual-row">
+          <input id="manual-metric" placeholder="metric e.g. steps" />
+          <input id="manual-value" placeholder="value" type="number" step="any" />
+        </div>
+        <button type="button" id="manual-btn" class="ghost">Add log</button>
+        <p id="manual-hint" class="hint"></p>
+      </div>
+    </div>
+  </section>
+
   <footer class="foot">
-    <span>Local-first · Ollama optional · Text primary</span>
+    <span>Local-first · Ollama optional · Text primary · <code>make os-dev</code></span>
   </footer>
+
+  <aside id="chat-dock" class="chat-dock" aria-label="Chat">
+    <button type="button" id="chat-toggle" class="chat-toggle" aria-expanded="false">Chat</button>
+    <div id="chat-panel" class="chat-panel" hidden>
+      <div id="chat-log" class="chat-log"></div>
+      <div id="chat-preview" class="chat-preview" hidden></div>
+      <form id="chat-form" class="chat-form">
+        <input type="file" id="chat-image" accept="image/*" class="sr-only" />
+        <button type="button" id="chat-attach" class="ghost" title="Attach image">Img</button>
+        <input id="chat-input" type="text" placeholder="Ask about sleep, steps, alerts…" autocomplete="off" />
+        <button type="submit">Send</button>
+      </form>
+      <p class="hint chat-disclaimer">Answers cite local sources. Not medical advice.</p>
+    </div>
+  </aside>
 
   <script src="/static/app.js"></script>
 </body>

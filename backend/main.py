@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -12,7 +12,11 @@ from pydantic import BaseModel, Field
 
 from backend.alerts import AlertEngine, AlertRule
 from backend.charts import build_metric_trend, validate_chart_spec
+from backend.chat import ChatService, ChatTurnRequest, vision_status
 from backend.config import get_settings
+from backend.connectors.status import enrich_source_status
+from backend.connectors.takeout import ingest_takeout_bytes
+from backend.environment import fetch_environment
 from backend.goals import GoalCreate, GoalStore
 from backend.health.evidence import build_evidence_bundle
 from backend.health.schema import SAFETY_DISCLAIMER, DataQuality, DataSource
@@ -29,10 +33,11 @@ from backend.providers.tracing import init_tracing, start_span
 from backend.reasoner import compose_directive
 from backend.sync import SourceRegistry, SyncConfig
 from backend.tools import HealthQueryTools
+from backend.tools.dates import parse_date_range
 
 FRONTEND_DIR = Path(__file__).resolve().parents[1] / "frontend"
 
-app = FastAPI(title="aegis", version="0.5.0")
+app = FastAPI(title="aegis", version="0.6.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -49,6 +54,7 @@ _metrics = HealthMetricsStore()
 _alerts = AlertEngine(metrics=_metrics)
 _goals = GoalStore(metrics=_metrics)
 _tools = HealthQueryTools(metrics=_metrics, alerts=_alerts, goals=_goals, sync=_sync, memory=_memory)
+_chat = ChatService(tools=_tools)
 
 
 class TextUpdate(BaseModel):
@@ -204,7 +210,13 @@ class SyncRequest(BaseModel):
 
 @app.get("/api/sources")
 def api_list_sources() -> dict:
-    return _sync.snapshot()
+    snap = _sync.snapshot()
+    # mode=json so enums become strings before enrichment
+    sources = []
+    for s in _sync.list_sources():
+        sources.append(enrich_source_status(s.model_dump(mode="json")))
+    snap["sources"] = sources
+    return snap
 
 
 @app.post("/api/sources/{source_id}/enable")
@@ -213,7 +225,7 @@ def api_enable_source(source_id: str, body: SourceEnableBody) -> dict:
         status = _sync.set_enabled(source_id, body.enabled)
     except KeyError as exc:
         raise HTTPException(status_code=404, detail=f"Unknown source: {source_id}") from exc
-    return status.model_dump()
+    return enrich_source_status(status.model_dump())
 
 
 @app.get("/api/sync/config")
@@ -324,6 +336,24 @@ def api_fitindex_csv(body: dict) -> dict:
     return draft.model_dump()
 
 
+@app.post("/api/takeout/zip")
+async def api_takeout_zip(file: UploadFile = File(...)) -> dict:
+    """Upload a Google Takeout ZIP (future-compatible fallback)."""
+    if not file.filename or not file.filename.lower().endswith(".zip"):
+        raise HTTPException(status_code=400, detail="Expected a .zip Takeout archive")
+    data = await file.read()
+    if not data:
+        raise HTTPException(status_code=400, detail="Empty upload")
+    with start_span("api.takeout.zip", bytes=len(data)):
+        result = ingest_takeout_bytes(_metrics, data)
+        try:
+            _sync.set_enabled("takeout", True)
+            _sync.sync_one("takeout", force=True)
+        except Exception:
+            pass
+        return result
+
+
 @app.get("/api/alerts/rules")
 def api_alert_rules() -> dict:
     return {"rules": [r.model_dump() for r in _alerts.list_rules()]}
@@ -428,14 +458,55 @@ def api_geo_status() -> dict:
 
 @app.get("/api/environment")
 def api_environment() -> dict:
-    # Soft offline fixture when Open-Meteo unavailable
+    """Live Open-Meteo when reachable; otherwise labeled offline/disabled."""
+    return fetch_environment()
+
+
+@app.post("/api/chat", response_model=None)
+def api_chat(body: ChatTurnRequest) -> dict:
+    with start_span("api.chat", chars=len(body.message)):
+        return _chat.turn(body).model_dump()
+
+
+@app.get("/api/chat/history")
+def api_chat_history(limit: int = 40) -> dict:
+    msgs = _chat.history(limit=limit)
+    return {"messages": [m.model_dump() for m in msgs], "count": len(msgs)}
+
+
+@app.get("/api/vision/status")
+def api_vision_status() -> dict:
+    return vision_status()
+
+
+@app.get("/api/context/screen")
+def api_screen_context() -> dict:
+    """Light AIContext feed for chat (dashboard/sync summary)."""
+    snap = _sync.snapshot()
+    env = fetch_environment(force_offline=True)
     return {
-        "ok": True,
-        "mode": "fixture",
-        "weather": {"temp_c": 18, "conditions": "partly_cloudy"},
-        "aqi": {"us_aqi": 42, "category": "Good"},
-        "detail": "Offline fixture — live Open-Meteo optional later",
+        "panel": "overview",
+        "sources": [
+            {
+                "source_id": s["source_id"],
+                "enabled": s["enabled"],
+                "stale": s["stale"],
+                "last_success_at": s.get("last_success_at"),
+            }
+            for s in snap["sources"]
+        ],
+        "stale": snap.get("stale") or [],
+        "alerts_active": len(_alerts.active()),
+        "goals": len(_goals.list()),
+        "environment_mode": env.get("mode"),
+        "geo_enabled": False,
     }
+
+
+@app.post("/api/tools/parse_date")
+def api_parse_date(body: dict) -> dict:
+    text = body.get("text") or body.get("query") or ""
+    return parse_date_range(str(text))
 
 
 @app.get("/")

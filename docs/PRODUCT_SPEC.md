@@ -92,33 +92,34 @@ Legend: **IT** = Implemented & tested · **IL** = Implemented but limited/incomp
 | Local FastAPI boot + health | IT | `tests/test_health.py` |
 | Text intake → `IntakeResult` | IT | Heuristic always; Ollama optional |
 | Daily directive string | IT | Rule-based composer |
-| Sleep / diet scorers | IT | Deterministic |
+| Sleep / diet scorers | IT | Deterministic; diet blends Macro Pool when protein_g present |
 | Readiness / soreness scorers | IL | **Transitional labels**; not canonical contract |
-| Front-rack score | P | Missing |
-| Workout-preparation score | P | Missing |
-| Overall health/fitness score | P | Missing |
+| Front-rack score | IT | Canonical scorer |
+| Workout-preparation score | IT | Canonical scorer |
+| Overall health/fitness score | IT | Blend of four canonical scores |
 | SQLite log store | IT | Restart durability + schema_version proven (Slice 0) |
 | Memory retrieval | IL | Dedup + exclude-self + today/history/conflicts wired; relevance still basic |
 | Evidence provenance | IT | source / recorded_at / quality / extractor / content_hash |
-| Safety disclaimer | IT | API + UI (MVP-DISCLAIMER-01); broader PHC-SAFETY-01 still open |
-| WOD negotiation | P | Parse only today |
-| Macro Pool ledger | P | Meal-count heuristic only |
+| Safety disclaimer | IT | API + UI (MVP-DISCLAIMER-01); PHC-SAFETY-01 covered |
+| WOD negotiation | IT | as_prescribed / scaled / substituted / deferred |
+| Macro Pool ledger | IT | Wired into diet + canonical `macro_pool` |
 | Dictation UI control | IL | Browser API; not E2E verified |
-| Opt-in TTS | IL | Often `tts: null`; not reliable |
-| Fitbit OAuth + metrics | P / NV | Not in this tree |
-| FITINDEX CSV / OCR / manual | P / NV | Not in this tree |
-| Google Takeout import | P / NV | Future-compatible fallback |
-| Google Calendar (read-only) | P / NV | Not in this tree |
-| Chat + image + llava | P / NV | Not in this tree |
-| LLM metric-query tools | P | Not in this tree |
-| Inline charts | P | Not in this tree |
-| Alerts / custom thresholds | P | Not in this tree |
-| Goals + confirmation | P | Not in this tree |
-| Sync registry / staleness | IT | Fixture/manual sync; externals registered disabled; 24h stale warnings |
-| Geolocation + weather/AQI | P | Not in this tree |
-| Grafana-style dashboard | P | Current UI is single composer page |
-| PWA / Tailscale remote | P | Not documented or implemented |
-| Automated tests | IT | **23** passed in this tree (`make os-test` / pytest) |
+| Opt-in TTS | IL | Browser SpeechSynthesis when toggled |
+| Fitbit OAuth + metrics | F / NV | Fixture metrics + honest `needs_credentials`; no live OAuth |
+| FITINDEX CSV / OCR / manual | IT / P | CSV + manual review; OCR deferred |
+| Google Takeout import | IT | Production ZIP parser + upload API + fixture sync |
+| Google Calendar (read-only) | F | Fixture events; live OAuth deferred |
+| Chat + image + llava | IT / P | Chat API + dock + image preview; llava status honest |
+| LLM metric-query tools | IT | Tools + parse_date |
+| Inline charts | IT | Spec API + SVG renderer in overview |
+| Alerts / custom thresholds | IT / P | Full API; overview panel (not full alert editor UI) |
+| Goals + confirmation | IT / P | Full API; overview panel |
+| Sync registry / staleness | IT | Registry + 24h stale + UI sync panel |
+| Geolocation + weather/AQI | IT | Geo default-off; Open-Meteo live/offline/disabled |
+| Grafana-style dashboard | P | Light overview (not full Grafana clone) |
+| PWA / Tailscale remote | IT / docs | Manifest + Tailscale security doc |
+| Automated tests | IT | **94** passed (`make os-test` / pytest) |
+| Feature merge matrix | IT | `docs/FEATURE_MERGE_MATRIX.md` |
 
 ---
 
@@ -324,20 +325,21 @@ External connectors are adapters; core reasoning never hard-depends on them.
 
 ## 14. Implementation order (next)
 
-1. Canonical schema, provenance, SQLite durability — **done (Slice 0)**  
-2. Source registry + sync status ← **next**  
-3. Complete manual/fixture ingestion  
-4. Fitbit + Calendar adapters  
-5. FITINDEX OCR/manual review workflow  
-6. Alerts + staleness  
-7. Goals + progress  
-8. LLM query tools + inline charts  
-9. Restore canonical four-score + WOD directive contract  
-10. Mobile/PWA + Tailscale hardening  
-11. End-to-end acceptance testing  
+1. Canonical schema, provenance, SQLite durability — **done**  
+2. Source registry + sync status — **done**  
+3. Manual/fixture ingestion — **done**  
+4. Fitbit + Calendar adapters (fixture; live OAuth deferred) — **done F**  
+5. FITINDEX CSV/manual (OCR later) — **done / OCR deferred**  
+6. Alerts + staleness — **done**  
+7. Goals + progress — **done**  
+8. LLM query tools + inline charts — **done**  
+9. Canonical four-score + WOD + Macro Pool — **done**  
+10. Mobile/PWA + Tailscale hardening — **done thin**  
+11. Feature aggregate (Takeout prod, Open-Meteo, chat, dashboard) — **done this pass**  
+12. Older-prototype residual port — **blocked** until tree available  
+13. Live OAuth + Playwright E2E — optional when secrets/scope allow  
 
-**First implementation slice after docs:** Slice 0 complete.  
-**Next:** Source registry + sync status (fixture/manual sources; no OAuth yet).
+**Dev command:** `make os-dev` (alias: `make dev`).
 
 ---
 

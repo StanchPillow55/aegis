@@ -1,4 +1,4 @@
-.PHONY: os-model-info os-test os-smoke os-demo os-dev os-health mvp-demo
+.PHONY: os-model-info os-test os-smoke os-demo os-dev os-health mvp-demo dev
 
 DEV_HOST ?= 127.0.0.1
 DEV_PORT ?= 8000
@@ -25,6 +25,9 @@ os-demo:
 
 mvp-demo:
 	python3 scripts/mvp_demo.py
+
+# Canonical local server. `dev` is a compatibility alias — same command, no second path.
+dev: os-dev
 
 os-dev:
 	@echo ""

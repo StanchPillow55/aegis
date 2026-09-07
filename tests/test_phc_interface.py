@@ -1,5 +1,6 @@
 from fastapi.testclient import TestClient
 from backend.main import app
+from backend.environment.open_meteo import fetch_environment
 
 client = TestClient(app)
 
@@ -15,7 +16,37 @@ def test_phc_geolocation_privacy():
 def test_phc_environment():
     res = client.get("/api/environment")
     assert res.status_code == 200
-    assert res.json()["ok"] is True
+    data = res.json()
+    assert data["ok"] is True
+    assert data["mode"] in {"live", "offline", "disabled"}
+    assert "weather" in data
+    assert "aqi" in data
+    # Must not claim live when using fixture
+    if data["mode"] == "offline":
+        assert data.get("source") == "fixture"
+        assert "fixture" in (data.get("detail") or "").lower() or "offline" in (
+            data.get("detail") or ""
+        ).lower()
+
+
+def test_phc_environment_force_offline():
+    data = fetch_environment(force_offline=True)
+    assert data["mode"] == "offline"
+    assert data["source"] == "fixture"
+    assert data["ok"] is True
+
+
+def test_phc_connector_honesty():
+    res = client.get("/api/sources")
+    assert res.status_code == 200
+    sources = res.json()["sources"]
+    by_id = {s["source_id"]: s for s in sources}
+    assert by_id["fitbit"]["live_oauth"] is False
+    assert by_id["fitbit"]["integration_state"] in {
+        "needs_credentials",
+        "configured",
+    }
+    assert by_id["calendar"]["live_oauth"] is False
 
 
 def test_phc_pwa():
@@ -24,10 +55,12 @@ def test_phc_pwa():
     assert "aegis" in res.text
     html = client.get("/").text
     assert "manifest.webmanifest" in html
+    assert 'id="sync-panel"' in html or "Sync status" in html
 
 
 def test_phc_tailscale_security():
     from pathlib import Path
+
     doc = (Path(__file__).resolve().parents[1] / "docs" / "TAILSCALE.md").read_text()
     assert "localhost only" in doc.lower() or "localhost" in doc.lower()
     assert "Funnel" in doc

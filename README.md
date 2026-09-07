@@ -10,7 +10,8 @@ Still centered on one evidence-bound daily training directive:
 1. [`docs/PRODUCT_SPEC.md`](docs/PRODUCT_SPEC.md) — canonical product + architecture spec  
 2. [`success_criteria.yaml`](success_criteria.yaml) — Definition of Done  
 3. [`AGENT_HANDOFF.md`](AGENT_HANDOFF.md) — current state + next slice  
-4. [`CLAUDE.md`](CLAUDE.md) — build contract  
+4. [`docs/FEATURE_MERGE_MATRIX.md`](docs/FEATURE_MERGE_MATRIX.md) — cross-prototype feature status  
+5. [`CLAUDE.md`](CLAUDE.md) — build contract  
 
 ## Quickstart (Apple Silicon M2 or Linux)
 ```bash
@@ -18,7 +19,7 @@ cp .env.example .env
 python3 -m pip install -r requirements.txt
 make os-test
 make os-demo
-make os-dev   # prints http://127.0.0.1:8000/
+make os-dev   # alias: make dev — http://127.0.0.1:8000/
 make os-health  # same-host proof the server is up
 ```
 

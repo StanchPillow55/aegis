@@ -240,8 +240,234 @@ pre {
   border: 0;
 }
 
+.top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.nav-jump {
+  display: flex;
+  gap: 1rem;
+  padding-right: 1.5rem;
+  font-size: 0.9rem;
+}
+
+.nav-jump a {
+  color: var(--leaf-deep);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+}
+
+.nav-jump a:hover {
+  border-bottom-color: var(--leaf);
+}
+
+.dash, .settings {
+  max-width: 40rem;
+  margin: 0 auto 2.5rem;
+  padding: 0 1.5rem;
+  animation: rise 600ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.dash h2, .settings h2 {
+  margin: 0 0 0.4rem;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 500;
+}
+
+.dash-lede {
+  margin: 0 0 1.25rem;
+  color: rgba(26, 36, 33, 0.72);
+  font-size: 0.95rem;
+}
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.panel-head h3, .dash h3, .settings h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.sync-panel {
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.source-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.source-list li {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.55rem 0;
+  border-top: 1px solid var(--line);
+  font-size: 0.88rem;
+}
+
+.source-list .muted {
+  color: rgba(26, 36, 33, 0.55);
+  font-size: 0.8rem;
+}
+
+.dash-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.panel-pre {
+  margin: 0.4rem 0 0;
+  min-height: 4rem;
+}
+
+.chart-block {
+  margin-top: 0.5rem;
+}
+
+#chart-svg {
+  width: 100%;
+  height: auto;
+  background: rgba(255, 255, 255, 0.55);
+  border-top: 2px solid var(--leaf);
+}
+
+.chart-metric-label select {
+  font: inherit;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.7);
+  padding: 0.35rem 0.5rem;
+}
+
+.settings-grid {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.settings-grid textarea,
+.settings-grid input[type="text"],
+.settings-grid input:not([type="file"]),
+.manual-row input {
+  width: 100%;
+  font: inherit;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.7);
+  padding: 0.55rem 0.65rem;
+  margin: 0.35rem 0;
+}
+
+.manual-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.chat-dock {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 20;
+  width: min(22rem, calc(100vw - 2rem));
+}
+
+.chat-toggle {
+  width: 100%;
+  box-shadow: var(--shadow);
+}
+
+.chat-panel {
+  margin-top: 0.5rem;
+  background: rgba(244, 250, 246, 0.96);
+  border: 1px solid var(--line);
+  backdrop-filter: blur(10px);
+  padding: 0.65rem;
+  animation: rise 280ms ease both;
+}
+
+.chat-log {
+  max-height: 14rem;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-bottom: 0.5rem;
+}
+
+.bubble {
+  padding: 0.45rem 0.6rem;
+  font-size: 0.85rem;
+  line-height: 1.35;
+  max-width: 95%;
+}
+
+.bubble.user {
+  align-self: flex-end;
+  background: rgba(15, 61, 50, 0.1);
+  border-left: 2px solid var(--leaf-deep);
+}
+
+.bubble.assistant {
+  align-self: flex-start;
+  background: rgba(255, 255, 255, 0.75);
+  border-left: 2px solid var(--signal);
+}
+
+.bubble .thumb {
+  display: block;
+  max-width: 6rem;
+  max-height: 4rem;
+  margin-bottom: 0.35rem;
+  object-fit: cover;
+}
+
+.chat-form {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.35rem;
+}
+
+.chat-form input[type="text"] {
+  font: inherit;
+  border: 1px solid var(--line);
+  padding: 0.45rem 0.55rem;
+  background: #fff;
+}
+
+.chat-preview {
+  margin-bottom: 0.4rem;
+}
+
+.chat-preview img {
+  max-width: 100%;
+  max-height: 5rem;
+  object-fit: contain;
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.chat-disclaimer {
+  margin: 0.35rem 0 0;
+}
+
 @media (max-width: 640px) {
   .hero { padding-top: 8vh; }
   .score-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .speak-toggle { margin-left: 0; width: 100%; order: 3; }
+  .dash-grid { grid-template-columns: 1fr; }
+  .manual-row { grid-template-columns: 1fr; }
 }
+

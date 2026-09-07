@@ -93,11 +93,15 @@ def score_overall(intake: IntakeResult) -> dict:
 
 def score_canonical(intake: IntakeResult) -> dict:
     """Product-contract scores (+ transitional block for compatibility)."""
+    from backend.scorers.macro_pool import macro_pool_status
+
     transitional = score_transitional(intake)
+    diet = score_diet(intake)
     return {
         "front_rack": score_front_rack(intake),
         "sleep": score_sleep(intake),
-        "diet": score_diet(intake),
+        "diet": diet,
+        "macro_pool": macro_pool_status(intake),
         "workout_preparation": score_workout_preparation(intake),
         "overall": score_overall(intake),
         # transitional — not permanent top-level contract

@@ -90,6 +90,11 @@ class HealthQueryTools:
             "sources": sorted({p.provenance.source.value for p in pts}),
         }
 
+    def parse_date(self, text: str) -> dict[str, Any]:
+        from backend.tools.dates import parse_date_range
+
+        return parse_date_range(text)
+
     def source_freshness(self) -> dict[str, Any]:
         return {
             "sources": [
@@ -152,6 +157,7 @@ class HealthQueryTools:
             "goal_progress": self.goal_progress,
             "search_conversations": self.search_conversations,
             "evidence": self.evidence,
+            "parse_date": self.parse_date,
         }
         if tool not in mapping:
             return {"error": f"Unknown tool {tool}", "available": sorted(mapping)}

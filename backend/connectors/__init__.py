@@ -5,10 +5,34 @@ from __future__ import annotations
 import time
 from typing import Any
 
+from backend.connectors.status import (
+    calendar_config_state,
+    enrich_source_status,
+    fitbit_config_state,
+    takeout_config_state,
+    weather_config_state,
+)
+from backend.connectors.takeout import ingest_takeout_bytes, ingest_takeout_zip
 from backend.health.schema import DataQuality, DataSource, Provenance
 from backend.health.store import HealthMetricsStore
 from backend.sync.fixtures import load_fixture_bundle
 from backend.sync.registry import SourceId, SourceRegistry, SyncResult
+
+__all__ = [
+    "FITBIT_REQUIRED_METRICS",
+    "calendar_config_state",
+    "enrich_source_status",
+    "expand_fitbit_fixture_metrics",
+    "fitbit_config_state",
+    "ingest_takeout_bytes",
+    "ingest_takeout_zip",
+    "register_fixture_connectors",
+    "sync_calendar_fixture",
+    "sync_fitbit_fixture",
+    "sync_takeout_fixture",
+    "takeout_config_state",
+    "weather_config_state",
+]
 
 
 # Fitbit metric names required by PHC-FITBIT-01 (fixture coverage map)
@@ -87,12 +111,16 @@ def sync_fitbit_fixture(registry: SourceRegistry, source_id: SourceId) -> SyncRe
             )
             written += 1
     status = registry._load(source_id.value)
-    status.coverage = {"metrics": sorted(metrics.keys()), "mode": "fixture"}
+    status.coverage = {
+        "metrics": sorted(metrics.keys()),
+        "mode": "fixture",
+        **fitbit_config_state(),
+    }
     return SyncResult(
         source_id=source_id,
         success=True,
         record_count=written,
-        detail="Fitbit fixture sync complete (no OAuth)",
+        detail="Fitbit fixture sync complete (not live OAuth)",
         status=status,
     )
 
@@ -140,12 +168,13 @@ def sync_calendar_fixture(registry: SourceRegistry, source_id: SourceId) -> Sync
         "events": len(events),
         "mode": "fixture",
         "write_access": False,
+        **calendar_config_state(),
     }
     return SyncResult(
         source_id=source_id,
         success=True,
         record_count=len(events),
-        detail="Calendar fixture sync (read-only)",
+        detail="Calendar fixture sync (read-only; not live OAuth)",
         status=status,
     )
 
@@ -172,12 +201,16 @@ def sync_takeout_fixture(registry: SourceRegistry, source_id: SourceId) -> SyncR
         metric="resting_hr", value=60, day="2026-09-07", observed_at=observed, provenance=prov
     )
     status = registry._load(source_id.value)
-    status.coverage = {"mode": "fixture_fallback", "formats": ["zip/csv"]}
+    status.coverage = {
+        "mode": "fixture_fallback",
+        "formats": ["zip/csv"],
+        **takeout_config_state(),
+    }
     return SyncResult(
         source_id=source_id,
         success=True,
         record_count=2,
-        detail="Takeout fixture fallback",
+        detail="Takeout fixture fallback (not a live Google account)",
         status=status,
     )
 
