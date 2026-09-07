@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from backend.health.schema import SAFETY_DISCLAIMER, EvidenceBundle
 from backend.intake.schema import IntakeResult
-from backend.scorers import score_all
+from backend.reasoner.wod import negotiate_wod
+from backend.scorers.canonical import score_canonical
 
 
 def compose_directive(
@@ -13,52 +14,50 @@ def compose_directive(
     context_notes: list[str] | None = None,
     evidence_bundle: EvidenceBundle | None = None,
 ) -> dict:
-    """Return scores + one plain-language directive string + disclaimer."""
-    scores = score_all(intake)
-    readiness = scores["readiness"]["score"]
-    sleep_s = scores["sleep"]["score"]
-    soreness_s = scores["soreness"]["score"]
-    diet_s = scores["diet"]["score"]
+    """Return canonical scores + WOD decision + directive + disclaimer."""
+    scores = score_canonical(intake)
+    wod_decision = negotiate_wod(intake)
 
-    if readiness < 45:
+    fr = scores["front_rack"]["score"]
+    sleep_s = scores["sleep"]["score"]
+    diet_s = scores["diet"]["score"]
+    wp = scores["workout_preparation"]["score"]
+    overall = scores["overall"]["score"]
+
+    status = wod_decision["status"]
+    if status == "deferred":
         action = (
-            "Take a recovery day: easy walk, mobility, and sleep priority. "
-            "Skip heavy loading until readiness climbs."
+            "Defer today's loaded work. Prioritize sleep, nutrition, and easy movement."
         )
-    elif readiness < 65:
+    elif status == "substituted":
         action = (
-            "Train, but cap intensity. Keep skill/technique work, reduce volume ~20–30%, "
-            "and stop short of failure."
+            "Train with substitutions that spare front-rack positions. "
+            "Keep quality high on the revised plan."
+        )
+    elif status == "scaled":
+        action = (
+            "Train, but scale volume ~20–30% and stop short of failure."
         )
     else:
         action = (
-            "Green light for a full session. Hit today's plan with normal intensity, "
-            "then note how joints/soreness respond."
+            "Green light for the prescribed session. Note how joints respond afterward."
         )
 
     focus_bits: list[str] = []
     if sleep_s < 55:
         focus_bits.append("protect a longer sleep window tonight")
-    if soreness_s < 55 and intake.soreness:
-        parts = ", ".join(s.body_part for s in intake.soreness[:3])
-        focus_bits.append(f"ease load on {parts}")
+    if fr < 55:
+        focus_bits.append("front-rack mobility primer before loading")
     if diet_s < 55:
         focus_bits.append("add a clear protein source to your next meal")
     if intake.todays_wod.movements:
-        focus_bits.append(
-            "planned movements: " + ", ".join(intake.todays_wod.movements[:6])
-        )
+        focus_bits.append("WOD decision: " + status)
 
-    hist_n = 0
-    conflict_n = 0
-    if evidence_bundle is not None:
-        hist_n = len(evidence_bundle.history)
-        conflict_n = len(evidence_bundle.conflicts)
-    elif context_notes:
-        hist_n = len(context_notes)
-
+    hist_n = len(evidence_bundle.history) if evidence_bundle else len(context_notes or [])
+    conflict_n = len(evidence_bundle.conflicts) if evidence_bundle else 0
     evidence = (
-        f"readiness {readiness}/100 (sleep {sleep_s}, soreness {soreness_s}, diet {diet_s})"
+        f"overall {overall}/100 (front-rack {fr}, sleep {sleep_s}, diet {diet_s}, "
+        f"workout-prep {wp}); wod={status}"
     )
     if hist_n:
         evidence += f"; history hits: {hist_n}"
@@ -72,15 +71,18 @@ def compose_directive(
     )
 
     score_evidence = {
-        "readiness": readiness,
+        "front_rack": fr,
         "sleep": sleep_s,
-        "soreness": soreness_s,
         "diet": diet_s,
+        "workout_preparation": wp,
+        "overall": overall,
+        "wod_status": status,
         "context": context_notes or [],
-        "note": (
-            "Top-level readiness/soreness labels are transitional; "
-            "canonical scores are front_rack/sleep/diet/workout_preparation/overall."
-        ),
+        # Keep transitional numbers for compatibility/debugging
+        "transitional": {
+            "readiness": scores["transitional"]["readiness"]["score"],
+            "soreness": scores["transitional"]["soreness"]["score"],
+        },
     }
     if evidence_bundle is not None:
         score_evidence["today"] = evidence_bundle.today
@@ -92,5 +94,6 @@ def compose_directive(
         "directive": directive,
         "disclaimer": SAFETY_DISCLAIMER,
         "scores": scores,
+        "wod_decision": wod_decision,
         "evidence": score_evidence,
     }

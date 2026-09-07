@@ -56,7 +56,8 @@ def main() -> int:
         )
 
     print("[os-demo] log_id:", log_id)
-    print("[os-demo] readiness:", composed["evidence"]["readiness"])
+    print("[os-demo] overall:", composed["evidence"].get("overall"))
+    print("[os-demo] wod:", composed.get("wod_decision", {}).get("status"))
     print("[os-demo] directive:", composed["directive"])
     print("[os-demo] intake:", json.dumps(intake.model_dump(), indent=2))
     return 0

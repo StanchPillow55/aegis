@@ -10,9 +10,17 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
+from backend.alerts import AlertEngine, AlertRule
+from backend.charts import build_metric_trend, validate_chart_spec
 from backend.config import get_settings
+from backend.goals import GoalCreate, GoalStore
 from backend.health.evidence import build_evidence_bundle
 from backend.health.schema import SAFETY_DISCLAIMER, DataQuality, DataSource
+from backend.health.store import (
+    FitindexManualIn,
+    HealthMetricsStore,
+    ManualMetricIn,
+)
 from backend.intake.schema import IntakeResult
 from backend.providers.llm import LocalLLMProvider
 from backend.providers.memory import LocalMemoryProvider
@@ -20,15 +28,11 @@ from backend.providers.speech import LocalSpeechProvider
 from backend.providers.tracing import init_tracing, start_span
 from backend.reasoner import compose_directive
 from backend.sync import SourceRegistry, SyncConfig
-from backend.health.store import (
-    FitindexManualIn,
-    HealthMetricsStore,
-    ManualMetricIn,
-)
+from backend.tools import HealthQueryTools
 
 FRONTEND_DIR = Path(__file__).resolve().parents[1] / "frontend"
 
-app = FastAPI(title="aegis", version="0.4.0")
+app = FastAPI(title="aegis", version="0.5.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -42,6 +46,9 @@ _memory = LocalMemoryProvider()
 _speech = LocalSpeechProvider()
 _sync = SourceRegistry()
 _metrics = HealthMetricsStore()
+_alerts = AlertEngine(metrics=_metrics)
+_goals = GoalStore(metrics=_metrics)
+_tools = HealthQueryTools(metrics=_metrics, alerts=_alerts, goals=_goals, sync=_sync, memory=_memory)
 
 
 class TextUpdate(BaseModel):
@@ -54,6 +61,7 @@ class DirectiveResponse(BaseModel):
     directive: str
     disclaimer: str
     scores: dict
+    wod_decision: dict
     evidence: dict
     log_id: str
     extractor: str
@@ -140,12 +148,13 @@ def api_directive(body: TextUpdate) -> DirectiveResponse:
             }
         span.set_attribute("log_id", log_id)
         span.set_attribute("extractor", extractor)
-        span.set_attribute("readiness_score", composed["evidence"]["readiness"])
+        span.set_attribute("overall_score", composed["evidence"].get("overall"))
         return DirectiveResponse(
             intake=intake,
             directive=composed["directive"],
             disclaimer=composed.get("disclaimer") or SAFETY_DISCLAIMER,
             scores=composed["scores"],
+            wod_decision=composed.get("wod_decision") or {},
             evidence=composed["evidence"],
             log_id=log_id,
             extractor=extractor,
@@ -315,12 +324,134 @@ def api_fitindex_csv(body: dict) -> dict:
     return draft.model_dump()
 
 
+@app.get("/api/alerts/rules")
+def api_alert_rules() -> dict:
+    return {"rules": [r.model_dump() for r in _alerts.list_rules()]}
+
+
+@app.post("/api/alerts/rules")
+def api_upsert_alert_rule(body: AlertRule) -> dict:
+    body.custom = True
+    return _alerts.upsert_rule(body).model_dump()
+
+
+@app.post("/api/alerts/rules/{rule_id}/enable")
+def api_enable_alert_rule(rule_id: str, body: dict) -> dict:
+    try:
+        return _alerts.set_enabled(rule_id, bool(body.get("enabled", True))).model_dump()
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Unknown rule") from exc
+
+
+@app.post("/api/alerts/evaluate")
+def api_eval_alerts() -> dict:
+    fired = _alerts.evaluate()
+    return {
+        "fired": [a.model_dump() for a in fired],
+        "active": [a.model_dump() for a in _alerts.active()],
+    }
+
+
+@app.get("/api/alerts")
+def api_alerts() -> dict:
+    return {
+        "active": [a.model_dump() for a in _alerts.active()],
+        "history": [a.model_dump() for a in _alerts.history()],
+    }
+
+
+@app.post("/api/goals")
+def api_create_goal(body: GoalCreate) -> dict:
+    return _goals.create(body).model_dump()
+
+
+@app.get("/api/goals")
+def api_list_goals() -> dict:
+    return {"goals": [g.model_dump() for g in _goals.list()], "bands": _goals.chart_bands()}
+
+
+@app.post("/api/goals/{goal_id}/evaluate")
+def api_eval_goal(goal_id: str) -> dict:
+    try:
+        return _goals.evaluate(goal_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Unknown goal") from exc
+
+
+@app.post("/api/goals/{goal_id}/complete")
+def api_complete_goal(goal_id: str) -> dict:
+    try:
+        return _goals.confirm_complete(goal_id).model_dump()
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Unknown goal") from exc
+
+
+@app.post("/api/goals/{goal_id}/abandon")
+def api_abandon_goal(goal_id: str) -> dict:
+    try:
+        return _goals.abandon(goal_id).model_dump()
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Unknown goal") from exc
+
+
+@app.post("/api/tools/{tool_name}")
+def api_tool(tool_name: str, body: dict | None = None) -> dict:
+    body = body or {}
+    return _tools.dispatch(tool_name, **body)
+
+
+@app.get("/api/charts/{metric}")
+def api_chart(metric: str) -> dict:
+    spec = build_metric_trend(metric, metrics=_metrics, goals=_goals)
+    return spec.model_dump()
+
+
+@app.post("/api/charts/validate")
+def api_validate_chart(body: dict) -> dict:
+    try:
+        return validate_chart_spec(body).model_dump()
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.get("/api/geo/status")
+def api_geo_status() -> dict:
+    # Location disabled by default; never sent to cloud LLM
+    return {
+        "enabled": False,
+        "default": "off",
+        "revocable": True,
+        "cloud_llm": False,
+        "detail": "Geolocation is opt-in and disabled by default.",
+    }
+
+
+@app.get("/api/environment")
+def api_environment() -> dict:
+    # Soft offline fixture when Open-Meteo unavailable
+    return {
+        "ok": True,
+        "mode": "fixture",
+        "weather": {"temp_c": 18, "conditions": "partly_cloudy"},
+        "aqi": {"us_aqi": 42, "category": "Good"},
+        "detail": "Offline fixture — live Open-Meteo optional later",
+    }
+
+
 @app.get("/")
 def index() -> FileResponse:
     index_path = FRONTEND_DIR / "index.html"
     if not index_path.exists():
         raise HTTPException(status_code=404, detail="frontend/index.html missing")
     return FileResponse(index_path)
+
+
+@app.get("/manifest.webmanifest")
+def manifest() -> FileResponse:
+    path = FRONTEND_DIR / "manifest.webmanifest"
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="manifest missing")
+    return FileResponse(path, media_type="application/manifest+json")
 
 
 if FRONTEND_DIR.exists():

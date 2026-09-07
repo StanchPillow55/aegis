@@ -43,7 +43,9 @@ def test_directive_roundtrip(tmp_path, monkeypatch) -> None:
     assert data["directive"]
     assert data["log_id"]
     assert data["disclaimer"]
-    assert "readiness" in data["scores"]
+    assert "front_rack" in data["scores"]
+    assert "overall" in data["scores"]
+    assert data["wod_decision"]["status"]
     assert data["evidence"]["today"]["authoritative"] is True
     assert isinstance(data["evidence"]["history"], list)
     assert data["extractor"] in {"heuristic", "ollama"}

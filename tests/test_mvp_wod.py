@@ -1,0 +1,1 @@
+from tests.test_mvp_product_wave import test_wod_negotiation_substitutes_front_rack as test_mvp_wod

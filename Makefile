@@ -1,4 +1,4 @@
-.PHONY: os-model-info os-test os-smoke os-demo os-dev
+.PHONY: os-model-info os-test os-smoke os-demo os-dev mvp-demo
 
 os-model-info:
 	@echo "Local model info:"
@@ -19,6 +19,9 @@ os-smoke:
 
 os-demo:
 	python3 scripts/os_demo.py
+
+mvp-demo:
+	python3 scripts/mvp_demo.py
 
 os-dev:
 	python3 -m uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload

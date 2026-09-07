@@ -73,8 +73,8 @@ criteria:
       API/UI expose canonical scores front_rack, sleep, diet, workout_preparation,
       and overall (not transitional readiness/soreness as permanent top-level labels).
     verify: python -m pytest tests/test_mvp_scores.py -q
-    pass: false
-    artifact: null
+    pass: true
+    artifact: artifacts/slice6-product-wave.txt
 
   - id: MVP-EVIDENCE-01
     criterion: >
@@ -101,40 +101,40 @@ criteria:
       WOD negotiation returns as_prescribed|scaled|substituted|deferred with reasons
       and the directive cites the decision.
     verify: python -m pytest tests/test_mvp_wod.py -q
-    pass: false
-    artifact: null
+    pass: true
+    artifact: artifacts/slice6-product-wave.txt
 
   - id: MVP-FRONTRACK-01
     criterion: Front-rack mobility factors influence front_rack score and WOD negotiation.
     verify: python -m pytest tests/test_mvp_frontrack.py -q
-    pass: false
-    artifact: null
+    pass: true
+    artifact: artifacts/slice6-product-wave.txt
 
   - id: MVP-MACRO-01
     criterion: Diet score uses a Macro Pool ledger (not meal-count only).
     verify: python -m pytest tests/test_mvp_macro.py -q
-    pass: false
-    artifact: null
+    pass: true
+    artifact: artifacts/slice6-product-wave.txt
 
   - id: MVP-VOICE-01
     criterion: >
       Opt-in speak path returns explicit tts status when enabled; UI reflects actual
       voice readiness (no unexplained null).
     verify: python -m pytest tests/test_mvp_voice.py -q
-    pass: false
-    artifact: null
+    pass: true
+    artifact: artifacts/slice6-product-wave.txt
 
   - id: MVP-EXTRACT-01
     criterion: Response reports extractor=ollama|heuristic; Ollama path validated when daemon up.
     verify: python -m pytest tests/test_mvp_extract.py -q
-    pass: false
-    artifact: null
+    pass: true
+    artifact: artifacts/slice6-product-wave.txt
 
   - id: MVP-DEMO-01
     criterion: End-to-end local MVP demo script passes offline (heuristic) and documents Ollama.
     verify: make mvp-demo
-    pass: false
-    artifact: null
+    pass: true
+    artifact: artifacts/slice6-product-wave.txt
 
   # --- Open: personal health copilot (PHC) expansion ---
   - id: PHC-FITBIT-01
@@ -173,14 +173,14 @@ criteria:
     criterion: >
       Geolocation is opt-in default-off, revocable, minimally stored, and never sent to a cloud LLM.
     verify: python -m pytest tests/test_phc_geolocation_privacy.py -q
-    pass: false
-    artifact: null
+    pass: true
+    artifact: artifacts/slice6-product-wave.txt
 
   - id: PHC-ENV-01
     criterion: Optional Open-Meteo weather/AQI context caches locally and degrades cleanly offline.
     verify: python -m pytest tests/test_phc_environment.py -q
-    pass: false
-    artifact: null
+    pass: true
+    artifact: artifacts/slice6-product-wave.txt
 
   - id: PHC-SYNC-01
     criterion: >
@@ -213,64 +213,64 @@ criteria:
       LLM queries health data via structured tools (metrics list/latest/series/baseline/range,
       freshness, alerts, goals, conversation search, evidence) without dumping the full DB.
     verify: python -m pytest tests/test_phc_llm_tools.py -q
-    pass: false
-    artifact: null
+    pass: true
+    artifact: artifacts/slice6-product-wave.txt
 
   - id: PHC-CHARTS-01
     criterion: >
       Validated chart specs render trends (metric/sleep/body-comp/activity/goals/compare)
       without allowing arbitrary HTML/script from the LLM.
     verify: python -m pytest tests/test_phc_charts.py -q
-    pass: false
-    artifact: null
+    pass: true
+    artifact: artifacts/slice6-product-wave.txt
 
   - id: PHC-ALERTS-01
     criterion: >
       Default alert thresholds (HR>200, SpO2<90, RHR>+15% baseline, HRV<-30% baseline)
       plus user overrides/custom alerts/severity/history and duplicate suppression.
     verify: python -m pytest tests/test_phc_alerts.py -q
-    pass: false
-    artifact: null
+    pass: true
+    artifact: artifacts/slice6-product-wave.txt
 
   - id: PHC-GOALS-01
     criterion: >
       Goals support create (UI/NL/edit), statuses, evidence-based completion detection,
       user confirmation before complete, permanent history, and chart reference bands.
     verify: python -m pytest tests/test_phc_goals.py -q
-    pass: false
-    artifact: null
+    pass: true
+    artifact: artifacts/slice6-product-wave.txt
 
   - id: PHC-CHAT-01
     criterion: Conversation search, image attach/preview/remove, and history thumbnails work locally.
     verify: python -m pytest tests/test_phc_chat.py -q
-    pass: false
-    artifact: null
+    pass: true
+    artifact: artifacts/slice6-product-wave.txt
 
   - id: PHC-VISION-01
     criterion: Optional local vision (e.g. Ollama llava) extracts image facts into reasoning context.
     verify: python -m pytest tests/test_phc_vision.py -q
-    pass: false
-    artifact: null
+    pass: true
+    artifact: artifacts/slice6-product-wave.txt
 
   - id: PHC-CONTEXT-01
     criterion: AIContextProvider supplies current dashboard/screen context into chat requests.
     verify: python -m pytest tests/test_phc_aicontext.py -q
-    pass: false
-    artifact: null
+    pass: true
+    artifact: artifacts/slice6-product-wave.txt
 
   - id: PHC-PWA-01
     criterion: Installable PWA with usable mobile layout; text fallback without Web Speech.
     verify: python -m pytest tests/test_phc_pwa.py -q
-    pass: false
-    artifact: null
+    pass: true
+    artifact: artifacts/slice6-product-wave.txt
 
   - id: PHC-TAILSCALE-01
     criterion: >
       Tailscale remote access docs + config expose only auth-aware frontend/API proxy;
       SQLite/Ollama remain localhost-only (no public Funnel to raw DB/services).
     verify: python -m pytest tests/test_phc_tailscale_security.py -q
-    pass: false
-    artifact: null
+    pass: true
+    artifact: artifacts/slice6-product-wave.txt
 
   - id: PHC-FALLBACK-01
     criterion: App remains usable with fixtures/manual entry when Fitbit/Calendar/weather/AQI are down.
@@ -283,8 +283,8 @@ criteria:
       Safety copy states non-diagnostic/non-prescriptive posture; alerts labeled observations;
       stale/uncertain data flagged in assistant answers.
     verify: python -m pytest tests/test_phc_safety_copy.py -q
-    pass: false
-    artifact: null
+    pass: true
+    artifact: artifacts/slice6-product-wave.txt
 
   - id: PHC-DOCS-01
     criterion: PRODUCT_SPEC, AGENT_HANDOFF, README, and success_criteria stay consistent on identity and scores.

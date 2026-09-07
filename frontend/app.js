@@ -81,15 +81,20 @@ form.addEventListener("submit", async (event) => {
     directiveText.textContent = data.directive;
     disclaimerText.textContent = data.disclaimer || "";
     const scores = data.scores || {};
-    // Transitional labels until canonical four-score UI lands.
-    scoreRow.innerHTML = ["readiness", "sleep", "soreness", "diet"]
+    const ev = data.evidence || {};
+    scoreRow.innerHTML = ["front_rack", "sleep", "diet", "workout_preparation", "overall"]
       .map((key) => {
         const value = scores[key]?.score ?? "—";
-        return `<span>${key}<strong>${value}</strong></span>`;
+        const label = key.replaceAll("_", " ");
+        return `<span>${label}<strong>${value}</strong></span>`;
       })
       .join("");
-    const ev = data.evidence || {};
-    todayPre.textContent = JSON.stringify(ev.today || data.intake, null, 2);
+    const wod = data.wod_decision || {};
+    todayPre.textContent = JSON.stringify(
+      { today: ev.today || data.intake, wod_decision: wod },
+      null,
+      2
+    );
     historyPre.textContent = JSON.stringify(ev.history || [], null, 2);
     conflictsPre.textContent = JSON.stringify(ev.conflicts || [], null, 2);
     evidencePre.textContent = JSON.stringify(
