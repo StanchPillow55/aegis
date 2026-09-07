@@ -13,9 +13,9 @@ Feature aggregation branch `cursor/feature-merge-aggregate-766c` ports compatibl
 | 2–5 Ingestion + fixture connectors | #26 | Done |
 | 6–11 Alerts/goals/scores/tools/charts/PWA/Tailscale | #27 | Done |
 | Localhost bugfix docs | #28 | Done |
-| Feature merge aggregate | `cursor/feature-merge-aggregate-766c` | In progress |
+| Feature merge aggregate | #29 `cursor/feature-merge-aggregate-766c` | Done locally + CI green |
 
-Local validation: `make os-test` (pytest **94** passed).
+Local validation: `make os-test` (pytest **94** passed). CI @ `2342e0a`: success.
 
 ## What landed in this aggregate pass
 

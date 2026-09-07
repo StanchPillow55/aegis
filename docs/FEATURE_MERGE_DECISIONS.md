@@ -84,3 +84,12 @@ Until then: UI/API must report **disabled / needs_credentials / offline_fixture*
 - Independent ports above implemented + tested.  
 - No fake live integrations.  
 - Older-prototype unique features marked **U** until the tree is supplied; then a follow-up pass updates the matrix and ports residuals.
+
+### Evidence (this pass)
+
+| Check | Result |
+|---|---|
+| Local `make os-test` | 94 pytest passed |
+| GitHub CI on `cursor/feature-merge-aggregate-766c` @ `2342e0a` | **success** (2 checks) |
+| PR | https://github.com/StanchPillow55/aegis/pull/29 |
+| Older prototype inspection | Still blocked (path not on agent) |
