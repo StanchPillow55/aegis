@@ -3,7 +3,10 @@ meta:
   description: >
     Local-first daily training-decision copilot for functional longevity,
     expanding into a personal health copilot. Canonical spec: docs/PRODUCT_SPEC.md.
-    OS foundation rows are closed; MVP-* and PHC-* rows are open until verified.
+    `pass: true` means the listed verify command succeeded — NOT always live/E2E
+    product completion. Maturity tiers live in docs/SC_MATURITY.md (QA 2026-09-08).
+  maturity_doc: docs/SC_MATURITY.md
+  implementation_plan: docs/IMPLEMENTATION_PLAN.md
 
 criteria:
   # --- Closed: OS foundation ---

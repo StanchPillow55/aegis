@@ -2,26 +2,29 @@
 
 **Read first (in order):**
 1. `docs/PRODUCT_SPEC.md` — product + architecture contract  
-2. `docs/IMPLEMENTATION_PLAN.md` — **next-agent plan** (progress, gaps, slices A–E)  
-3. `docs/FEATURE_MERGE_MATRIX.md` — what was kept / ported / deferred from legacy  
-4. `success_criteria.yaml` — Definition of Done (43/43 pass)  
-5. `CLAUDE.md` — build contract  
-6. `docs/bugs/BUG-LOCALHOST-01.md` — if UI “won’t open” from a Cloud Agent
+2. `docs/IMPLEMENTATION_PLAN.md` — **QA-revised** next-agent plan (required)  
+3. `docs/SC_MATURITY.md` — what `pass: true` actually means  
+4. `docs/FEATURE_MERGE_MATRIX.md` — legacy vs canonical feature status  
+5. `success_criteria.yaml` — DoD automation (verify scripts)  
+6. `CLAUDE.md` — build contract  
+7. `docs/bugs/BUG-LOCALHOST-01.md` — if UI “won’t open” from a Cloud Agent
 
 ---
 
 ## TL;DR for a new agent
 
-You are continuing **canonical** Aegis at `/workspace` on branch  
-`cursor/feature-merge-aggregate-766c` ([PR #29](https://github.com/StanchPillow55/aegis/pull/29), CI green @ `f8a3fed`).
+You are on **canonical** Aegis `/workspace`, branch  
+`cursor/feature-merge-aggregate-766c` ([PR #29](https://github.com/StanchPillow55/aegis/pull/29), CI green).
 
-**Autonomous stacked execution through #29 is complete.** Core product + legacy-compatible residuals are in. Next work is merge hygiene, live OAuth (secrets), UI depth, or Playwright — see `docs/IMPLEMENTATION_PLAN.md` §4–5.
+**Foundation through #29 is shipped and CI-green**, but QA clarified that the **operational completion layer is still open**: required background sync, full Fitbit/Calendar live+OAuth security, persistent chat, interactive charts, geo UI, remote/PWA acceptance, and honest maturity labeling.
+
+**Do not** treat `43/43 pass: true` as “product complete.” Use `docs/SC_MATURITY.md`.
 
 Do **not** modify remote `legacy-aegis`. Do **not** fake OAuth or live weather.
 
 ---
 
-## Progress (stacked PRs — all CI green when last verified)
+## Progress (stacked PRs — CI green)
 
 | Slice | PR | Result |
 |---|---|---|
@@ -31,37 +34,41 @@ Do **not** modify remote `legacy-aegis`. Do **not** fake OAuth or live weather.
 | 1 Source registry + sync | #25 | CI green |
 | 2–5 Metrics ingest + fixture connectors | #26 | CI green |
 | 6–11 Scores, WOD, alerts, goals, tools, charts, PWA, Tailscale docs | #27 | CI green |
-| Localhost bugfix docs + Makefile/`os-health` | #28 | CI green |
+| Localhost bugfix docs | #28 | CI green |
 | Feature aggregate + legacy residual ports | #29 | CI green |
 
-### Verification
+### Verification (foundation only)
 
 | Check | Result |
 |---|---|
-| Local tests | **103** pytest (`make os-test`) |
-| Success criteria | **43/43** pass with artifacts |
+| Tests | **103** pytest (`make os-test`) |
+| SC automation | **43/43** `pass: true` = verify scripts green — see maturity map |
+| Open-Meteo | Live `mode=live` when egress allowed |
 | Demos | `make mvp-demo` / `make os-demo` |
-| Open-Meteo | Live `mode=live` after egress approval |
 
 ---
 
-## What works (functionality)
+## What works today (vs what is still planned)
 
-**Directive loop:** text (+ optional Dictate/Speak) → intake → evidence (today/history/conflicts, today_wins) → canonical scores (Front-rack / Sleep / Diet / Workout-prep / Overall) + Macro Pool → WOD negotiation → disclaimer.
+**Works (foundation):** directive loop; canonical scores + Macro Pool; evidence today_wins; SQLite; registry + on-demand sync + stale flags; fixture Fitbit/Calendar/Takeout; FITINDEX CSV/manual/OCR drafts; Takeout CSV+JSON; Open-Meteo honesty; Fitbit OAuth **scaffold**; chat dock (in-memory); tools/patterns APIs; light overview SVG; geo API default-off.
 
-**Data:** SQLite durability; source registry + 24h staleness; fixture Fitbit/Calendar/Takeout; FITINDEX CSV/manual/OCR drafts; Takeout CSV+JSON; manual metrics; Open-Meteo live/offline/disabled; geo default-off.
-
-**Intelligence:** chat sessions + guardrails; rich screen context; tools (metrics/alerts/goals/correlate/trend/body_comp/calendar); patterns API; calendar signals; chart specs + SVG; hydration/performance as **factors**.
-
-**UI:** composer + overview (sync/env/alerts/chart) + settings/imports + floating chat.  
-**Dev:** `make os-dev` (alias `make dev`) · `make os-health` · port **8000** required.
+**Not complete (QA):** automatic **background sync** (required); full Fitbit metric live map; OAuth security checklist; SQLite chat persist/search; llava E2E; inline chat charts; NL goals + alert proactive/dedupe depth; Grafana-style chart interactions; geo consent UI; authenticated Tailscale remote + PWA install; Playwright E2E.
 
 ---
 
-## Localhost / browser (resolved as operator misunderstanding)
+## Safety: two output modes (enforce)
 
-Diagnosis (PR #28): app is healthy on the agent (`curl :8000` OK). Laptop Chrome `127.0.0.1` is a different machine; bare `http://127.0.0.1/` hits port 80.  
-Docs: `docs/bugs/BUG-LOCALHOST-01.md`, `docs/bugs/tasks.md`, `docs/postmortems/2026-09-07-localhost-connection-refused.md`.
+1. **Health analysis** — observational / non-prescriptive; guardrails on.  
+2. **Training planning (directive)** — labeled non-medical decision support; WOD negotiation allowed; disclaimer always; confirm when materially changing the plan.
+
+Do not market the system as “observational only” while emitting unmarked training commands.
+
+---
+
+## Localhost / browser
+
+App is fine on the agent (`curl :8000` OK). Laptop `127.0.0.1` ≠ VM; use port **8000** on the same host.  
+`docs/bugs/BUG-LOCALHOST-01.md` · `docs/bugs/tasks.md` · postmortem under `docs/postmortems/`.
 
 ---
 
@@ -70,10 +77,8 @@ Docs: `docs/bugs/BUG-LOCALHOST-01.md`, `docs/bugs/tasks.md`, `docs/postmortems/2
 | Item | Detail |
 |---|---|
 | Remote | `origin/legacy-aegis` @ `9a4e50e…` — **do not push/modify** |
-| Local mirror | `/workspace/legacy-aegis` via `git archive` (gitignored) |
-| Role | Read-only feature source; semantic port only |
+| Local | `/workspace/legacy-aegis` via `git archive` (gitignored) |
 
-Refresh mirror:
 ```bash
 git fetch origin legacy-aegis
 rm -rf /workspace/legacy-aegis && mkdir -p /workspace/legacy-aegis
@@ -82,31 +87,46 @@ git archive origin/legacy-aegis | tar -x -C /workspace/legacy-aegis
 
 ---
 
-## Honest gaps → next features
+## Next work (QA priority list)
 
-| Priority | Work | Needs |
-|---|---|---|
-| **P0** | Merge/rebase #22–#29 onto preferred base | Human merge decisions |
-| **P1** | Live Fitbit pull after OAuth | `FITBIT_CLIENT_ID/SECRET` + browser |
-| **P1** | Live Google Calendar read-only | Google OAuth client |
-| **P2** | Goals/alerts editors + FITINDEX confirm UI | No secrets |
-| **P2** | Chart goal-band SVG + chat SQLite persistence | No secrets |
-| **P2** | PWA icons/SW | No secrets |
-| **P3** | Playwright same-host smoke | Browser on server host |
-| **Skip** | Chroma, multi-user, Vite SPA rewrite, fake OAuth/weather, boot-required Redis/Deepgram |
+### P1 (start here if not merging)
+- **Required background sync:** interval, per-source toggle, retries, last-success, stale warnings, on-demand via button/chat/voice  
+- **Fitbit:** full metric list (RHR, steps, distance, active minutes, calories, weight, body fat, stress, breathing rate, activities, …) + units/timestamps/source/confidence/provenance; OAuth state/callback/refresh/revoke/encrypt/scopes/no-log-secrets/UI states  
+- **Chat:** SQLite persist, searchable history, image refs, llava click-path, tools from UI, inline charts, context regression tests  
+- **Goals/alerts:** NL goal create; statuses in-progress/completed/abandoned/paused; confirm-before-complete; history; custom alerts; critical dedupe; proactive chat; stale/missing/conflict tests  
 
-**Recommended first slice for a new agent:** Implementation Plan **Slice A** (merge hygiene) or **Slice C** (UI depth without secrets).
+### P2
+- Google Calendar live OAuth + read-only ingest  
+- FITINDEX confirm UI  
+- Interactive charts (click, range, tooltips, goal bands, missing-data, source/time) + inline chat charts  
+- Geo consent/revoke/delete/home/threshold UI  
+- PWA SW/icons + mobile install test  
+- Authenticated Tailscale remote (no DB exposure; routing/CORS/CSRF/rate-limit as needed)  
+
+### P3
+- Playwright same-host E2E  
+- Mocked OAuth integration tests  
+- Offline/source-failure tests  
+- M2 performance / local-model resource tests  
+- SQLite backup/export/restore tests  
+
+### Recommended slice order
+Without secrets: **A (merge) → S1 background sync → S2 chat persist → S3 goals/alerts → S4 interactive charts**  
+With secrets: add **S5 Fitbit**, **S6 Calendar/geo**  
+Then **S7 remote/PWA**, **S8 Playwright**.
+
+Details: `docs/IMPLEMENTATION_PLAN.md` §4–5.
 
 ---
 
 ## Rules (non-negotiable)
 
-1. `success_criteria.yaml` is DoD — mark `pass: true` only with verify + artifact.  
-2. Preserve canonical architecture and passing tests.  
-3. Never restore fake OAuth, fake weather, or hardcoded “connected” success.  
-4. Fixtures OK if labeled; live integrations must show `needs_credentials` / offline when not configured.  
-5. Distinguish UI presence ≠ backend ≠ live integration ≠ E2E.  
-6. Do not modify `legacy-aegis` remote branch.
+1. Mark SC complete in prose only when `docs/SC_MATURITY.md` says so — not merely `pass: true`.  
+2. Preserve canonical architecture and green tests.  
+3. Never fake OAuth, fake weather, or “connected” without tokens.  
+4. Fixtures OK if labeled.  
+5. UI ≠ backend ≠ live ≠ E2E.  
+6. Do not modify `legacy-aegis` remote.  
 
 ---
 
