@@ -104,6 +104,8 @@ def build_context(
     recent_text: str = "",
     view: str = "directive",
     include_overall: bool | None = None,
+    metrics: dict[str, Any] | None = None,
+    extras: dict[str, Any] | None = None,
 ) -> SignalContext:
     active_goals: list[Any] = []
     active_tasks: list[Any] = []
@@ -125,6 +127,9 @@ def build_context(
         except Exception:
             active_goals = []
             active_tasks = []
+    extra = dict(extras or {})
+    if metrics is not None:
+        extra["metrics"] = metrics
     return SignalContext(
         intake=intake,
         active_goals=active_goals,
@@ -132,6 +137,7 @@ def build_context(
         recent_text=recent_text,
         view=view,
         include_overall=include_overall,
+        extras=extra,
     )
 
 

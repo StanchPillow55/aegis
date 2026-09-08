@@ -1369,6 +1369,28 @@ document.getElementById("manual-btn").addEventListener("click", async () => {
   }
 });
 
+document.getElementById("backup-restore-btn")?.addEventListener("click", () => {
+  document.getElementById("backup-file")?.click();
+});
+
+document.getElementById("backup-file")?.addEventListener("change", async () => {
+  const hint = document.getElementById("backup-hint");
+  const fileInput = document.getElementById("backup-file");
+  if (!fileInput.files?.length) return;
+  const fd = new FormData();
+  fd.append("file", fileInput.files[0]);
+  try {
+    const res = await fetch("/api/backup/restore", { method: "POST", body: fd });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || res.status);
+    hint.textContent = `Restored ${data.count} file(s): ${(data.restored || []).join(", ")}. Restart the server to reload stores.`;
+  } catch (err) {
+    hint.textContent = String(err);
+  } finally {
+    fileInput.value = "";
+  }
+});
+
 refreshDashboard();
 refreshGoalsUi();
 restoreChatSession();

@@ -72,7 +72,32 @@ def test_running_goal_selects_pace_and_diet_signals(tmp_path: Path):
     assert "diet" in ids
     assert "overall" not in ids
     pace = next(s for s in selected if s.id == "running_pace")
-    assert pace.available is False
+    assert pace.available is True
+    assert pace.score is not None
+    assert "10:30" in (pace.factors.get("pace") or pace.rationale)
+
+
+def test_recovery_signal_from_sleep_debt_journal(tmp_path: Path):
+    store = GoalGraphStore(tmp_path / "rec.sqlite3")
+    store.create_goal(
+        GraphGoalCreate(
+            title="Recover from sleep debt",
+            metric="sleep_hours",
+            description="Average of 8 hours this week",
+        )
+    )
+    text = "Slept 5 hours, nothing sore, hoping to recover from my sleep debt"
+    intake = _intake()
+    intake.sleep.hours = 5.0
+    ctx = build_context(intake, goal_store=store, recent_text=text, view="directive")
+    selected = select_signals(ctx)
+    ids = {s.id for s in selected}
+    assert "recovery" in ids or "sleep" in ids
+    recovery = next((s for s in selected if s.id == "recovery"), None)
+    if recovery is None:
+        recovery = next(p.compute(ctx) for p in default_providers() if p.id == "recovery")
+    assert recovery.available is True
+    assert recovery.score is not None
 
 
 def test_signals_payload_includes_compat_scores():

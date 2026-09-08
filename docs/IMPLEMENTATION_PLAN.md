@@ -21,7 +21,10 @@ Aegis is a **local-first** daily training-decision / personal health copilot (Fa
 | Chat SQLite persist/search (S2) | Fixture-verified |
 | Dual safety output modes | Fixture-verified (API + UI labels) |
 | PWA SW + icon | Fixture-verified; install accept operator-owned |
-| Playwright Goal Graph smoke | Opt-in (`AEGIS_PLAYWRIGHT=1`); full §12 browser path open |
+| Playwright Goal Graph §12 | Opt-in (`AEGIS_PLAYWRIGHT=1`) — **done** |
+| Recovery / running_pace / body / activity signals | Computed (no longer stubs) |
+| Sync labels | Takeout **primary**; Fitbit **legacy**; FITINDEX no scale OAuth |
+| Local SQLite backup/restore | API + Settings UI |
 | Live Google Calendar / Google Health OAuth | Open / blocked-on-secrets |
 | Fitbit live API | **Out of primary scope** — legacy fixture only |
 
@@ -80,7 +83,7 @@ Details: **`docs/GOAL_GRAPH.md`**.
 ## 3. Priority backlog (current)
 
 ### Done (do not restart)
-GL0 · GL1 · GL2 · GL3 · GL4 · GL5 · S1 · S2 · GG-E2E fixture · GG-SAFETY · dual safety labels · geo consent UI · PWA SW/icon smoke · **S8 Playwright §12 browser** · **S5a FITINDEX confirm UX** · **S5b Takeout preview/provenance**
+GL0 · GL1 · GL2 · GL3 · GL4 · GL5 · S1 · S2 · GG-E2E fixture · GG-SAFETY · dual safety labels · geo consent UI · PWA SW/icon smoke · **S8 Playwright §12 browser** · **S5a FITINDEX confirm UX** · **S5b Takeout preview/provenance** · **S9** PDF-gap polish (computed signals + sync label honesty + backup/restore)
 
 ### P0 — Docs / merge hygiene
 1. Keep connector policy honest (`docs/CONNECTORS.md`).  
@@ -90,7 +93,7 @@ GL0 · GL1 · GL2 · GL3 · GL4 · GL5 · S1 · S2 · GG-E2E fixture · GG-SAFET
 
 | ID | Work | Notes |
 |---|---|---|
-| Offline / backup | Local SQLite backup / restore notes | Optional polish |
+| Overview UX | Soften raw JSON panels on Overview (operator polish) | Optional |
 
 ### P1 — When Google secrets available
 
@@ -150,7 +153,7 @@ GL0 · GL1 · GL2 · GL3 · GL4 · GL5 · S1 · S2 · GG-E2E fixture · GG-SAFET
 8. Screen-aware chat about updated dashboard  
 
 **API fixture path:** `artifacts/gg-e2e-fixture.txt`.  
-**Browser path:** expand S8 Playwright (smoke exists).
+**Browser path:** `artifacts/s8-playwright-gg-e2e.txt` (`AEGIS_PLAYWRIGHT=1`).
 
 ---
 
@@ -167,10 +170,14 @@ GL0 · GL1 · GL2 · GL3 · GL4 · GL5 · S1 · S2 · GG-E2E fixture · GG-SAFET
 | **S5b** | Takeout preview + provenance | **DONE** |
 | **S6** | Geo + **Google Calendar** live OAuth | Geo consent UI present; Calendar OAuth when secrets |
 | **S7** | PWA + Tailscale accept | SW+icons fixture; mesh operator-owned |
-| **S8** | Playwright + offline/backup | **DONE** §12 browser path (opt-in `AEGIS_PLAYWRIGHT=1`) |
+| **S8** | Playwright + offline/backup | **DONE** §12 browser + backup/restore |
+| **S9** | PDF-tested gap polish | Computed recovery/pace/body/activity · sync labels · backup |
 
 **Recommended order now:**  
-**(secrets) S6 Calendar + S5 Google Health API → GL6/S7 remote accept · optional offline/backup notes**
+**(secrets) S6 Calendar + S5 Google Health API → GL6/S7 remote accept · optional Overview JSON polish**
+
+### Operator PDF check (2026-09-07)
+Manual UI exercise confirmed: composer → directive, goal tree + HITL suggestions, Settings connector policy, Takeout/FITINDEX panels. Gaps closed in S9: stub recovery/pace signals, Takeout “fallback” sync label, missing backup.
 
 ---
 

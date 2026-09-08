@@ -6,11 +6,12 @@ from pathlib import Path
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from backend.alerts import AlertEngine, AlertRule
+from backend.backup import build_backup_zip, restore_backup_zip
 from backend.charts import build_metric_trend, validate_chart_spec
 from backend.chat import ChatService, ChatStore, ChatTurnRequest, vision_status
 from backend.config import get_settings
@@ -210,6 +211,7 @@ def api_directive(body: TextUpdate) -> DirectiveResponse:
             evidence_bundle=bundle,
             goal_store=_goal_graph,
             recent_text=body.text,
+            metrics=_metrics.snapshot_latest(),
         )
         goal_analysis = None
         try:
@@ -271,6 +273,7 @@ def api_signals(text: str = "", view: str = "dashboard", include_overall: bool |
         recent_text=text,
         view=view,
         include_overall=include_overall,
+        metrics=_metrics.snapshot_latest(),
     )
     return signals_payload(ctx)
 
@@ -544,6 +547,31 @@ async def api_takeout_zip(file: UploadFile = File(...)) -> dict:
         except Exception:
             pass
         return result
+
+
+@app.get("/api/backup/export")
+def api_backup_export() -> Response:
+    """Download a local zip of SQLite DBs + geo preference (offline backup)."""
+    settings = get_settings()
+    data, meta = build_backup_zip(settings.data_dir)
+    headers = {
+        "Content-Disposition": 'attachment; filename="aegis-backup.zip"',
+        "X-Aegis-Backup-Files": str(meta.get("count", 0)),
+    }
+    return Response(content=data, media_type="application/zip", headers=headers)
+
+
+@app.post("/api/backup/restore")
+async def api_backup_restore(file: UploadFile = File(...)) -> dict:
+    """Restore sqlite/json members from a backup zip into DATA_DIR."""
+    if not file.filename or not file.filename.lower().endswith(".zip"):
+        raise HTTPException(status_code=400, detail="Expected a .zip backup")
+    raw = await file.read()
+    try:
+        result = restore_backup_zip(get_settings().data_dir, raw)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {"ok": True, **result}
 
 
 @app.get("/api/alerts/rules")

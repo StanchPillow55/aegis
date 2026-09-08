@@ -313,6 +313,16 @@
         <button type="button" id="manual-btn" class="ghost">Add log</button>
         <p id="manual-hint" class="hint"></p>
       </div>
+      <div data-pin-id="backup" data-pin-label="Local backup">
+        <h3>Local backup / restore</h3>
+        <p class="hint">Offline zip of SQLite DBs on this host. Restore overwrites local data files — restart <code>make os-dev</code> after restore.</p>
+        <div class="hitl-actions">
+          <a id="backup-export-link" class="ghost" href="/api/backup/export">Download backup</a>
+          <button type="button" id="backup-restore-btn" class="ghost">Restore from ZIP</button>
+        </div>
+        <input type="file" id="backup-file" accept=".zip,application/zip" hidden />
+        <p id="backup-hint" class="hint"></p>
+      </div>
     </div>
   </section>
 

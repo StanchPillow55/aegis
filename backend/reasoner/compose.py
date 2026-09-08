@@ -18,6 +18,7 @@ def compose_directive(
     evidence_bundle: EvidenceBundle | None = None,
     goal_store: Any | None = None,
     recent_text: str = "",
+    metrics: dict[str, Any] | None = None,
 ) -> dict:
     """Return canonical scores + goal-relevant signals + WOD + directive + disclaimer."""
     scores = score_canonical(intake)
@@ -34,6 +35,7 @@ def compose_directive(
         goal_store=goal_store,
         recent_text=recent_text,
         view="directive",
+        metrics=metrics,
     )
     selected = select_signals(sig_ctx)
     signals = {

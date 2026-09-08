@@ -98,15 +98,15 @@ def _default_sources() -> dict[str, SourceStatus]:
         ),
         SourceId.FITBIT.value: SourceStatus(
             source_id=SourceId.FITBIT,
-            label="Fitbit (OAuth — not configured)",
+            label="Fitbit (legacy fixture — not primary)",
             enabled=False,
             supports_background=True,
             kind="external",
-            coverage={"metrics": []},
+            coverage={"metrics": [], "primary": False, "legacy_fixture": True},
         ),
         SourceId.CALENDAR.value: SourceStatus(
             source_id=SourceId.CALENDAR,
-            label="Google Calendar (read-only — not configured)",
+            label="Google Calendar (read-only OAuth)",
             enabled=False,
             supports_background=True,
             kind="external",
@@ -114,18 +114,19 @@ def _default_sources() -> dict[str, SourceStatus]:
         ),
         SourceId.FITINDEX.value: SourceStatus(
             source_id=SourceId.FITINDEX,
-            label="FITINDEX body composition",
+            label="FITINDEX (CSV + OCR + manual — no scale OAuth)",
             enabled=True,
             supports_background=False,
             kind="local",
-            coverage={"modes": ["csv", "manual"]},  # OCR later
+            coverage={"modes": ["csv", "ocr", "manual"], "scale_oauth": False},
         ),
         SourceId.TAKEOUT.value: SourceStatus(
             source_id=SourceId.TAKEOUT,
-            label="Google Takeout ZIP (fallback)",
+            label="Google Health / Takeout (primary metrics)",
             enabled=False,
             supports_background=False,
             kind="external",
+            coverage={"primary_metric_path": True, "modes": ["zip_preview", "zip_confirm"]},
         ),
         SourceId.WEATHER.value: SourceStatus(
             source_id=SourceId.WEATHER,
@@ -227,6 +228,22 @@ class SourceRegistry:
                         "INSERT INTO sources(source_id, payload_json) VALUES (?, ?)",
                         (sid, status.model_dump_json()),
                     )
+                else:
+                    # Refresh policy labels/coverage without wiping sync timestamps.
+                    cur = SourceStatus.model_validate_json(existing["payload_json"])
+                    changed = False
+                    if cur.label != status.label:
+                        cur.label = status.label
+                        changed = True
+                    for key, val in (status.coverage or {}).items():
+                        if cur.coverage.get(key) != val:
+                            cur.coverage[key] = val
+                            changed = True
+                    if changed:
+                        conn.execute(
+                            "UPDATE sources SET payload_json = ? WHERE source_id = ?",
+                            (cur.model_dump_json(), sid),
+                        )
             conn.commit()
 
     def register_handler(self, source_id: SourceId | str, handler: SyncHandler) -> None:

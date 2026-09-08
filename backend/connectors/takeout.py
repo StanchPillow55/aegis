@@ -1,4 +1,4 @@
-"""Google Takeout ZIP → health metrics (future-compatible fallback).
+"""Google Takeout ZIP → health metrics (primary metric import path).
 
 Supports:
 - Daily activity metrics CSV (Google Takeout Fit export)

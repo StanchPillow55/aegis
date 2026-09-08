@@ -56,7 +56,8 @@ Branch tip: `cursor/s1-background-sync-3696` ([PR #31](https://github.com/Stanch
 - PWA service worker + icon present; install acceptance still operator-owned.  
 - Playwright smoke available behind `AEGIS_PLAYWRIGHT=1`.  
 - **Metric sync policy:** Google Health / Takeout primary; Google Calendar OAuth kept; FITINDEX = CSV + image only; Fitbit API not primary (legacy fixture only).  
-- Full Playwright Goal Graph §12 browser path still open.  
+- Recovery / running_pace signals are computed from journal (not stubs).  
+- Local backup/restore available under Settings.  
 - `pass: true` ≠ live/E2E complete.
 
 ---
@@ -76,12 +77,12 @@ Branch tip: `cursor/s1-background-sync-3696` ([PR #31](https://github.com/Stanch
 
 1. **GL0–GL5 + GG-E2E/SAFETY + S8 Playwright §12** — **done** (Playwright opt-in `AEGIS_PLAYWRIGHT=1`)  
 2. **S5a / S5b** — FITINDEX confirm UX + Takeout preview/provenance — **done**  
-3. **(secrets) S6** — Live Google Calendar OAuth; geo consent UI already present  
-4. **(secrets) S5** — Live Google Health API beyond Takeout (**not Fitbit**)  
-5. **GL6 / S7** — Remote/PWA operator acceptance (Tailscale mesh)  
-6. Optional: offline SQLite backup/restore notes  
+3. **S9** — PDF gap polish (computed signals, sync labels, backup) — **done**  
+4. **(secrets) S6** — Live Google Calendar OAuth; geo consent UI already present  
+5. **(secrets) S5** — Live Google Health API beyond Takeout (**not Fitbit**)  
+6. **GL6 / S7** — Remote/PWA operator acceptance (Tailscale mesh)  
 
-Details: `docs/IMPLEMENTATION_PLAN.md` · connectors: `docs/CONNECTORS.md` · models: `docs/GOAL_GRAPH.md`.
+Details: `docs/IMPLEMENTATION_PLAN.md` · connectors: `docs/CONNECTORS.md` · backup: `docs/BACKUP.md`.
 
 Historical note: **Slice 0** (schema/evidence) is already done; do not restart it.
 

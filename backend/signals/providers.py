@@ -1,4 +1,4 @@
-"""Built-in signal providers wrapping canonical scorers + future stubs."""
+"""Built-in signal providers wrapping canonical scorers + computed Goal Graph signals."""
 
 from __future__ import annotations
 
@@ -14,6 +14,12 @@ from backend.scorers.diet import score as score_diet
 from backend.scorers.hydration import score_hydration
 from backend.scorers.performance import score_performance
 from backend.scorers.sleep import score as score_sleep
+from backend.signals.computed import (
+    score_activity_volume,
+    score_body_composition,
+    score_recovery,
+    score_running_pace,
+)
 from backend.signals.protocol import SignalContext, SignalResult
 
 
@@ -35,7 +41,7 @@ PROVIDER_KEYWORDS: dict[str, set[str]] = {
     "body_composition": _keywords("body fat", "weight", "bf%", "composition", "fitindex"),
     "running_pace": _keywords("run", "pace", "mile", "km", "conditioning", "jog"),
     "hydration": _keywords("hydrat", "water", "thirst"),
-    "recovery": _keywords("recover", "hrv", "sore", "soreness", "fatigue"),
+    "recovery": _keywords("recover", "hrv", "sore", "soreness", "fatigue", "sleep debt"),
     "activity_volume": _keywords("steps", "active minutes", "walk", "activity"),
 }
 
@@ -118,36 +124,53 @@ class ScorerProvider:
             return True, "matches goal/task/journal keywords"
         if self.always_core and ctx.include_overall is not False and not ctx.active_goals:
             return True, "default core set"
-        # With active goals: core providers still available but not auto-selected
-        # unless keyword/metric match — except we keep a minimal always-on set for directive.
         if self.always_core and ctx.view == "directive":
-            # Prefer goal-relevant; still include core if nothing else matched later
             return False, "core available; not goal-linked"
         return False, "not linked to active goals/context"
 
 
-class StubProvider:
-    """Future signal with no scorer yet — available=False until data lands."""
+class ContextScorerProvider:
+    """Scorer that may use ``ctx.recent_text`` and ``ctx.extras`` (metrics)."""
 
-    def __init__(self, *, id: str, label: str) -> None:
+    def __init__(self, *, id: str, label: str, fn: Callable[..., dict]) -> None:
         self.id = id
         self.label = label
+        self._fn = fn
         self.always_core = False
 
     def compute(self, ctx: SignalContext) -> SignalResult:
+        raw = self._fn(ctx)
         return SignalResult(
             id=self.id,
             label=self.label,
-            score=None,
-            factors={},
-            rationale=f"{self.label} signal not yet computed in this build.",
-            available=False,
+            score=raw.get("score"),
+            factors=dict(raw.get("factors") or {}),
+            rationale=str(raw.get("rationale") or ""),
+            available=raw.get("score") is not None,
         )
 
     def relevant(self, ctx: SignalContext) -> tuple[bool, str]:
-        if _metric_match(ctx, self.id) or _keyword_match(ctx, self.id):
-            return True, "goal/context mentions signal (provider stub)"
+        if _metric_match(ctx, self.id):
+            return True, "matches active goal metric"
+        if _keyword_match(ctx, self.id):
+            return True, "matches goal/task/journal keywords"
         return False, "not linked"
+
+
+def _recovery_fn(ctx: SignalContext) -> dict:
+    return score_recovery(ctx.intake, recent_text=ctx.recent_text)
+
+
+def _pace_fn(ctx: SignalContext) -> dict:
+    return score_running_pace(ctx.intake, recent_text=ctx.recent_text)
+
+
+def _body_fn(ctx: SignalContext) -> dict:
+    return score_body_composition(metrics=(ctx.extras or {}).get("metrics"))
+
+
+def _activity_fn(ctx: SignalContext) -> dict:
+    return score_activity_volume(metrics=(ctx.extras or {}).get("metrics"))
 
 
 def default_providers() -> list:
@@ -166,8 +189,8 @@ def default_providers() -> list:
         ScorerProvider(
             id="performance", label="Performance", fn=score_performance, always_core=False
         ),
-        StubProvider(id="body_composition", label="Body composition"),
-        StubProvider(id="running_pace", label="Running pace"),
-        StubProvider(id="recovery", label="Recovery"),
-        StubProvider(id="activity_volume", label="Activity volume"),
+        ContextScorerProvider(id="body_composition", label="Body composition", fn=_body_fn),
+        ContextScorerProvider(id="running_pace", label="Running pace", fn=_pace_fn),
+        ContextScorerProvider(id="recovery", label="Recovery", fn=_recovery_fn),
+        ContextScorerProvider(id="activity_volume", label="Activity volume", fn=_activity_fn),
     ]
