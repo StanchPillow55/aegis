@@ -343,18 +343,34 @@ function appendBubble(role, content, opts = {}) {
 
 async function buildScreenContext() {
   const primary = pinnedContexts[0]?.id || "overview";
+  const metric = document.getElementById("chart-metric")?.value || null;
+  const params = new URLSearchParams({
+    panel: primary,
+    route: window.location.pathname + window.location.hash,
+  });
+  if (selectedGoalId) params.set("goal_id", selectedGoalId);
+  if (metric) params.set("chart_metric", metric);
+  if (typeof chartHorizon !== "undefined") params.set("horizon", chartHorizon);
+  if (chatSessionId) params.set("session_id", chatSessionId);
   let screen = {};
   try {
-    screen = await (await fetch(`/api/context/screen?panel=${encodeURIComponent(primary)}`)).json();
+    screen = await (await fetch(`/api/context/screen?${params}`)).json();
   } catch {
-    screen = { panel: primary };
+    screen = { panel: primary, route: window.location.pathname };
   }
-  screen.pinned = pinnedContexts.map((p) => ({
+  // Prefer typed fields from server; attach pins client-side
+  screen.pins = pinnedContexts.map((p) => ({
     id: p.id,
     label: p.label,
-    snippet: p.snippet,
+    snippet: (p.snippet || "").slice(0, 240),
   }));
   screen.input = "composer";
+  screen.selected_goal_id = selectedGoalId || screen.selected_goal_id || null;
+  screen.selected_chart_metric = metric || screen.selected_chart_metric || null;
+  screen.date_range = { horizon: typeof chartHorizon !== "undefined" ? chartHorizon : "month" };
+  // Never send HTML blobs
+  delete screen.html;
+  delete screen.script;
   return screen;
 }
 

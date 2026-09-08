@@ -272,9 +272,30 @@ class ChatService:
     ) -> str:
         parts: list[str] = []
         if screen_context:
-            panel = screen_context.get("panel") or screen_context.get("view")
-            if panel:
-                parts.append(f"(Context: viewing {panel}.)")
+            from backend.context.screen import parse_screen_context, screen_context_summary
+
+            try:
+                typed = parse_screen_context(screen_context)
+                looking = any(
+                    p in (message or "").lower()
+                    for p in (
+                        "what am i looking",
+                        "what i'm looking",
+                        "current screen",
+                        "this page",
+                        "what do you see",
+                    )
+                )
+                if looking:
+                    parts.append(
+                        f"You are looking at: {screen_context_summary(typed)}."
+                    )
+                elif typed.panel:
+                    parts.append(f"(Context: viewing {typed.panel}.)")
+            except Exception:
+                panel = screen_context.get("panel") or screen_context.get("view")
+                if panel:
+                    parts.append(f"(Context: viewing {panel}.)")
 
         metric_hit = next((t for t in tool_results if t.get("tool") == "latest"), None)
         if metric_hit:

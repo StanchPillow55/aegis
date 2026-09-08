@@ -45,6 +45,8 @@ from backend.health.store import (
     ManualMetricIn,
 )
 from backend.intake.schema import IntakeResult
+from backend.goals.tools import GoalGraphTools, MUTATE_PREVIEW_TOOLS, READ_TOOLS
+from backend.context.screen import parse_screen_context
 from backend.intelligence.context import build_system_context, format_context_text
 from backend.patterns.correlations import correlate_metrics, day_before_metric_performance
 from backend.patterns.trends import trend_direction, weekly_metric_averages
@@ -88,6 +90,13 @@ _tools = HealthQueryTools(
     chat_store=_chat_store,
 )
 _chat = ChatService(tools=_tools, store=_chat_store)
+_graph_tools = GoalGraphTools(
+    graph=_goal_graph,
+    metrics=_metrics,
+    memory=_memory,
+    sync=_sync,
+    chat_store=_chat_store,
+)
 
 
 class TextUpdate(BaseModel):
@@ -856,13 +865,58 @@ def api_vision_status() -> dict:
 
 
 @app.get("/api/context/screen")
-def api_screen_context(panel: str = "overview") -> dict:
-    """Rich AIContext feed for chat (vitals, alerts, goals, sync, calendar)."""
+def api_screen_context(
+    panel: str = "overview",
+    route: str = "/",
+    goal_id: str | None = None,
+    task_id: str | None = None,
+    chart_metric: str | None = None,
+    horizon: str | None = None,
+    session_id: str | None = None,
+) -> dict:
+    """Typed AIContext feed for chat (vitals, alerts, goals, sync, calendar)."""
+    screen = {
+        "panel": panel,
+        "route": route,
+        "selected_goal_id": goal_id,
+        "selected_task_id": task_id,
+        "selected_chart_metric": chart_metric,
+        "date_range": {"horizon": horizon} if horizon else None,
+        "session_id": session_id,
+    }
+    try:
+        typed = parse_screen_context(screen)
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     ctx = build_system_context(
-        metrics=_metrics, alerts=_alerts, goals=_goals, sync=_sync, panel=panel
+        metrics=_metrics,
+        alerts=_alerts,
+        goals=_goals,
+        sync=_sync,
+        panel=typed.panel,
+        screen=typed.model_dump(),
+        graph=_goal_graph,
     )
     ctx["text"] = format_context_text(ctx)
     return ctx
+
+
+@app.get("/api/goal-graph/tools")
+def api_goal_graph_tools() -> dict:
+    return _graph_tools.list_tools()
+
+
+@app.post("/api/goal-graph/tools/{tool_name}")
+def api_goal_graph_tool(tool_name: str, body: dict | None = None) -> dict:
+    body = body or {}
+    try:
+        return _graph_tools.dispatch(tool_name, **body)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=f"Unknown tool: {tool_name}") from exc
+    except TypeError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.get("/api/patterns/trend/{metric}")

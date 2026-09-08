@@ -361,8 +361,8 @@ criteria:
       Validated typed screen context (route/goal/task/chart/range/filters/pins)
       is passed to chat; read tools vs mutation-preview tools are separated.
     verify: python -m pytest tests/test_gg_context.py -q
-    pass: false
-    artifact: null
+    pass: true
+    artifact: artifacts/gl5-context.txt
 
   - id: GG-E2E-01
     criterion: >

@@ -776,7 +776,7 @@ class GoalGraphStore:
                 (after.model_dump_json(), suggestion_id),
             )
             conn.commit()
-        # Apply create_task only after explicit approval/edit
+        # Apply mutations only after explicit approval/edit
         if after.decision in {SuggestionDecision.APPROVED, SuggestionDecision.EDITED}:
             if after.kind == SuggestionKind.CREATE_TASK and after.affected_goal_id:
                 title = after.payload.get("title") or after.title
@@ -790,6 +790,19 @@ class GoalGraphStore:
                         user_approved=True,
                     )
                 )
+            elif after.kind == SuggestionKind.CREATE_GOAL:
+                self.create_goal(
+                    GraphGoalCreate(
+                        title=str(after.payload.get("title") or after.title),
+                        metric=after.payload.get("metric"),
+                        description=str(after.payload.get("description") or after.reason),
+                        user_approved=True,
+                    )
+                )
+            elif after.kind == SuggestionKind.REWRITE_GOAL and after.affected_goal_id:
+                title = after.payload.get("title")
+                if title:
+                    self.update_goal(after.affected_goal_id, title=str(title))
         self._audit(
             entity_type="suggestion",
             entity_id=suggestion_id,
