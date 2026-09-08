@@ -42,10 +42,10 @@
 | Manual NL intake → directive | both | I | V | Y | Keep | — | `/api/directive` | **Keep** |
 | Fitbit fixture metrics | target | F | — | Y | Legacy fixture only — **not primary sync** | — | PHC-FITBIT | **Keep F / deprioritize live** |
 | Fitbit live OAuth + API | older | Cancelled-as-primary | V | N | Do not schedule as primary (refresh cadence) | — | scaffold only | **Out of primary scope** |
-| FITINDEX CSV + manual review | target | I | V | Y | Keep — **no scale OAuth** | — | PHC-FITINDEX | **Keep** |
+| FITINDEX CSV + manual review | target | I | V | Y | Confirm/discard UI — **no scale OAuth** | — | PHC-FITINDEX | **Keep** |
 | FITINDEX screenshot OCR | older | I | V | Y | CSV/image path only | Ollama llava | `/api/fitindex/ocr` | **Done** |
 | FITINDEX NL text extract | older | I | V | Y | Heuristic draft path (no Claude required) | — | `/api/fitindex/text` | **Done** |
-| Google Takeout CSV | target | I | V | Y | **Primary metric import** (w/ JSON) | — | takeout CSV | **Primary** |
+| Google Takeout CSV | target | I | V | Y | **Primary** preview→confirm + provenance | — | takeout CSV | **Primary** |
 | Google Takeout JSON Data Points | older | I | V | Y | Ported into takeout ZIP ingest | — | `test_takeout_json` | **Primary** |
 | Google Health live API | plan | M/S | — | Y | **Primary** live path when secrets (beyond Takeout) | Google secrets | CONNECTORS.md | **Deferred (primary)** |
 | Calendar fixture | target | F | — | Y | Keep | — | PHC-CALENDAR | **Keep F** |
@@ -54,7 +54,7 @@
 | Geolocation privacy default-off | both | I | V | Y | Keep; never cloud LLM | — | `/api/geo/status` | **Keep** |
 | Open-Meteo weather/AQI | both | I | V (fake fallback CONFLICT) | Y | Canonical honest modes win; live verified | network | `mode=live` smoke | **Done** |
 | Front-rack/Sleep/Diet/WP/Overall | target | I | — | Y | Keep as **pluggable signal providers**; dashboard migrates to Goal Graph | — | MVP-SCORE + GG-SIGNAL | **Migrate** |
-| Goal Graph hierarchy + HITL | plan | I | V (fixture) | Y | GL0–GL5 + GG-E2E fixture on #31; Playwright full path open | — | GG-* | **Fixture** |
+| Goal Graph hierarchy + HITL | plan | I | V (fixture) | Y | GL0–GL5 + GG-E2E fixture + S8 Playwright §12 | — | GG-* | **Fixture+PW** |
 | Hydration + performance factors | older | I | V | Y | Ported as `scores.factors.*` (not top-level) | optional intake fields | `test_legacy_ports` | **Done** |
 | Macro Pool | target | I | — | Y | Keep | — | MVP-MACRO | **Keep** |
 | WOD negotiation | target | I | V (partial) | Y | Keep | — | MVP-WOD | **Keep** |
