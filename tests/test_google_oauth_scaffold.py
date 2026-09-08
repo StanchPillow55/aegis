@@ -80,8 +80,9 @@ def test_token_store_roundtrip_and_no_fake_connected(monkeypatch, tmp_path):
         3600,
         scopes=google_oauth.CALENDAR_SCOPES,
     )
-    assert stored["stored"] is True
+    assert stored.get("stored") is True, stored
     tok = token_store.get_token(google_oauth.SOURCE_CALENDAR)
+    assert tok is not None
     assert tok["access_token"] == "access-xyz"
     assert tok["expired"] is False
 
