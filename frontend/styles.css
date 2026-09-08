@@ -220,10 +220,48 @@ button.ghost[aria-pressed="true"] {
 }
 
 .thread-heading {
-  margin: 0 0 0.75rem;
+  margin: 0;
   font-family: var(--font-display);
   font-size: 1.15rem;
   font-weight: 500;
+}
+
+.chat-search {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.chat-search input {
+  font: inherit;
+  font-size: 0.85rem;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.7);
+  padding: 0.35rem 0.5rem;
+  min-width: 9rem;
+}
+
+.chat-search-hits {
+  list-style: none;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  font-size: 0.85rem;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.chat-search-hits li {
+  padding: 0.45rem 0.65rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.chat-search-hits li:last-child {
+  border-bottom: none;
+}
+
+.chat-search-hits .hit-meta {
+  color: rgba(26, 36, 33, 0.6);
+  font-size: 0.78rem;
 }
 
 .thread-log {

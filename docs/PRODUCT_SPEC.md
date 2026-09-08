@@ -306,7 +306,7 @@ Daily directive (when requested), **goal-relevant signals** (not hardcoded four 
 ### Conversation
 
 Unified composer (journal + Ask); auto-growing textarea; optional Web Speech STT; image attachments; click-to-pin page sections as context; conversation thread inline; screen context via `AIContextProvider`.  
-Searchable durable history still planned (S2).  
+Searchable durable history: SQLite persist + `/api/chat/search` (S2 fixture).  
 **Text remains the reliable fallback.** Web Speech is never required.
 
 ### Deployment
@@ -358,7 +358,7 @@ See **`docs/IMPLEMENTATION_PLAN.md`** for the authoritative ordered slices.
 1. Foundation slices 0–11 + feature aggregate — **done**  
 2. S1 background sync + unified composer — **done**  
 3. **GL0–GL3 Goal Graph core** — **next**  
-4. S2 chat persist · GL4 progress dashboards · GL5 context-aware chat  
+4. GL4 progress dashboards · GL5 context-aware chat (S2 chat persist done)  
 5. S5 Fitbit live/OAuth when secrets · S6 geo/calendar · GL6/S7 remote/PWA  
 6. S8 Playwright incl. Goal Graph E2E  
 

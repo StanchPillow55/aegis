@@ -5,10 +5,12 @@ from __future__ import annotations
 import re
 import time
 import uuid
+from pathlib import Path
 from typing import Any
 
 from pydantic import BaseModel, Field
 
+from backend.chat.store import ChatStore, StoredMessage
 from backend.health.schema import SAFETY_DISCLAIMER
 from backend.tools import HealthQueryTools
 
@@ -104,43 +106,45 @@ def vision_status() -> dict[str, Any]:
         }
 
 
+def _stored_to_chat(msg: StoredMessage) -> ChatMessage:
+    return ChatMessage(
+        role=msg.role,
+        content=msg.content,
+        at=msg.at,
+        attachments=list(msg.attachments),
+        tool_results=list(msg.tool_results),
+    )
+
+
 class ChatService:
-    def __init__(self, tools: HealthQueryTools | None = None) -> None:
+    def __init__(
+        self,
+        tools: HealthQueryTools | None = None,
+        store: ChatStore | None = None,
+        db_path: Path | str | None = None,
+    ) -> None:
         self.tools = tools or HealthQueryTools()
-        self._sessions: dict[str, list[ChatMessage]] = {}
+        self.store = store or ChatStore(db_path)
 
     def history(self, limit: int = 40, session_id: str | None = None) -> list[ChatMessage]:
-        if session_id:
-            return (self._sessions.get(session_id) or [])[-limit:]
-        # flatten recent across sessions
-        all_msgs: list[ChatMessage] = []
-        for msgs in self._sessions.values():
-            all_msgs.extend(msgs)
-        all_msgs.sort(key=lambda m: m.at)
-        return all_msgs[-limit:]
+        return [_stored_to_chat(m) for m in self.store.history(limit=limit, session_id=session_id)]
 
     def list_sessions(self) -> list[dict[str, Any]]:
-        out = []
-        for sid, msgs in self._sessions.items():
-            title = "Chat"
-            for m in msgs:
-                if m.role == "user" and m.content.strip():
-                    title = m.content.strip()[:48]
-                    break
-            out.append({"session_id": sid, "message_count": len(msgs), "title": title})
-        return out
+        return self.store.list_sessions()
+
+    def search(self, query: str, *, limit: int = 20) -> list[dict[str, Any]]:
+        return self.store.search(query, limit=limit)
 
     def turn(self, req: ChatTurnRequest) -> ChatTurnResponse:
         from backend.safety.guardrails import apply_guardrails
 
-        session_id = req.session_id or str(uuid.uuid4())
-        hist = self._sessions.setdefault(session_id, [])
-        user = ChatMessage(
+        session_id = self.store.ensure_session(req.session_id)
+        self.store.append_message(
+            session_id=session_id,
             role="user",
             content=req.message,
             attachments=list(req.attachments or []),
         )
-        hist.append(user)
 
         tool_results: list[dict[str, Any]] = []
         citations: list[dict[str, Any]] = []
@@ -153,12 +157,10 @@ class ChatService:
                 metric = name
                 break
 
-        # On-demand sync via chat (and voice/dictate routed through chat).
         if is_sync_trigger(req.message):
             channel = "voice" if (req.screen_context or {}).get("input") == "voice" else "chat"
             out = self.tools.trigger_sync(channel=channel)
             tool_results.append({"tool": "trigger_sync", "result": out})
-            # Also report freshness after the pull.
             out_f = self.tools.source_freshness()
             tool_results.append({"tool": "source_freshness", "result": out_f})
         elif any(w in lower for w in ("sync", "stale", "source", "fresh")):
@@ -242,12 +244,12 @@ class ChatService:
             pass
         reply = apply_guardrails(reply, goal_metrics)
 
-        assistant = ChatMessage(
+        self.store.append_message(
+            session_id=session_id,
             role="assistant",
             content=reply,
             tool_results=tool_results,
         )
-        hist.append(assistant)
         return ChatTurnResponse(
             reply=reply,
             disclaimer=SAFETY_DISCLAIMER,
@@ -347,3 +349,15 @@ class ChatService:
 
         parts.append("Not medical advice — informational only.")
         return " ".join(parts)
+
+
+__all__ = [
+    "ChatMessage",
+    "ChatService",
+    "ChatStore",
+    "ChatTurnRequest",
+    "ChatTurnResponse",
+    "StoredMessage",
+    "is_sync_trigger",
+    "vision_status",
+]

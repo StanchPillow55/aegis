@@ -251,6 +251,14 @@ criteria:
     pass: true
     artifact: artifacts/slice6-product-wave.txt
 
+  - id: PHC-CHAT-02
+    criterion: >
+      Chat sessions and messages persist in SQLite across restarts; history is
+      searchable via API and the local UI search control.
+    verify: python -m pytest tests/test_s2_chat_persist.py -q
+    pass: true
+    artifact: artifacts/s2-chat-persist.txt
+
   - id: PHC-VISION-01
     criterion: Optional local vision (e.g. Ollama llava) extracts image facts into reasoning context.
     verify: python -m pytest tests/test_phc_vision.py -q

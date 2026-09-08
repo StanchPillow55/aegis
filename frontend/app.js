@@ -28,7 +28,7 @@ let recognition = null;
 let imageAttachment = null;
 let pinnedContexts = [];
 let pinPicking = false;
-let chatSessionId = null;
+let chatSessionId = localStorage.getItem("aegis_chat_session_id") || null;
 
 function SpeechRecognitionCtor() {
   return window.SpeechRecognition || window.webkitSpeechRecognition || null;
@@ -405,6 +405,7 @@ async function submitAsk() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.detail || res.status);
     chatSessionId = data.session_id || chatSessionId;
+    if (chatSessionId) localStorage.setItem("aegis_chat_session_id", chatSessionId);
     appendBubble("assistant", data.reply);
     if (data.chart_hints?.length) {
       document.getElementById("chart-metric").value = data.chart_hints[0];
@@ -428,6 +429,61 @@ form.addEventListener("submit", async (event) => {
 askBtn.addEventListener("click", async () => {
   await submitAsk();
 });
+
+document.getElementById("chat-search-form")?.addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  const q = document.getElementById("chat-search-q").value.trim();
+  const hitsEl = document.getElementById("chat-search-hits");
+  if (!hitsEl) return;
+  if (!q) {
+    hitsEl.hidden = true;
+    hitsEl.innerHTML = "";
+    return;
+  }
+  try {
+    const res = await fetch(`/api/chat/search?q=${encodeURIComponent(q)}`);
+    const data = await res.json();
+    const hits = data.hits || [];
+    thread.hidden = false;
+    if (!hits.length) {
+      hitsEl.hidden = false;
+      hitsEl.innerHTML = `<li class="hint">No matches.</li>`;
+      return;
+    }
+    hitsEl.hidden = false;
+    hitsEl.innerHTML = hits
+      .map(
+        (h) => `<li>
+          <div class="hit-meta">${escapeHtml(h.role)} · ${escapeHtml(h.session_title || h.session_id)}</div>
+          ${escapeHtml(h.snippet || h.content || "")}
+        </li>`
+      )
+      .join("");
+  } catch (err) {
+    hitsEl.hidden = false;
+    hitsEl.innerHTML = `<li class="hint">${String(err)}</li>`;
+  }
+});
+
+async function restoreChatSession() {
+  if (!chatSessionId || !threadLog) return;
+  try {
+    const res = await fetch(
+      `/api/chat/history?session_id=${encodeURIComponent(chatSessionId)}&limit=40`
+    );
+    if (!res.ok) return;
+    const data = await res.json();
+    const msgs = data.messages || [];
+    if (!msgs.length) return;
+    thread.hidden = false;
+    threadLog.innerHTML = "";
+    for (const m of msgs) {
+      appendBubble(m.role, m.content);
+    }
+  } catch {
+    /* ignore restore errors */
+  }
+}
 
 textarea.addEventListener("keydown", (event) => {
   if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
@@ -1044,3 +1100,4 @@ document.getElementById("manual-btn").addEventListener("click", async () => {
 
 refreshDashboard();
 refreshGoalsUi();
+restoreChatSession();

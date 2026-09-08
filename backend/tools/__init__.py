@@ -19,12 +19,14 @@ class HealthQueryTools:
         goals: GoalStore | None = None,
         sync: SourceRegistry | None = None,
         memory: LocalMemoryProvider | None = None,
+        chat_store: Any | None = None,
     ) -> None:
         self.metrics = metrics or HealthMetricsStore()
         self.alerts = alerts or AlertEngine(metrics=self.metrics)
         self.goals = goals or GoalStore(metrics=self.metrics)
         self.sync = sync or SourceRegistry()
         self.memory = memory or LocalMemoryProvider()
+        self.chat_store = chat_store
 
     def list_metrics(self) -> dict[str, Any]:
         return {"metrics": self.metrics.list_metrics()}
@@ -188,7 +190,15 @@ class HealthQueryTools:
         return {"goals": out}
 
     def search_conversations(self, query: str) -> dict[str, Any]:
-        # Conversation store not fully built — search intake memory as proxy
+        if self.chat_store is not None:
+            hits = self.chat_store.search(query, limit=8)
+            return {
+                "query": query,
+                "hits": hits,
+                "source": "chat_store",
+                "limitation": None,
+            }
+        # Fallback: intake memory until chat store is wired
         hits = self.memory.search(query, k=5)
         return {
             "query": query,
@@ -196,6 +206,7 @@ class HealthQueryTools:
                 {"log_id": h.log_id, "content": h.content, "timestamp": h.timestamp}
                 for h in hits
             ],
+            "source": "intake_memory",
             "limitation": "Searches intake memory until chat history store lands",
         }
 

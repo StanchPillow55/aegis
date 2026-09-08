@@ -51,7 +51,8 @@
 | PHC-CHARTS-01 | `implemented-but-not-E2E-tested` | Long-term bands → GL4 |
 | PHC-ALERTS-01 | `implemented-but-not-E2E-tested` | |
 | PHC-GOALS-01 | `implemented-but-not-E2E-tested` | Thin metric goals; **superseded by GG-*** |
-| PHC-CHAT-01 | `implemented-but-not-E2E-tested` | Unified composer; SQLite persist planned (S2) |
+| PHC-CHAT-01 | `implemented-but-not-E2E-tested` | Unified composer + search UI |
+| PHC-CHAT-02 | `fixture-verified` | S2 SQLite session/message persist + `/api/chat/search` |
 | PHC-VISION-01 | `implemented-but-not-E2E-tested` | |
 | PHC-CONTEXT-01 | `implemented-but-not-E2E-tested` | Pin context + basic screen API; **typed Goal Graph context → GL5** |
 | PHC-PWA-01 | `planned` / thin | Manifest only |

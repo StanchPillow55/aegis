@@ -90,7 +90,7 @@ Details: **`docs/GOAL_GRAPH.md`**.
 ### P1 — Supporting operational (interleave as needed)
 | ID | Work | Notes |
 |---|---|---|
-| **S2** | Chat SQLite persist + search | Feeds GL5; still required |
+| **S2** | Chat SQLite persist + search | **DONE fixture** — feeds GL5 |
 | **S5** | Fitbit live metrics + OAuth security | Evidence richness for Goal Graph |
 | Dual safety labels in reasoner/UI | Enforce analysis vs planning |
 
@@ -153,7 +153,7 @@ Details: **`docs/GOAL_GRAPH.md`**.
 | Slice | Scope | Status / note |
 |---|---|---|
 | **S1** | Background sync | **DONE** |
-| **S2** | Chat SQLite persist + search | After GL0 or parallel with GL5 |
+| **S2** | Chat SQLite persist + search | **DONE fixture** (`artifacts/s2-chat-persist.txt`) |
 | **S3** | Thin NL goals/alerts (old) | **Superseded by GL0–GL3**; keep alerts work |
 | **S4** | Interactive charts | Prefer implement inside **GL4** |
 | **S5** | Fitbit full metrics + OAuth security | After GL2 or when secrets available |

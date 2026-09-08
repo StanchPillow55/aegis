@@ -59,7 +59,15 @@
     </form>
 
     <section id="thread" class="thread" hidden aria-label="Conversation">
-      <h2 class="thread-heading">Conversation</h2>
+      <div class="panel-head">
+        <h2 class="thread-heading">Conversation</h2>
+        <form id="chat-search-form" class="chat-search" role="search">
+          <label class="sr-only" for="chat-search-q">Search chat history</label>
+          <input id="chat-search-q" type="search" placeholder="Search history…" />
+          <button type="submit" class="ghost">Search</button>
+        </form>
+      </div>
+      <ul id="chat-search-hits" class="chat-search-hits" hidden></ul>
       <div id="thread-log" class="thread-log"></div>
     </section>
   </main>

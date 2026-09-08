@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field
 
 from backend.alerts import AlertEngine, AlertRule
 from backend.charts import build_metric_trend, validate_chart_spec
-from backend.chat import ChatService, ChatTurnRequest, vision_status
+from backend.chat import ChatService, ChatStore, ChatTurnRequest, vision_status
 from backend.config import get_settings
 from backend.connectors import fitbit_oauth
 from backend.connectors.calendar_signals import summarize_calendar_signals
@@ -73,8 +73,16 @@ _metrics = HealthMetricsStore()
 _alerts = AlertEngine(metrics=_metrics)
 _goals = GoalStore(metrics=_metrics)
 _goal_graph = GoalGraphStore()
-_tools = HealthQueryTools(metrics=_metrics, alerts=_alerts, goals=_goals, sync=_sync, memory=_memory)
-_chat = ChatService(tools=_tools)
+_chat_store = ChatStore()
+_tools = HealthQueryTools(
+    metrics=_metrics,
+    alerts=_alerts,
+    goals=_goals,
+    sync=_sync,
+    memory=_memory,
+    chat_store=_chat_store,
+)
+_chat = ChatService(tools=_tools, store=_chat_store)
 
 
 class TextUpdate(BaseModel):
@@ -763,6 +771,12 @@ def api_chat_history(limit: int = 40, session_id: str | None = None) -> dict:
 @app.get("/api/chat/sessions")
 def api_chat_sessions() -> dict:
     return {"sessions": _chat.list_sessions()}
+
+
+@app.get("/api/chat/search")
+def api_chat_search(q: str = "", limit: int = 20) -> dict:
+    hits = _chat.search(q, limit=max(1, min(limit, 50)))
+    return {"query": q, "hits": hits, "count": len(hits), "source": "chat_store"}
 
 
 @app.get("/api/vision/status")

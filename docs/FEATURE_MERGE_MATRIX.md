@@ -63,7 +63,7 @@
 | Patterns / correlations / trends | older | I | V | Y | Ported SQL-free metric trends + Pearson | metrics store | `/api/patterns/*` | **Done** |
 | Chroma semantic search | older | M | V | N* | Skip — SQLite memory is DoD | — | — | **D** |
 | Chart specs + SVG render | target | I | V (Recharts) | Y | Keep SVG; skip Vite SPA; bands via GL4 | — | charts | **Keep** |
-| Text chat + sessions | older→target | I | V | Y | Unified composer + sessions; SQLite persist planned | — | `/api/chat` | **Done / S2** |
+| Text chat + sessions | older→target | I | V | Y | Unified composer + SQLite persist/search (S2) | — | `/api/chat` | **Done** |
 | Image attach/preview | target | P | V | Y | Unified composer (no chat dock) | — | composer | **Partial** |
 | Vision / llava status + OCR | both | I | V | Y | Status + FITINDEX OCR when model present | Ollama | vision + ocr | **Done** |
 | Rich AIContext / system context | older | I | V | Y | Ported vitals/alerts/goals/stale/calendar | — | `/api/context/screen` | **Done** |

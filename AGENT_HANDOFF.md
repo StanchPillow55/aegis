@@ -59,7 +59,7 @@ Branch tip: `cursor/s1-background-sync-3696` ([PR #31](https://github.com/Stanch
 | Goal/task infrastructure (GL0) | Fixture-verified |
 | Journal contribution + HITL (GL2–GL3) | Fixture-verified (UI + APIs); Playwright E2E pending |
 | Progress dashboards (GL4) | Planned |
-| Context-aware chat depth (GL5) + S2 persist | Planned |
+| Context-aware chat depth (GL5) + S2 persist | S2 fixture-verified; GL5 planned |
 | UI work for goal tree / suggestions | Fixture-verified (GL3) |
 | E2E verification (S8 + Goal Graph story) | Planned |
 | OAuth + remote access (S5–S7 / GL6) | Open / blocked-on-secrets |
@@ -70,7 +70,7 @@ Branch tip: `cursor/s1-background-sync-3696` ([PR #31](https://github.com/Stanch
 
 - Fixed four-score dashboard still present in UI (compat); not yet dynamic.  
 - Goal Graph APIs + local UI exist (GL0–GL3 fixture); Playwright E2E / remote polish still open.  
-- Chat sessions are in-memory (S2 pending).  
+- Chat sessions persist in SQLite (S2); GL5 typed context tools still pending.  
 - Live Fitbit/Calendar OAuth incomplete.  
 - No Playwright Goal Graph E2E yet.  
 - `pass: true` ≠ live/E2E complete.
@@ -83,7 +83,7 @@ Branch tip: `cursor/s1-background-sync-3696` ([PR #31](https://github.com/Stanch
 2. **GL1** — Pluggable signals; stop treating FR/Sleep/Diet/WP as mandatory cards (`GG-SIGNAL-01`) — **fixture-verified**  
 3. **GL2** — Journal contribution engine + HITL (`GG-CONTRIB-01`, `GG-SUGGEST-01`) — **fixture-verified**  
 4. **GL3** — Goal/task UI + suggestion review (`GG-UI-01`) — **fixture-verified**  
-5. **S2** — Chat SQLite persist/search (supports GL5)  
+5. **S2** — Chat SQLite persist/search (supports GL5) — **fixture-verified**  
 6. **GL4** — Progress dashboards / bands / explain (`GG-PROGRESS-01`)  
 7. **GL5** — Typed screen context + read/mutate tools (`GG-CONTEXT-01`)  
 8. **S5/S6** — Fitbit/Calendar/geo when secrets  
