@@ -65,6 +65,8 @@ class SyncConfig(BaseModel):
     background_enabled: bool = False
     interval_seconds: int = 3600
     sources: dict[str, bool] = Field(default_factory=dict)
+    max_retries: int = 3
+    retry_backoff_seconds: float = 2.0
 
 
 class SyncResult(BaseModel):
@@ -96,15 +98,15 @@ def _default_sources() -> dict[str, SourceStatus]:
         ),
         SourceId.FITBIT.value: SourceStatus(
             source_id=SourceId.FITBIT,
-            label="Fitbit (OAuth — not configured)",
+            label="Fitbit (legacy fixture — not primary)",
             enabled=False,
             supports_background=True,
             kind="external",
-            coverage={"metrics": []},
+            coverage={"metrics": [], "primary": False, "legacy_fixture": True},
         ),
         SourceId.CALENDAR.value: SourceStatus(
             source_id=SourceId.CALENDAR,
-            label="Google Calendar (read-only — not configured)",
+            label="Google Calendar (read-only OAuth)",
             enabled=False,
             supports_background=True,
             kind="external",
@@ -112,18 +114,19 @@ def _default_sources() -> dict[str, SourceStatus]:
         ),
         SourceId.FITINDEX.value: SourceStatus(
             source_id=SourceId.FITINDEX,
-            label="FITINDEX body composition",
+            label="FITINDEX (CSV + OCR + manual — no scale OAuth)",
             enabled=True,
             supports_background=False,
             kind="local",
-            coverage={"modes": ["csv", "manual"]},  # OCR later
+            coverage={"modes": ["csv", "ocr", "manual"], "scale_oauth": False},
         ),
         SourceId.TAKEOUT.value: SourceStatus(
             source_id=SourceId.TAKEOUT,
-            label="Google Takeout ZIP (fallback)",
+            label="Google Health / Takeout (primary metrics)",
             enabled=False,
             supports_background=False,
             kind="external",
+            coverage={"primary_metric_path": True, "modes": ["zip_preview", "zip_confirm"]},
         ),
         SourceId.WEATHER.value: SourceStatus(
             source_id=SourceId.WEATHER,
@@ -225,6 +228,22 @@ class SourceRegistry:
                         "INSERT INTO sources(source_id, payload_json) VALUES (?, ?)",
                         (sid, status.model_dump_json()),
                     )
+                else:
+                    # Refresh policy labels/coverage without wiping sync timestamps.
+                    cur = SourceStatus.model_validate_json(existing["payload_json"])
+                    changed = False
+                    if cur.label != status.label:
+                        cur.label = status.label
+                        changed = True
+                    for key, val in (status.coverage or {}).items():
+                        if cur.coverage.get(key) != val:
+                            cur.coverage[key] = val
+                            changed = True
+                    if changed:
+                        conn.execute(
+                            "UPDATE sources SET payload_json = ? WHERE source_id = ?",
+                            (cur.model_dump_json(), sid),
+                        )
             conn.commit()
 
     def register_handler(self, source_id: SourceId | str, handler: SyncHandler) -> None:
@@ -395,6 +414,47 @@ class SourceRegistry:
         self._append_history(entry)
         result.status = status
         return result
+
+    def sync_one_with_retries(
+        self,
+        source_id: SourceId | str,
+        *,
+        force: bool = False,
+        max_retries: int | None = None,
+        backoff_seconds: float | None = None,
+        sleep_fn: Callable[[float], None] | None = None,
+    ) -> SyncResult:
+        """Sync one source with exponential backoff on soft failure.
+
+        Disabled sources are not retried. ``not_configured`` failures are not
+        retried (configuration will not change mid-loop). Transient
+        ``sync_failed`` errors retry up to ``max_retries`` times.
+        """
+        cfg = self.get_config()
+        attempts = max(1, int(max_retries if max_retries is not None else cfg.max_retries))
+        base = float(
+            backoff_seconds
+            if backoff_seconds is not None
+            else cfg.retry_backoff_seconds
+        )
+        sleeper = sleep_fn or time.sleep
+        last: SyncResult | None = None
+        for attempt in range(1, attempts + 1):
+            last = self.sync_one(source_id, force=force)
+            if last.success:
+                last.detail = (last.detail or "") + (
+                    f" (attempt {attempt}/{attempts})" if attempt > 1 else ""
+                )
+                return last
+            code = last.error.code if last.error else ""
+            if code in {"disabled", "not_configured"}:
+                return last
+            if attempt >= attempts:
+                break
+            sleeper(base * (2 ** (attempt - 1)))
+        assert last is not None
+        last.detail = (last.detail or "failed") + f" (exhausted {attempts} attempts)"
+        return last
 
     def sync_all(self, *, only_enabled: bool = True) -> list[SyncResult]:
         results: list[SyncResult] = []

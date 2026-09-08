@@ -19,7 +19,18 @@ def build_system_context(
     goals: GoalStore | None = None,
     sync: SourceRegistry | None = None,
     panel: str | None = None,
+    screen: dict[str, Any] | None = None,
+    graph: Any | None = None,
 ) -> dict[str, Any]:
+    from backend.context.screen import parse_screen_context, screen_context_summary
+
+    typed = parse_screen_context(
+        {
+            **(screen or {}),
+            "panel": (screen or {}).get("panel") or panel or "overview",
+        }
+    )
+
     metrics = metrics or HealthMetricsStore()
     alerts = alerts or AlertEngine(metrics=metrics)
     goals = goals or GoalStore(metrics=metrics)
@@ -72,13 +83,35 @@ def build_system_context(
         "late_events": 0,
     }
 
+    graph_summary = None
+    if graph is not None:
+        try:
+            graph_summary = {
+                "goal_count": len(graph.list_goals()),
+                "pending_suggestions": len(graph.list_suggestions(pending_only=True)),
+                "selected_goal": (
+                    graph.get_goal(typed.selected_goal_id).model_dump()
+                    if typed.selected_goal_id
+                    else None
+                ),
+            }
+        except Exception:
+            graph_summary = {"goal_count": 0, "pending_suggestions": 0}
+
+    # Merge typed stale with live stale
+    stale_merged = sorted(set(stale) | set(typed.stale_sources))
+
     return {
-        "panel": panel or "overview",
+        "panel": typed.panel,
+        "route": typed.route,
+        "typed": typed.model_dump(),
+        "typed_summary": screen_context_summary(typed),
         "vitals_24h": vitals,
         "alerts_active": active,
         "goals": goal_rows,
+        "goal_graph": graph_summary,
         "sources": sources,
-        "stale": stale,
+        "stale": stale_merged,
         "calendar": {
             "events": cal.get("events", 0),
             "travel_days": cal.get("travel_days", 0),
@@ -93,6 +126,8 @@ def build_system_context(
 
 def format_context_text(ctx: dict[str, Any]) -> str:
     lines = ["--- SYSTEM CONTEXT ---"]
+    if ctx.get("typed_summary"):
+        lines.append(f"SCREEN: {ctx['typed_summary']}")
     vitals = ctx.get("vitals_24h") or {}
     if not vitals:
         lines.append("VITALS: No recent metrics.")
@@ -103,6 +138,12 @@ def format_context_text(ctx: dict[str, Any]) -> str:
     lines.append(f"ACTIVE ALERTS: {len(alerts)}")
     goals = ctx.get("goals") or []
     lines.append(f"GOALS: {len(goals)}")
+    gg = ctx.get("goal_graph") or {}
+    if gg:
+        lines.append(
+            f"GOAL_GRAPH: {gg.get('goal_count', 0)} goals; "
+            f"pending_suggestions={gg.get('pending_suggestions', 0)}"
+        )
     stale = ctx.get("stale") or []
     if stale:
         lines.append("STALE: " + ", ".join(stale))

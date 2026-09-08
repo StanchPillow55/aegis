@@ -9,6 +9,10 @@ ROOT = Path(__file__).resolve().parents[1]
 
 REQUIRED_FILES = [
     "docs/PRODUCT_SPEC.md",
+    "docs/GOAL_GRAPH.md",
+    "docs/IMPLEMENTATION_PLAN.md",
+    "docs/CONNECTORS.md",
+    "docs/SC_MATURITY.md",
     "AGENT_HANDOFF.md",
     "README.md",
     "CLAUDE.md",
@@ -21,26 +25,60 @@ REQUIRED_PHRASES = {
         "Front-rack",
         "Workout preparation",
         "local-first",
+        "Google Health",
         "Fitbit",
         "FITINDEX",
         "Tailscale",
         "today wins",
+        "Goal Graph",
+        "pluggable",
+        "CONNECTORS.md",
+    ],
+    "docs/GOAL_GRAPH.md": [
+        "Goal Graph",
+        "human-in-the-loop",
+        "pluggable",
+        "journal",
+        "approve",
+        "Vision",
+    ],
+    "docs/IMPLEMENTATION_PLAN.md": [
+        "GL0",
+        "GL1",
+        "Goal Graph",
+        "S1",
+        "Google Health",
+        "CONNECTORS.md",
+        "not Fitbit",
+    ],
+    "docs/CONNECTORS.md": [
+        "Primary metric sync",
+        "Google Health",
+        "Google Calendar",
+        "no scale OAuth",
+        "not primary",
+        "Fitbit",
     ],
     "AGENT_HANDOFF.md": [
         "PRODUCT_SPEC.md",
+        "GOAL_GRAPH.md",
+        "CONNECTORS.md",
         "Known limitations",
         "Next implementation order",
         "Slice 0",
+        "GL0",
     ],
     "README.md": [
         "PRODUCT_SPEC.md",
         "success_criteria.yaml",
         "local-first",
+        "GOAL_GRAPH.md",
     ],
     "CLAUDE.md": [
         "Front-rack",
         "success_criteria.yaml",
         "PRODUCT_SPEC.md",
+        "Goal Graph",
     ],
 }
 
@@ -59,7 +97,6 @@ def main() -> int:
                 print(f"ERROR: {rel} missing required phrase: {phrase!r}")
                 failed = True
 
-    # MVP_SPEC must point at PRODUCT_SPEC to avoid duplicate canon
     mvp = ROOT / "docs" / "MVP_SPEC.md"
     if mvp.is_file():
         body = mvp.read_text(encoding="utf-8")
@@ -68,7 +105,16 @@ def main() -> int:
             failed = True
 
     sc = (ROOT / "success_criteria.yaml").read_text(encoding="utf-8")
-    for needle in ("MVP-SCORE-01", "PHC-FITBIT-01", "PHC-TOOLS-01", "PHC-GOALS-01"):
+    for needle in (
+        "MVP-SCORE-01",
+        "PHC-FITBIT-01",
+        "PHC-TOOLS-01",
+        "PHC-GOALS-01",
+        "GG-SCHEMA-01",
+        "GG-SIGNAL-01",
+        "GG-E2E-01",
+        "goal_graph_doc",
+    ):
         if needle not in sc:
             print(f"ERROR: success_criteria.yaml missing {needle}")
             failed = True

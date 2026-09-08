@@ -1,9 +1,11 @@
 # aegis Product Specification
 
 **Canonical product + architecture spec** (do not fork parallel specs).  
-**Status date:** 2026-09-07  
+**Status date:** 2026-09-08  
 **DoD:** `success_criteria.yaml`  
-**Handoff:** `AGENT_HANDOFF.md`
+**Handoff:** `AGENT_HANDOFF.md`  
+**Goal Graph:** `docs/GOAL_GRAPH.md`  
+**Implementation plan:** `docs/IMPLEMENTATION_PLAN.md`
 
 ---
 
@@ -13,30 +15,43 @@ Aegis is a **daily training-decision copilot for functional longevity**.
 
 Expanded product direction (same core, wider inputs):
 
-> Aegis is a **local-first personal health copilot** that combines wearable data, body composition, calendar/lifestyle context, natural-language logging, image understanding, environmental context, health scoring, goal tracking, alerts, and a conversational dashboard — and still emits **one evidence-bound daily training directive**.
+> Aegis is a **local-first personal health copilot** and a **living evidence-backed goal system**: wearable data, body composition, calendar/lifestyle context, natural-language logging, image understanding, environmental context, **pluggable health signals**, goal/task hierarchy, alerts, and a conversational dashboard — still able to emit **one evidence-bound daily training directive**.
 
 ### Preserved daily-directive flow
 
 ```
-Intake / synced health data
+Intake / synced health data / journal
   → structured health records (with provenance)
   → evidence retrieval (today vs history)
-  → health scores
-  → WOD / training context (+ negotiation)
-  → ONE evidence-bound daily directive
+  → goal-relevant signals (+ optional overall)
+  → WOD / training context (+ negotiation) when planning
+  → ONE evidence-bound daily directive (when requested)
+  → goal/task suggestions (human-in-the-loop)
 ```
 
-### Canonical health score model
+### Signal model (replaces permanent fixed score cards)
 
-| Score | Role |
+**Front-rack, Sleep, Diet, Workout preparation** remain available as **analyzers / signal providers**. They are **not** permanent top-level product categories.
+
+| Signal | Role when relevant |
 |---|---|
 | **Front-rack** | Mobility / front-rack readiness for loaded upper-body positions |
 | **Sleep** | Overnight recovery quality |
 | **Diet** | Fueling vs Macro Pool / nutrition targets |
 | **Workout preparation** | Readiness to execute *today’s* training plan / WOD |
-| **Overall health/fitness** | Derived summary from the four scores + selected wearable signals |
+| **Overall** | **Optional** derived summary — prefer goal-specific progress |
+| Future examples | body composition, running pace, strength, hydration, recovery, activity volume, mobility, environmental exposure |
 
-**Transitional implementation detail (current code):** the UI/API still expose temporary labels **`readiness`** and **`soreness`** (plus sleep/diet). Those are **not** the permanent product contract. Internal soreness may remain a *factor* feeding Front-rack and Workout preparation; it must not permanently replace Front-rack or Workout preparation as top-level scores.
+Dashboard and directive surfaces select signals from:
+
+- active goals and tasks  
+- recent journal entries  
+- available health data + freshness/confidence  
+- selected dashboard view / user question  
+
+**Backward compatibility:** existing scorers and `MVP-SCORE-*` tests remain; UI migrates under Goal Graph slices (`GG-*` / GL1).
+
+**Transitional implementation detail:** code may still expose temporary labels **`readiness`** / **`soreness`**. Those are debt — not the permanent contract.
 
 ---
 
@@ -45,10 +60,13 @@ Intake / synced health data
 | Concern | Where it runs |
 |---|---|
 | LLM inference, normalization, scoring, reasoning, storage | **Local** (Apple Silicon M2 home host; Ollama + SQLite) |
-| Fitbit, Google Calendar | **External source connectors** (OAuth); data cached locally |
+| Fitbit (legacy fixture only) | **Not primary** — API deprecated for this product; keep fixtures only |
+| Google Health / Takeout | **Primary metric sync** (ZIP today; live API when credentials exist) |
+| Google Calendar | **External OAuth** (read-only); intended live calendar path |
+| FITINDEX / body scale | **CSV export + screenshot/OCR + manual** — no scale OAuth |
 | Open-Meteo weather / AQI | **Optional external** environmental connector; cached locally |
 | Cloud LLM / cloud DB | **Not required**; not on the core path |
-| Offline / degraded demo | Must work with **fixtures + manual entry** when Fitbit, Calendar, weather, or AQI are unavailable |
+| Offline / degraded demo | Must work with **fixtures + manual entry** when Google Health/Calendar/weather/AQI are unavailable |
 
 **Privacy rules**
 
@@ -105,11 +123,11 @@ Legend: **IT** = Implemented & tested · **IL** = Implemented but limited/incomp
 | Macro Pool ledger | IT | Wired into diet + canonical `macro_pool` |
 | Dictation UI control | IL | Browser API; not E2E verified |
 | Opt-in TTS | IL | Browser SpeechSynthesis when toggled |
-| Fitbit OAuth + metrics | F / NV | Fixture metrics + honest `needs_credentials`; no live OAuth |
-| FITINDEX CSV / OCR / manual | IT / P | CSV + manual review; OCR deferred |
-| Google Takeout import | IT | Production ZIP parser + upload API + fixture sync |
+| Google Health / Takeout | IT / F | **Primary** metric sync (ZIP + fixture); live Health API when secrets |
+| Fitbit OAuth + metrics | F / NV | Legacy fixture only — **not primary**; no live-primary work |
+| FITINDEX CSV / OCR / manual | IT / P | CSV + OCR drafts + manual review; **no scale OAuth** |
 | Google Calendar (read-only) | F | Fixture events; live OAuth deferred |
-| Chat + image + llava | IT / P | Chat API + dock + image preview; llava status honest |
+| Chat + image + llava | IT / P | Unified composer (Ask + directive); image preview; click-to-pin page context; llava status honest |
 | LLM metric-query tools | IT | Tools + parse_date |
 | Inline charts | IT | Spec API + SVG renderer in overview |
 | Alerts / custom thresholds | IT / P | Full API; overview panel (not full alert editor UI) |
@@ -139,9 +157,11 @@ Still required for MVP completion of the original Aegis identity:
 
 ## 6. Data ingestion requirements
 
-### 6.1 Fitbit (OAuth connector)
+### 6.1 Google Health / Takeout (primary metric sync)
 
-Ingest and normalize at least:
+**Primary** wearable/metric path (see `docs/CONNECTORS.md`).
+
+Ingest and normalize at least (via Takeout ZIP today; live Google Health API when credentials exist):
 
 - Heart rate, HRV, resting heart rate, SpO2  
 - Sleep duration / minutes asleep  
@@ -150,28 +170,34 @@ Ingest and normalize at least:
 - Stress score, breathing rate  
 - Activities  
 
-Requirements: real OAuth (no mock auth backdoor), encrypted/local token storage, graceful failure, fixture mode for demos.
+Requirements: honest fixture/Takeout modes; live Health API only with real credentials (no mock auth backdoor); encrypted/local token storage when OAuth is added; graceful failure.
 
-### 6.2 FITINDEX body composition
+### 6.2 FITINDEX body composition (no scale OAuth)
 
-Supported paths:
+Supported paths **only**:
 
 1. CSV upload  
 2. Screenshot / image OCR (local vision, e.g. Ollama `llava` when available)  
 3. Manual text entry  
 4. **User review and correction before save** (mandatory)
 
-### 6.3 Google Calendar (read-only)
+Scale / FITINDEX vendor OAuth is **never used** and must not be added.
+
+### 6.3 Google Calendar (read-only OAuth — keep)
 
 Ingest: event name, location, description, start/end.  
-Write access: **forbidden**. Revocable OAuth; local cache only.
+Write access: **forbidden**. Revocable OAuth; local cache only.  
+This remains the **intended live calendar auth** path.
 
-### 6.4 Other intake
+### 6.4 Fitbit (legacy fixture only — not primary)
+
+Fitbit API is **not** the primary sync metric (refresh cadence unsuitable). Keep fixture / scaffold for compatibility tests only. Do not schedule live Fitbit OAuth as the main wearable path.
+
+### 6.5 Other intake
 
 - Generic natural-language health logging (`/api/intake` and chat tools)  
 - Generic file drop  
 - Manual text entry  
-- Google Health / Google Fit **Takeout ZIP** as **future-compatible fallback** (not primary)  
 - Opt-in device geolocation (default off)  
 - Environmental context via Open-Meteo weather + AQI  
 
@@ -186,7 +212,7 @@ Write access: **forbidden**. Revocable OAuth; local cache only.
 | Sync history | Last success, last attempt, error state, record counts / coverage |
 | Retry | Bounded retries with backoff; never block local manual use |
 | Staleness | Warn per source when last success > 24h |
-| Degradation | App remains usable with manual entry + fixtures if Fitbit / Calendar / weather / AQI fail |
+| Degradation | App remains usable with manual entry + fixtures if Google Health / Calendar / weather / AQI fail |
 
 ---
 
@@ -260,27 +286,38 @@ Prominent UI; available to assistant; proactive mention when relevant; include v
 
 ---
 
-## 11. Goal planning
+## 11. Goal Graph and task planning
 
-Goals may be created via UI form, natural language, or manual edit.
+Canonical detail: **`docs/GOAL_GRAPH.md`**.
 
-Fields: metric, target, direction, optional timeframe, success criteria, status, created_at, confirmation state, history.
+Aegis maintains a living editable hierarchy:
 
-Statuses: `in_progress` | `completed` | `abandoned` | `paused`.
+`Vision → Goal → Project → Milestone → Task → Subtask → Evidence`
 
-Flow: detect possible completion → show evidence → **ask user to confirm** → mark complete only after confirmation; allow manual complete/abandon; **preserve history permanently**. Goals appear as chart reference lines/bands.
+- Goals: outcomes / maintenance / habits / projects (vague wording preserved + editable structure).  
+- Tasks: actions with inbox/today/upcoming/completed views.  
+- Journal entries map to **goal contributions** (positive/negative/neutral/insufficient/conflicting) with evidence + confidence.  
+- All meaningful mutations are **suggestions** until Approve / Edit / Reject / Defer.  
+- Thin metric-target goals API remains as a compat layer until GL0–GL3 land.
+
+Statuses (goals): `in_progress` | `completed` | `abandoned` | `paused`.  
+Task statuses include `inbox` | `proposed` | `planned` | `in_progress` | `completed` | `skipped` | `canceled`.
+
+Completion of Goal Graph requires the tested path:  
+journal → evidence → suggestion → human approval → dashboard update.
 
 ---
 
 ## 12. Interface and deployment
 
-### Desktop dashboard (Grafana-style)
+### Desktop dashboard (progress workspace)
 
-Daily directive, health scores, alerts, source freshness, interactive charts, goal progress, evidence/history, sync controls.
+Daily directive (when requested), **goal-relevant signals** (not hardcoded four cards), alerts, source freshness, interactive long-term charts with goal bands, goal/task progress, evidence/history, sync controls, suggestion review.
 
 ### Conversation
 
-Floating chat; text input; optional Web Speech STT toggle; searchable history; image attachments; inline charts; screen context via `AIContextProvider`.  
+Unified composer (journal + Ask); auto-growing textarea; optional Web Speech STT; image attachments; click-to-pin page sections as context; conversation thread inline; screen context via `AIContextProvider`.  
+Searchable durable history: SQLite persist + `/api/chat/search` (S2 fixture).  
 **Text remains the reliable fallback.** Web Speech is never required.
 
 ### Deployment
@@ -305,17 +342,19 @@ Floating chat; text input; optional Web Speech STT toggle; searchable history; i
 ## 13. Architecture (target modules)
 
 ```
-frontend/          PWA + dashboard + floating chat
+frontend/          PWA + progress workspace + unified composer
 backend/
   intake/          NL + image → structured records
   connectors/      fitbit, calendar, fitindex, takeout, weather
-  sync/            registry, jobs, staleness
+  sync/            registry, background loop, staleness
   memory/          SQLite health DB + vector/evidence index
-  scorers/         front_rack, sleep, diet, workout_prep, overall
-  reasoner/        directive + tool-using chat
+  signals/         pluggable providers (wrap scorers; GL1)
+  scorers/         front_rack, sleep, diet, workout_prep, overall (compat)
+  reasoner/        directive + tool-using chat + dual safety modes
   alerts/          thresholds + history
-  goals/           CRUD + confirmation
-  charts/          validated chart specs
+  goals/           Goal Graph + HITL suggestions (GL0+)
+  charts/          validated chart specs + goal overlays
+  intelligence/    typed screen context
   obs/             local tracing
 ```
 
@@ -325,19 +364,16 @@ External connectors are adapters; core reasoning never hard-depends on them.
 
 ## 14. Implementation order (next)
 
-1. Canonical schema, provenance, SQLite durability — **done**  
-2. Source registry + sync status — **done**  
-3. Manual/fixture ingestion — **done**  
-4. Fitbit + Calendar adapters (fixture; live OAuth deferred) — **done F**  
-5. FITINDEX CSV/manual (OCR later) — **done / OCR deferred**  
-6. Alerts + staleness — **done**  
-7. Goals + progress — **done**  
-8. LLM query tools + inline charts — **done**  
-9. Canonical four-score + WOD + Macro Pool — **done**  
-10. Mobile/PWA + Tailscale hardening — **done thin**  
-11. Feature aggregate (Takeout prod, Open-Meteo, chat, dashboard) — **done this pass**  
-12. Older-prototype residual port — **blocked** until tree available  
-13. Live OAuth + Playwright E2E — optional when secrets/scope allow  
+See **`docs/IMPLEMENTATION_PLAN.md`** + **`docs/CONNECTORS.md`** for the authoritative ordered slices and connector policy.
+
+1. Foundation slices 0–11 + feature aggregate — **done**  
+2. S1 background sync + unified composer — **done**  
+3. GL0–GL5 Goal Graph + GG-E2E/SAFETY fixtures + S2 chat persist — **done (fixture)**  
+4. **S8** Playwright Goal Graph §12 browser — **done** (opt-in)  
+5. **S5a / S5b** FITINDEX confirm + Takeout preview/provenance — **done**  
+6. **(secrets) S6** Live Google Calendar OAuth; geo consent already present  
+7. **(secrets) S5** Live Google Health API (**not Fitbit**)  
+8. **GL6 / S7** Tailscale Funnel + PWA install operator acceptance  
 
 **Dev command:** `make os-dev` (alias: `make dev`).
 
@@ -354,4 +390,4 @@ External connectors are adapters; core reasoning never hard-depends on them.
 
 UI presence ≠ backend implementation ≠ live integration ≠ E2E verification.
 
-Requirements that still **lack tests in this repo** (non-exhaustive): Fitbit metric coverage, OAuth security, FITINDEX paths, Calendar, geolocation privacy, sync/staleness, LLM tools, charts, alerts, goals, conversation search, PWA, Tailscale, four-score contract, WOD negotiation, evidence dedup — see `PHC-*` / `MVP-*` rows in `success_criteria.yaml`.
+Requirements that still **lack full live/E2E coverage** (non-exhaustive): Google Health live API, Google Calendar OAuth security, FITINDEX confirm UX depth, Playwright Goal Graph §12, geolocation privacy browser path, Tailscale accept, chart/alert polish — see `PHC-*` / `GG-*` rows in `success_criteria.yaml` and `docs/CONNECTORS.md`.

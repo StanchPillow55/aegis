@@ -171,6 +171,24 @@ class HealthMetricsStore:
             ).fetchone()
         return self._row(row) if row else None
 
+    def snapshot_latest(self, metrics: list[str] | None = None) -> dict[str, float]:
+        """Latest values for selected metrics (empty when missing)."""
+        wanted = metrics or [
+            "weight_kg",
+            "body_fat_pct",
+            "steps",
+            "active_minutes",
+            "resting_hr",
+            "hrv",
+            "sleep_minutes",
+        ]
+        out: dict[str, float] = {}
+        for m in wanted:
+            pt = self.latest(m)
+            if pt is not None:
+                out[m] = float(pt.value)
+        return out
+
     def series(
         self,
         metric: str,
@@ -286,6 +304,16 @@ class HealthMetricsStore:
             )
             conn.commit()
         return FitindexReview(draft_id=draft_id, proposed=proposed, confirmed=False)
+
+    def fitindex_discard(self, draft_id: str) -> dict[str, Any]:
+        with self._connect() as conn:
+            cur = conn.execute(
+                "DELETE FROM fitindex_drafts WHERE draft_id = ?", (draft_id,)
+            )
+            conn.commit()
+            if cur.rowcount < 1:
+                raise KeyError(draft_id)
+        return {"draft_id": draft_id, "discarded": True}
 
     def fitindex_confirm(self, draft_id: str, edits: FitindexManualIn | None = None) -> dict[str, Any]:
         with self._connect() as conn:

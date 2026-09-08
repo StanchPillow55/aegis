@@ -19,12 +19,14 @@ class HealthQueryTools:
         goals: GoalStore | None = None,
         sync: SourceRegistry | None = None,
         memory: LocalMemoryProvider | None = None,
+        chat_store: Any | None = None,
     ) -> None:
         self.metrics = metrics or HealthMetricsStore()
         self.alerts = alerts or AlertEngine(metrics=self.metrics)
         self.goals = goals or GoalStore(metrics=self.metrics)
         self.sync = sync or SourceRegistry()
         self.memory = memory or LocalMemoryProvider()
+        self.chat_store = chat_store
 
     def list_metrics(self) -> dict[str, Any]:
         return {"metrics": self.metrics.list_metrics()}
@@ -149,6 +151,34 @@ class HealthQueryTools:
             ]
         }
 
+    def trigger_sync(
+        self,
+        *,
+        source_id: str | None = None,
+        force: bool = False,
+        channel: str = "chat",
+    ) -> dict[str, Any]:
+        """On-demand sync from chat / voice / UI-equivalent channels."""
+        if source_id:
+            result = self.sync.sync_one(source_id, force=force)
+            results = [result]
+        else:
+            results = self.sync.sync_all(only_enabled=not force)
+        return {
+            "channel": channel,
+            "results": [
+                {
+                    "source_id": r.source_id.value,
+                    "success": r.success,
+                    "detail": r.detail,
+                    "error": r.error.model_dump() if r.error else None,
+                    "record_count": r.record_count,
+                }
+                for r in results
+            ],
+            "stale": [s.source_id.value for s in self.sync.stale_sources()],
+        }
+
     def active_alerts(self) -> dict[str, Any]:
         self.alerts.evaluate()
         return {"alerts": [a.model_dump() for a in self.alerts.active()]}
@@ -160,7 +190,15 @@ class HealthQueryTools:
         return {"goals": out}
 
     def search_conversations(self, query: str) -> dict[str, Any]:
-        # Conversation store not fully built — search intake memory as proxy
+        if self.chat_store is not None:
+            hits = self.chat_store.search(query, limit=8)
+            return {
+                "query": query,
+                "hits": hits,
+                "source": "chat_store",
+                "limitation": None,
+            }
+        # Fallback: intake memory until chat store is wired
         hits = self.memory.search(query, k=5)
         return {
             "query": query,
@@ -168,6 +206,7 @@ class HealthQueryTools:
                 {"log_id": h.log_id, "content": h.content, "timestamp": h.timestamp}
                 for h in hits
             ],
+            "source": "intake_memory",
             "limitation": "Searches intake memory until chat history store lands",
         }
 

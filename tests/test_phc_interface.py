@@ -58,6 +58,26 @@ def test_phc_pwa():
     assert 'id="sync-panel"' in html or "Sync status" in html
 
 
+def test_unified_composer_not_floating_dock():
+    """Journal + ask share one expanding composer; no bottom-right chat dock."""
+    html = client.get("/").text
+    assert 'id="compose-form"' in html
+    assert 'id="compose-text"' in html
+    assert 'id="ask-btn"' in html
+    assert 'id="directive-btn"' in html
+    assert 'id="pin-mode-btn"' in html
+    assert 'id="thread"' in html
+    assert "chat-dock" not in html
+    assert 'id="chat-input"' not in html
+    # Attachable page regions for click-to-pin context
+    assert 'data-pin-id="sync"' in html
+    assert 'data-pin-id="overview"' in html
+    js = client.get("/static/app.js").text
+    assert "autosizeComposer" in js
+    assert "pinnedContexts" in js
+    assert "pin-picking" in js
+
+
 def test_phc_tailscale_security():
     from pathlib import Path
 

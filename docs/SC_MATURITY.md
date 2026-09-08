@@ -14,56 +14,72 @@
 | `blocked-on-secrets` | Implementation present or scaffolded; needs credentials to verify live |
 | `planned` | Required by PRODUCT_SPEC / IMPLEMENTATION_PLAN; not shipped |
 
-## Map (2026-09-08 QA revision)
+## Map (2026-09-08 Goal Graph revision)
 
 ### Foundation / MVP (generally stronger)
 
 | ID | Maturity | Notes |
 |---|---|---|
 | AGENT-* / OS-* | `verified` | CI + local scripts |
-| MVP-SCORE-01 | `verified` | Canonical scores tested |
+| MVP-SCORE-01 | `verified` | Compat scorers still tested; **dashboard contract migrating to dynamic signals (GG)** |
 | MVP-EVIDENCE-01 | `verified` | Today/history/conflicts |
 | MVP-PERSIST-01 | `verified` | SQLite restart |
 | MVP-DISCLAIMER-01 | `implemented-but-not-E2E-tested` | API+UI; browser E2E thin |
 | MVP-WOD-01 | `verified` | Negotiation unit/API |
-| MVP-FRONTRACK-01 | `verified` | |
+| MVP-FRONTRACK-01 | `verified` | Provider remains |
 | MVP-MACRO-01 | `verified` | Wired into diet |
 | MVP-VOICE-01 | `implemented-but-not-E2E-tested` | Browser STT/TTS optional |
 | MVP-EXTRACT-01 | `fixture-verified` | Heuristic always; Ollama optional |
 | MVP-DEMO-01 | `verified` | Script demos |
 
-### PHC expansion (many over-claimed as complete)
+### PHC expansion
 
 | ID | Maturity | Notes |
 |---|---|---|
-| PHC-FITBIT-01 | `fixture-verified` | Fixture covers metric names; **live pull + full field provenance planned** |
-| PHC-OAUTH-01 | `fixture-verified` / `blocked-on-secrets` | No fake backdoors tested; **state/refresh/revoke/encrypt checklist incomplete for live** |
-| PHC-FITINDEX-01 | `implemented-but-not-E2E-tested` | CSV/manual/OCR draft APIs; confirm UI + llava click-path incomplete |
-| PHC-TAKEOUT-01 | `verified` | CSV+JSON parsers + API tests |
-| PHC-CALENDAR-01 | `fixture-verified` | Fixture events; **live OAuth planned** |
-| PHC-GEO-01 | `fixture-verified` | API default-off; **consent/revoke/home UI planned** |
+| PHC-FITBIT-01 | `fixture-verified` | Legacy fixture only — **not primary sync** (see CONNECTORS.md) |
+| PHC-OAUTH-01 | `fixture-verified` / `blocked-on-secrets` | Applies to **Google** Calendar/Health tokens; no Fitbit-primary; no scale OAuth |
+| PHC-FITINDEX-01 | `fixture-verified` | CSV + screenshot/OCR + manual + **confirm/discard UI** — **no scale OAuth** |
+| PHC-TAKEOUT-01 | `verified` | Google Health/Fit Takeout — **primary**; preview dry-run + confirm + provenance |
+| PHC-CALENDAR-01 | `fixture-verified` | Google Calendar OAuth remains the intended live path |
+| PHC-GEO-01 | `fixture-verified` | Opt-in consent UI + API; no coords persisted; cloud_llm=false |
 | PHC-ENV-01 | `verified` | Live Open-Meteo smoke + offline labeling |
-| PHC-SYNC-01 | `implemented-but-not-E2E-tested` | On-demand + registry; **required background loop planned (P1)** |
-| PHC-STALE-01 | `fixture-verified` | Stale flags exist; UI/chat warnings incomplete |
+| PHC-SYNC-01 | `fixture-verified` | Background loop S1 |
+| PHC-STALE-01 | `fixture-verified` | Stale flags + UI/chat hints |
 | PHC-SQLITE-01 | `verified` | |
 | PHC-PROVENANCE-01 | `verified` | |
-| PHC-TOOLS-01 | `implemented-but-not-E2E-tested` | Tools API; chat UI tool use incomplete |
-| PHC-CHARTS-01 | `implemented-but-not-E2E-tested` | Specs + basic SVG; interactive Grafana-style controls planned |
-| PHC-ALERTS-01 | `implemented-but-not-E2E-tested` | API; custom UI, proactive chat, critical dedupe depth planned |
-| PHC-GOALS-01 | `implemented-but-not-E2E-tested` | API confirm; NL create, paused status, history UI planned |
-| PHC-CHAT-01 | `implemented-but-not-E2E-tested` | In-memory sessions; **SQLite persist/search planned** |
-| PHC-VISION-01 | `implemented-but-not-E2E-tested` | Status + OCR endpoint; full llava E2E planned |
-| PHC-CONTEXT-01 | `implemented-but-not-E2E-tested` | Context API; regression suite planned |
-| PHC-PWA-01 | `planned` / thin | Manifest only; SW/icons/iPhone install planned |
-| PHC-TAILSCALE-01 | `planned` / docs | Security doc exists; **authenticated remote acceptance planned** |
-| PHC-FALLBACK-01 | `fixture-verified` | Fixtures usable when externals down |
-| PHC-SAFETY-01 | `implemented-but-not-E2E-tested` | Disclaimer + guardrails; **dual analysis vs planning labels planned** |
-| PHC-DOCS-01 | `verified` | Specs/handoff present |
+| PHC-TOOLS-01 | `implemented-but-not-E2E-tested` | Expand for Goal Graph tools in GL5 |
+| PHC-CHARTS-01 | `implemented-but-not-E2E-tested` | Long-term bands → GL4 |
+| PHC-ALERTS-01 | `implemented-but-not-E2E-tested` | |
+| PHC-GOALS-01 | `implemented-but-not-E2E-tested` | Thin metric goals; **superseded by GG-*** |
+| PHC-CHAT-01 | `implemented-but-not-E2E-tested` | Unified composer + search UI |
+| PHC-CHAT-02 | `fixture-verified` | S2 SQLite session/message persist + `/api/chat/search` |
+| PHC-VISION-01 | `implemented-but-not-E2E-tested` | |
+| PHC-CONTEXT-01 | `implemented-but-not-E2E-tested` | Pin context + basic screen API; **typed Goal Graph context → GL5** |
+| PHC-PWA-01 | `fixture-verified` | Manifest + SW + icon; operator install accept still open |
+| PHC-TAILSCALE-01 | `planned` / docs | Authenticated remote acceptance planned (operator mesh) |
+| PHC-FALLBACK-01 | `fixture-verified` | |
+| PHC-SAFETY-01 | `fixture-verified` | Dual modes: training_planning vs health_analysis labeled in API/UI |
+| PHC-DOCS-01 | `verified` | Specs/handoff/Goal Graph docs |
+
+### Goal Graph (`GG-*`) — all planned until path tested
+
+| ID | Maturity | Notes |
+|---|---|---|
+| GG-SCHEMA-01 | `fixture-verified` | GL0 SQLite graph store + HITL suggestion apply; UI/E2E still open |
+| GG-SIGNAL-01 | `fixture-verified` | GL1 providers + selection; UI uses selected signals when present; overall optional with goals |
+| GG-CONTRIB-01 | `fixture-verified` | GL2 journal→goal contributions (beef/rice/run); UI review still open |
+| GG-SUGGEST-01 | `fixture-verified` | HITL approve/edit/reject/defer; no silent task creation; UI panel still open |
+| GG-UI-01 | `fixture-verified` | GL3 tree/inbox/today/upcoming/completed + editor + HITL suggestion panel; Playwright E2E still open |
+| GG-PROGRESS-01 | `fixture-verified` | GL4 horizons/bands/explain/create-task-from-chart (HITL); Playwright still open |
+| GG-CONTEXT-01 | `fixture-verified` | GL5 typed ScreenContext + read vs mutate-preview tools; no HTML dumps |
+| GG-E2E-01 | `fixture-verified` (+ Playwright when `AEGIS_PLAYWRIGHT=1`) | API fixture + Chromium §12 browser path |
+| GG-SAFETY-01 | `fixture-verified` | Observation vs interpretation; insufficient evidence; no-goals directive |
 
 ## Rule for next agents
 
-Before calling a PHC feature “done” in handoff prose:
+Before calling a PHC/GG feature “done” in handoff prose:
 
 1. Maturity is `verified`, or intentionally `fixture-verified` as the permanent mode.  
 2. Evidence path cited (test, artifact, or manual checklist).  
-3. `docs/SC_MATURITY.md` updated in the same PR.
+3. `docs/SC_MATURITY.md` updated in the same PR.  
+4. Goal Graph additionally requires the human-approval path in `docs/GOAL_GRAPH.md` §12.

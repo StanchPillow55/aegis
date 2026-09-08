@@ -17,7 +17,8 @@
   <header class="top">
     <p class="brand">aegis</p>
     <nav class="nav-jump" aria-label="Sections">
-      <a href="#composer">Update</a>
+      <a href="#composer">Compose</a>
+      <a href="#goals">Goals</a>
       <a href="#dashboard">Overview</a>
       <a href="#settings">Settings</a>
     </nav>
@@ -25,35 +26,59 @@
 
   <main class="hero" id="composer">
     <h1 class="brand-hero">aegis</h1>
-    <p class="lede">One evidence-bound training directive from today’s update.</p>
+    <p class="lede">One place to journal today’s update, ask follow-ups, and pin page context for the agent.</p>
 
-    <form id="update-form" class="composer">
-      <label class="sr-only" for="update-text">Daily update</label>
+    <form id="compose-form" class="composer" data-pin-id="composer" data-pin-label="Composer">
+      <div id="context-pins" class="context-pins" aria-live="polite"></div>
+      <div id="image-preview" class="image-preview" hidden></div>
+
+      <label class="sr-only" for="compose-text">Journal entry or question</label>
       <textarea
-        id="update-text"
+        id="compose-text"
         name="text"
-        rows="5"
-        placeholder="Slept 6 hours, quads sore 3/5, eggs and rice, squats and pull-ups today, feeling moderate."
-        required
+        rows="4"
+        placeholder="Slept 6 hours, quads sore 3/5… or ask: why is sleep score low?"
       ></textarea>
+
       <div class="actions">
         <button type="button" id="dictate-btn" class="ghost" title="Optional browser dictation">Dictate</button>
+        <button type="button" id="attach-img-btn" class="ghost" title="Attach image">Image</button>
+        <button type="button" id="pin-mode-btn" class="ghost" aria-pressed="false" title="Click page sections to attach as context">Pin context</button>
+        <input type="file" id="compose-image" accept="image/*" class="sr-only" />
         <label class="speak-toggle">
           <input type="checkbox" id="speak-toggle" />
           Speak directive
         </label>
-        <button type="submit" id="submit-btn">Get directive</button>
+        <div class="actions-primary">
+          <button type="button" id="ask-btn" class="ghost">Ask</button>
+          <button type="submit" id="directive-btn">Get directive</button>
+        </div>
       </div>
+      <p id="compose-hint" class="hint">Pin Overview, Sync, Directive, or Settings sections, then Ask — or submit a journal entry for today’s directive.</p>
       <p id="dictate-status" class="hint" hidden></p>
     </form>
+
+    <section id="thread" class="thread" hidden aria-label="Conversation">
+      <div class="panel-head">
+        <h2 class="thread-heading">Conversation</h2>
+        <form id="chat-search-form" class="chat-search" role="search">
+          <label class="sr-only" for="chat-search-q">Search chat history</label>
+          <input id="chat-search-q" type="search" placeholder="Search history…" />
+          <button type="submit" class="ghost">Search</button>
+        </form>
+      </div>
+      <ul id="chat-search-hits" class="chat-search-hits" hidden></ul>
+      <div id="thread-log" class="thread-log"></div>
+    </section>
   </main>
 
-  <section id="result" class="result" hidden>
+  <section id="result" class="result" hidden data-pin-id="directive" data-pin-label="Today’s directive">
+    <p id="directive-mode" class="output-mode" hidden></p>
     <h2>Today’s directive</h2>
     <p id="directive-text" class="directive"></p>
     <p id="disclaimer-text" class="disclaimer"></p>
-    <div class="score-row" id="score-row"></div>
-    <div class="evidence-panels">
+    <div class="score-row" id="score-row" data-pin-id="scores" data-pin-label="Scores"></div>
+    <div class="evidence-panels" data-pin-id="evidence" data-pin-label="Evidence panels">
       <details open>
         <summary>Today</summary>
         <pre id="today-pre"></pre>
@@ -73,33 +98,45 @@
     </div>
   </section>
 
-  <section id="dashboard" class="dash">
+  <section id="dashboard" class="dash" data-pin-id="overview" data-pin-label="Overview">
     <h2>Overview</h2>
     <p class="dash-lede">Sync freshness, environment, alerts, and a local metric chart.</p>
 
-    <div id="sync-panel" class="sync-panel" aria-live="polite">
+    <div id="sync-panel" class="sync-panel" aria-live="polite" data-pin-id="sync" data-pin-label="Sync status">
       <div class="panel-head">
         <h3>Sync status</h3>
         <button type="button" id="sync-now-btn" class="ghost">Sync now</button>
+      </div>
+      <div class="sync-config" id="sync-config">
+        <label class="sync-toggle">
+          <input type="checkbox" id="bg-sync-enabled" />
+          Background sync
+        </label>
+        <label class="sync-interval">
+          Interval (sec)
+          <input type="number" id="bg-sync-interval" min="5" step="1" value="3600" />
+        </label>
+        <button type="button" id="bg-sync-save" class="ghost">Save</button>
+        <span id="bg-sync-status" class="muted"></span>
       </div>
       <ul id="source-list" class="source-list"></ul>
       <p id="sync-hint" class="hint"></p>
     </div>
 
     <div class="dash-grid">
-      <div>
+      <div data-pin-id="environment" data-pin-label="Environment">
         <h3>Environment</h3>
         <pre id="env-pre" class="panel-pre"></pre>
       </div>
-      <div>
+      <div data-pin-id="alerts-goals" data-pin-label="Alerts &amp; goals">
         <h3>Alerts &amp; goals</h3>
         <pre id="alerts-pre" class="panel-pre"></pre>
       </div>
     </div>
 
-    <div class="chart-block">
+    <div class="chart-block" data-pin-id="chart" data-pin-label="Metric trend">
       <div class="panel-head">
-        <h3>Metric trend</h3>
+        <h3>Progress</h3>
         <label class="chart-metric-label">
           <span class="sr-only">Metric</span>
           <select id="chart-metric">
@@ -110,26 +147,142 @@
           </select>
         </label>
       </div>
-      <svg id="chart-svg" viewBox="0 0 320 120" role="img" aria-label="Metric trend chart"></svg>
+      <div class="horizon-views" role="tablist" aria-label="Chart horizon">
+        <button type="button" class="horizon-btn" data-horizon="today">Today</button>
+        <button type="button" class="horizon-btn" data-horizon="week">Week</button>
+        <button type="button" class="horizon-btn is-active" data-horizon="month">Month</button>
+        <button type="button" class="horizon-btn" data-horizon="year">Year</button>
+        <button type="button" class="horizon-btn" data-horizon="all">All</button>
+      </div>
+      <svg id="chart-svg" viewBox="0 0 320 140" role="img" aria-label="Metric trend chart"></svg>
       <p id="chart-note" class="hint"></p>
+      <p id="chart-bands" class="hint"></p>
+      <p id="chart-explain" class="progress-explain" hidden></p>
+      <div class="hitl-actions">
+        <button type="button" id="chart-explain-btn" class="ghost">Explain chart</button>
+        <button type="button" id="chart-task-btn" class="ghost">Suggest task from chart</button>
+      </div>
+      <p id="chart-task-hint" class="hint"></p>
     </div>
   </section>
 
-  <section id="settings" class="settings">
+  <section id="goals" class="goals" data-pin-id="goals" data-pin-label="Goals &amp; tasks">
+    <h2>Goals &amp; tasks</h2>
+    <p class="dash-lede">Hierarchy, task buckets, editor, and human review for suggestions — nothing applies silently.</p>
+
+    <div class="goals-layout">
+      <div class="goal-tree-panel">
+        <div class="panel-head">
+          <h3>Goal tree</h3>
+          <button type="button" id="goal-refresh-btn" class="ghost">Refresh</button>
+        </div>
+        <ul id="goal-tree" class="goal-tree" aria-label="Goal hierarchy"></ul>
+        <form id="goal-create-form" class="goal-create">
+          <label class="sr-only" for="goal-new-title">New goal title</label>
+          <input id="goal-new-title" placeholder="New goal title" required />
+          <label class="sr-only" for="goal-new-metric">Metric</label>
+          <input id="goal-new-metric" placeholder="Metric (optional)" />
+          <button type="submit" class="ghost">Add goal</button>
+        </form>
+      </div>
+
+      <div class="goal-editor-panel">
+        <h3>Goal editor</h3>
+        <p id="goal-editor-empty" class="hint">Select a goal in the tree to edit.</p>
+        <form id="goal-editor" class="goal-editor" hidden>
+          <input type="hidden" id="goal-edit-id" />
+          <label>Title <input id="goal-edit-title" required /></label>
+          <label>Description <textarea id="goal-edit-description" rows="3"></textarea></label>
+          <label>Metric <input id="goal-edit-metric" /></label>
+          <label>Success criteria <input id="goal-edit-criteria" /></label>
+          <div class="editor-actions">
+            <button type="submit">Save</button>
+            <button type="button" id="goal-archive-btn" class="ghost">Archive</button>
+          </div>
+          <p id="goal-editor-hint" class="hint"></p>
+        </form>
+      </div>
+    </div>
+
+    <div class="task-panel">
+      <div class="panel-head">
+        <h3>Tasks</h3>
+        <div class="task-views" role="tablist" aria-label="Task views">
+          <button type="button" class="task-view is-active" data-view="inbox" role="tab" aria-selected="true">Inbox</button>
+          <button type="button" class="task-view" data-view="today" role="tab" aria-selected="false">Today</button>
+          <button type="button" class="task-view" data-view="upcoming" role="tab" aria-selected="false">Upcoming</button>
+          <button type="button" class="task-view" data-view="completed" role="tab" aria-selected="false">Completed</button>
+        </div>
+      </div>
+      <ul id="task-list" class="task-list" aria-live="polite"></ul>
+      <form id="task-create-form" class="task-create">
+        <label class="sr-only" for="task-new-title">Task title</label>
+        <input id="task-new-title" placeholder="New task title" required />
+        <label class="sr-only" for="task-new-goal">Goal</label>
+        <select id="task-new-goal" required></select>
+        <button type="submit" class="ghost">Add task</button>
+      </form>
+    </div>
+
+    <div id="suggestion-panel" class="suggestion-panel" data-pin-id="suggestions" data-pin-label="Suggestion review">
+      <div class="panel-head">
+        <h3>Suggestion review</h3>
+        <button type="button" id="suggestion-refresh-btn" class="ghost">Refresh</button>
+      </div>
+      <p class="hint">Approve, edit, reject, or defer — tasks are created only after approval.</p>
+      <ul id="suggestion-list" class="suggestion-list" aria-live="polite"></ul>
+    </div>
+  </section>
+
+  <section id="settings" class="settings" data-pin-id="settings" data-pin-label="Settings &amp; imports">
     <h2>Settings &amp; imports</h2>
     <p class="dash-lede">External OAuth stays disabled until credentials exist. Local imports work offline.</p>
     <div class="settings-grid">
-      <div>
-        <h3>Fitbit</h3>
+      <div data-pin-id="google-health" data-pin-label="Google Health">
+        <h3>Google Health / Takeout</h3>
+        <p class="hint">Primary metric sync. Import a Takeout ZIP below. Live Google Health API is future work when credentials exist.</p>
+      </div>
+      <div data-pin-id="fitbit" data-pin-label="Fitbit legacy fixture">
+        <h3>Fitbit (legacy fixture)</h3>
         <p id="fitbit-status" class="hint">Loading…</p>
-        <button type="button" id="fitbit-auth-btn" class="ghost">Check OAuth / get auth URL</button>
+        <p class="hint">Not the primary sync path — Fitbit API refresh is unsuitable here. Fixture sync only for compatibility tests.</p>
+        <button type="button" id="fitbit-auth-btn" class="ghost">Check legacy OAuth scaffold</button>
         <button type="button" id="fitbit-fixture-btn" class="ghost">Run Fitbit fixture sync</button>
       </div>
-      <div>
-        <h3>FITINDEX CSV</h3>
+      <div data-pin-id="geo" data-pin-label="Geolocation">
+        <h3>Geolocation</h3>
+        <p id="geo-status" class="hint">Loading…</p>
+        <label class="sync-toggle">
+          <input type="checkbox" id="geo-consent-toggle" />
+          Enable device location (opt-in)
+        </label>
+        <p class="hint">Default off. Preference only — coordinates are not stored on the server and never sent to a cloud LLM.</p>
+        <button type="button" id="geo-revoke-btn" class="ghost">Revoke</button>
+      </div>
+      <div data-pin-id="fitindex" data-pin-label="FITINDEX review">
+        <h3>FITINDEX (CSV + image — no scale OAuth)</h3>
+        <p class="hint">Scale vendor OAuth is out of scope. Draft first, edit, then confirm before save.</p>
         <textarea id="fitindex-csv" rows="3" placeholder="date,weight_kg,body_fat_pct&#10;2026-09-07,78.2,18.5"></textarea>
-        <button type="button" id="fitindex-upload-btn" class="ghost">Upload CSV draft</button>
+        <button type="button" id="fitindex-upload-btn" class="ghost">Parse CSV → draft</button>
+        <div class="manual-row" style="margin-top:0.6rem">
+          <input id="fitindex-manual-weight" placeholder="weight kg" type="number" step="any" />
+          <input id="fitindex-manual-bf" placeholder="body fat %" type="number" step="any" />
+        </div>
+        <button type="button" id="fitindex-manual-btn" class="ghost">Manual → draft</button>
         <p id="fitindex-hint" class="hint"></p>
+        <div id="fitindex-draft" class="review-panel" hidden>
+          <h4>Review draft before save</h4>
+          <input type="hidden" id="fitindex-draft-id" />
+          <label>Weight (kg) <input id="fitindex-edit-weight" type="number" step="any" /></label>
+          <label>Body fat % <input id="fitindex-edit-bf" type="number" step="any" /></label>
+          <label>Day <input id="fitindex-edit-day" placeholder="YYYY-MM-DD" /></label>
+          <label>Notes <input id="fitindex-edit-notes" /></label>
+          <div class="hitl-actions">
+            <button type="button" id="fitindex-confirm-btn">Confirm save</button>
+            <button type="button" id="fitindex-discard-btn" class="ghost">Discard</button>
+          </div>
+          <p id="fitindex-review-hint" class="hint"></p>
+        </div>
       </div>
       <div>
         <h3>FITINDEX screenshot OCR</h3>
@@ -137,11 +290,19 @@
         <button type="button" id="fitindex-ocr-btn" class="ghost">OCR → draft</button>
         <p id="fitindex-ocr-hint" class="hint"></p>
       </div>
-      <div>
-        <h3>Google Takeout ZIP</h3>
+      <div data-pin-id="takeout" data-pin-label="Google Takeout">
+        <h3>Google Health / Takeout ZIP</h3>
+        <p class="hint">Primary metric import. Preview first, then confirm write with provenance.</p>
         <input type="file" id="takeout-file" accept=".zip,application/zip" />
-        <button type="button" id="takeout-upload-btn" class="ghost">Import ZIP</button>
+        <div class="hitl-actions">
+          <button type="button" id="takeout-preview-btn" class="ghost">Preview ZIP</button>
+          <button type="button" id="takeout-upload-btn">Confirm import</button>
+        </div>
         <p id="takeout-hint" class="hint"></p>
+        <div id="takeout-summary" class="review-panel" hidden>
+          <h4>Import provenance</h4>
+          <pre id="takeout-summary-body" class="import-summary"></pre>
+        </div>
       </div>
       <div>
         <h3>Add log (manual metric)</h3>
@@ -152,6 +313,16 @@
         <button type="button" id="manual-btn" class="ghost">Add log</button>
         <p id="manual-hint" class="hint"></p>
       </div>
+      <div data-pin-id="backup" data-pin-label="Local backup">
+        <h3>Local backup / restore</h3>
+        <p class="hint">Offline zip of SQLite DBs on this host. Restore overwrites local data files — restart <code>make os-dev</code> after restore.</p>
+        <div class="hitl-actions">
+          <a id="backup-export-link" class="ghost" href="/api/backup/export">Download backup</a>
+          <button type="button" id="backup-restore-btn" class="ghost">Restore from ZIP</button>
+        </div>
+        <input type="file" id="backup-file" accept=".zip,application/zip" hidden />
+        <p id="backup-hint" class="hint"></p>
+      </div>
     </div>
   </section>
 
@@ -159,21 +330,15 @@
     <span>Local-first · Ollama optional · Text primary · <code>make os-dev</code></span>
   </footer>
 
-  <aside id="chat-dock" class="chat-dock" aria-label="Chat">
-    <button type="button" id="chat-toggle" class="chat-toggle" aria-expanded="false">Chat</button>
-    <div id="chat-panel" class="chat-panel" hidden>
-      <div id="chat-log" class="chat-log"></div>
-      <div id="chat-preview" class="chat-preview" hidden></div>
-      <form id="chat-form" class="chat-form">
-        <input type="file" id="chat-image" accept="image/*" class="sr-only" />
-        <button type="button" id="chat-attach" class="ghost" title="Attach image">Img</button>
-        <input id="chat-input" type="text" placeholder="Ask about sleep, steps, alerts…" autocomplete="off" />
-        <button type="submit">Send</button>
-      </form>
-      <p class="hint chat-disclaimer">Answers cite local sources. Not medical advice.</p>
-    </div>
-  </aside>
+  <div id="pin-banner" class="pin-banner" hidden role="status">
+    Click a highlighted section to pin it. Esc or Pin context again to cancel.
+  </div>
 
   <script src="/static/app.js"></script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    }
+  </script>
 </body>
 </html>

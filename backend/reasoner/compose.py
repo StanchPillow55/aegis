@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from backend.health.schema import SAFETY_DISCLAIMER, EvidenceBundle
 from backend.intake.schema import IntakeResult
 from backend.reasoner.wod import negotiate_wod
 from backend.scorers.canonical import score_canonical
+from backend.signals import build_context, select_signals
 
 
 def compose_directive(
@@ -13,8 +16,11 @@ def compose_directive(
     *,
     context_notes: list[str] | None = None,
     evidence_bundle: EvidenceBundle | None = None,
+    goal_store: Any | None = None,
+    recent_text: str = "",
+    metrics: dict[str, Any] | None = None,
 ) -> dict:
-    """Return canonical scores + WOD decision + directive + disclaimer."""
+    """Return canonical scores + goal-relevant signals + WOD + directive + disclaimer."""
     scores = score_canonical(intake)
     wod_decision = negotiate_wod(intake)
 
@@ -23,6 +29,30 @@ def compose_directive(
     diet_s = scores["diet"]["score"]
     wp = scores["workout_preparation"]["score"]
     overall = scores["overall"]["score"]
+
+    sig_ctx = build_context(
+        intake,
+        goal_store=goal_store,
+        recent_text=recent_text,
+        view="directive",
+        metrics=metrics,
+    )
+    selected = select_signals(sig_ctx)
+    signals = {
+        "selected": [
+            {
+                "id": s.id,
+                "label": s.label,
+                "score": s.score,
+                "available": s.available,
+                "relevance": s.relevance,
+                "rationale": s.rationale,
+            }
+            for s in selected
+        ],
+        "overall_optional": bool(sig_ctx.active_goals)
+        and not any(s.id == "overall" for s in selected),
+    }
 
     status = wod_decision["status"]
     if status == "deferred":
@@ -44,19 +74,24 @@ def compose_directive(
         )
 
     focus_bits: list[str] = []
-    if sleep_s < 55:
+    selected_scores = {s.id: s.score for s in selected if s.score is not None}
+    if selected_scores.get("sleep", sleep_s) < 55:
         focus_bits.append("protect a longer sleep window tonight")
-    if fr < 55:
+    if selected_scores.get("front_rack", fr) < 55:
         focus_bits.append("front-rack mobility primer before loading")
-    if diet_s < 55:
+    if selected_scores.get("diet", diet_s) < 55:
         focus_bits.append("add a clear protein source to your next meal")
     if intake.todays_wod.movements:
         focus_bits.append("WOD decision: " + status)
 
     hist_n = len(evidence_bundle.history) if evidence_bundle else len(context_notes or [])
     conflict_n = len(evidence_bundle.conflicts) if evidence_bundle else 0
+    signal_bits = ", ".join(
+        f"{s.id}={s.score if s.score is not None else 'n/a'}" for s in selected[:6]
+    )
     evidence = (
-        f"overall {overall}/100 (front-rack {fr}, sleep {sleep_s}, diet {diet_s}, "
+        f"signals [{signal_bits}]; "
+        f"compat overall {overall}/100 (front-rack {fr}, sleep {sleep_s}, diet {diet_s}, "
         f"workout-prep {wp}); wod={status}"
     )
     if hist_n:
@@ -78,7 +113,7 @@ def compose_directive(
         "overall": overall,
         "wod_status": status,
         "context": context_notes or [],
-        # Keep transitional numbers for compatibility/debugging
+        "signals_selected": [s.id for s in selected],
         "transitional": {
             "readiness": scores["transitional"]["readiness"]["score"],
             "soreness": scores["transitional"]["soreness"]["score"],
@@ -94,6 +129,7 @@ def compose_directive(
         "directive": directive,
         "disclaimer": SAFETY_DISCLAIMER,
         "scores": scores,
+        "signals": signals,
         "wod_decision": wod_decision,
         "evidence": score_evidence,
     }

@@ -1,5 +1,6 @@
 """Sync package — source registry and local/fixture sync handlers."""
 
+from backend.sync.background import BackgroundSyncLoop
 from backend.sync.fixtures import ensure_fixture_file, load_fixture_bundle
 from backend.sync.registry import (
     STALE_AFTER_SECONDS,
@@ -11,6 +12,7 @@ from backend.sync.registry import (
 )
 
 __all__ = [
+    "BackgroundSyncLoop",
     "STALE_AFTER_SECONDS",
     "SourceId",
     "SourceRegistry",

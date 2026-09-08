@@ -2,18 +2,21 @@
 
 ## What aegis is
 **Daily training-decision copilot for functional longevity**, expanding into a
-local-first personal health copilot (wearables, body composition, calendar,
-NL/image logging, environment, scoring, goals, alerts, conversational dashboard).
+local-first personal health copilot and a **living evidence-backed Goal Graph**.
 
 Core loop (preserved):
-`Intake → structured health data → evidence → scores → WOD/training context → ONE evidence-bound daily directive`
+`Intake → structured health data → evidence → goal-relevant signals → WOD/training context → ONE evidence-bound daily directive` (+ HITL goal/task suggestions)
 
-Canonical scores: **Front-rack, Sleep, Diet, Workout preparation, Overall**.
+**Front-rack, Sleep, Diet, Workout preparation** remain analyzers / pluggable signals —
+not permanent hardcoded dashboard categories. Overall score is optional.
 Current code may still show transitional `readiness`/`soreness` labels — treat as debt.
 
 ## Canonical docs
 - `docs/PRODUCT_SPEC.md` — product + architecture (single source for “what”)
+- `docs/GOAL_GRAPH.md` — Goal Graph + context-aware planning layer
+- `docs/IMPLEMENTATION_PLAN.md` — ordered slices (GL0–GL6 + S*)
 - `success_criteria.yaml` — Definition of Done (single source for “done”)
+- `docs/SC_MATURITY.md` — verified vs fixture vs planned
 - `AGENT_HANDOFF.md` — current state + next implementation slice
 
 ## Runtime posture
@@ -27,7 +30,8 @@ No cloud LLM or cloud DB on the core path. Location is opt-in and never sent to 
 2. NEVER mark a criterion `pass: true` until its verify command passes WITH a linked artifact.
 3. Agentic loop: Planner/Prompter → Coder → Tester → QA (fails closed).
 4. Status reports must distinguish: UI presence ≠ backend ≠ live integration ≠ E2E verification.
-5. Do not implement expanded connectors until schema/provenance/sync docs gates are understood; prefer Slice 0 in AGENT_HANDOFF.
+5. Goal Graph is incomplete without journal → evidence → suggestion → human approval → dashboard update.
+6. Never silently mutate goals/tasks.
 
 ## Repo map
-backend/{intake,memory,scorers,agents,reasoner,obs,providers} importer/ frontend/ docs/ tests/ council/ scripts/
+backend/{intake,memory,scorers,signals,agents,reasoner,obs,providers,goals,chat} importer/ frontend/ docs/ tests/ council/ scripts/

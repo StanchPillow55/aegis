@@ -1,12 +1,14 @@
 meta:
   project: aegis
   description: >
-    Local-first daily training-decision copilot for functional longevity,
-    expanding into a personal health copilot. Canonical spec: docs/PRODUCT_SPEC.md.
-    `pass: true` means the listed verify command succeeded — NOT always live/E2E
-    product completion. Maturity tiers live in docs/SC_MATURITY.md (QA 2026-09-08).
+    Local-first daily training-decision copilot for functional longevity and a
+    living evidence-backed goal system. Canonical spec: docs/PRODUCT_SPEC.md;
+    Goal Graph: docs/GOAL_GRAPH.md. `pass: true` means the listed verify command
+    succeeded — NOT always live/E2E product completion. Maturity tiers live in
+    docs/SC_MATURITY.md (Goal Graph revision 2026-09-08).
   maturity_doc: docs/SC_MATURITY.md
   implementation_plan: docs/IMPLEMENTATION_PLAN.md
+  goal_graph_doc: docs/GOAL_GRAPH.md
 
 criteria:
   # --- Closed: OS foundation ---
@@ -156,15 +158,15 @@ criteria:
 
   - id: PHC-FITINDEX-01
     criterion: FITINDEX supports CSV upload, screenshot/OCR, manual entry, and pre-save user review.
-    verify: python -m pytest tests/test_phc_fitindex.py -q
+    verify: python -m pytest tests/test_phc_fitindex.py tests/test_s5_import_ux.py::test_s5a_fitindex_confirm_and_discard_ui_api -q
     pass: true
-    artifact: artifacts/slice2-ingestion.txt
+    artifact: artifacts/s5-import-ux.txt
 
   - id: PHC-TAKEOUT-01
-    criterion: Google Health/Fit Takeout ZIP import works as future-compatible fallback with fixtures.
-    verify: python -m pytest tests/test_phc_takeout.py -q
+    criterion: Google Health/Fit Takeout ZIP import works as primary metric path with preview/confirm and fixtures.
+    verify: python -m pytest tests/test_phc_takeout.py tests/test_s5_import_ux.py::test_s5b_takeout_preview_then_confirm -q
     pass: true
-    artifact: artifacts/slice2-ingestion.txt
+    artifact: artifacts/s5-import-ux.txt
 
   - id: PHC-CALENDAR-01
     criterion: Google Calendar read-only ingest of name, location, description, start/end; no writes.
@@ -189,9 +191,9 @@ criteria:
     criterion: >
       Hybrid sync supports configurable background sync, per-source toggles, on-demand UI/chat/voice
       sync, history, last success/attempt, errors, coverage, and retries.
-    verify: python -m pytest tests/test_phc_sync.py -q
+    verify: python -m pytest tests/test_phc_sync.py tests/test_phc_sync_background.py -q
     pass: true
-    artifact: artifacts/slice1-source-registry.txt
+    artifact: artifacts/s1-background-sync.txt
 
   - id: PHC-STALE-01
     criterion: Per-source staleness warnings fire when last successful sync is older than 24 hours.
@@ -249,6 +251,14 @@ criteria:
     pass: true
     artifact: artifacts/slice6-product-wave.txt
 
+  - id: PHC-CHAT-02
+    criterion: >
+      Chat sessions and messages persist in SQLite across restarts; history is
+      searchable via API and the local UI search control.
+    verify: python -m pytest tests/test_s2_chat_persist.py -q
+    pass: true
+    artifact: artifacts/s2-chat-persist.txt
+
   - id: PHC-VISION-01
     criterion: Optional local vision (e.g. Ollama llava) extracts image facts into reasoning context.
     verify: python -m pytest tests/test_phc_vision.py -q
@@ -290,7 +300,82 @@ criteria:
     artifact: artifacts/slice6-product-wave.txt
 
   - id: PHC-DOCS-01
-    criterion: PRODUCT_SPEC, AGENT_HANDOFF, README, and success_criteria stay consistent on identity and scores.
+    criterion: PRODUCT_SPEC, AGENT_HANDOFF, README, GOAL_GRAPH, and success_criteria stay consistent on identity and signals.
     verify: python scripts/validate_product_docs.py
     pass: true
     artifact: artifacts/product-docs-verify.txt
+
+  # --- Planned: Goal Graph and Context-Aware Planning Layer (GG) ---
+  # Do not set pass: true until fixture/E2E path in docs/GOAL_GRAPH.md §12 is evidenced.
+
+  - id: GG-SCHEMA-01
+    criterion: >
+      Goal/task hierarchy, revisions, evidence links, journal contributions,
+      suggestion records, user approval state, and audit history persist in SQLite.
+    verify: python -m pytest tests/test_gg_schema.py -q
+    pass: true
+    artifact: artifacts/gl0-goal-graph-schema.txt
+
+  - id: GG-SIGNAL-01
+    criterion: >
+      Fixed scorers are pluggable signal providers; dashboard/directive select
+      goal-relevant signals; overall score is optional; FR/Sleep/Diet/WP remain available.
+    verify: python -m pytest tests/test_gg_signals.py -q
+    pass: true
+    artifact: artifacts/gl1-signals.txt
+
+  - id: GG-CONTRIB-01
+    criterion: >
+      Journal entries map to affected goals with contribution class, evidence,
+      assumptions, confidence; users can edit interpretation before state changes.
+    verify: python -m pytest tests/test_gg_contributions.py -q
+    pass: true
+    artifact: artifacts/gl2-contributions.txt
+
+  - id: GG-SUGGEST-01
+    criterion: >
+      Task/goal suggestions support approve, edit, reject, defer; no silent mutations;
+      revision history preserved.
+    verify: python -m pytest tests/test_gg_suggestions.py -q
+    pass: true
+    artifact: artifacts/gl2-contributions.txt
+
+  - id: GG-UI-01
+    criterion: >
+      Goal tree, task inbox/today/upcoming/completed, editor, and suggestion review
+      panel are usable in the local UI.
+    verify: python -m pytest tests/test_gg_ui.py -q
+    pass: true
+    artifact: artifacts/gl3-goal-ui.txt
+
+  - id: GG-PROGRESS-01
+    criterion: >
+      Long-term progress charts support horizons, goal lines/bands, milestones,
+      provenance, missing/stale indicators, explain-chart and create-task-from-chart.
+    verify: python -m pytest tests/test_gg_progress.py -q
+    pass: true
+    artifact: artifacts/gl4-progress.txt
+
+  - id: GG-CONTEXT-01
+    criterion: >
+      Validated typed screen context (route/goal/task/chart/range/filters/pins)
+      is passed to chat; read tools vs mutation-preview tools are separated.
+    verify: python -m pytest tests/test_gg_context.py -q
+    pass: true
+    artifact: artifacts/gl5-context.txt
+
+  - id: GG-E2E-01
+    criterion: >
+      Fixture or Playwright path: create goal from conversation → journal → evidence →
+      contribution suggestion → edit/approve → dashboard/history update → screen-aware chat.
+    verify: python -m pytest tests/test_gg_e2e.py tests/test_s8_playwright_gg_e2e.py -q
+    pass: true
+    artifact: artifacts/gg-e2e-fixture.txt
+
+  - id: GG-SAFETY-01
+    criterion: >
+      Progress language distinguishes observations vs interpretations; insufficient
+      evidence is explicit; intake/directive behavior preserved for users with no goals.
+    verify: python -m pytest tests/test_gg_safety.py -q
+    pass: true
+    artifact: artifacts/gg-e2e-fixture.txt
