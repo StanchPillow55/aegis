@@ -678,6 +678,17 @@ class GoalGraphStore:
         items.sort(key=lambda s: s.created_at, reverse=True)
         return items
 
+    def list_contributions(
+        self, *, pending_only: bool = False
+    ) -> list[JournalContribution]:
+        with self._connect() as conn:
+            rows = conn.execute("SELECT payload_json FROM journal_contributions").fetchall()
+        items = [JournalContribution.model_validate_json(r["payload_json"]) for r in rows]
+        if pending_only:
+            items = [c for c in items if c.user_decision == SuggestionDecision.PENDING]
+        items.sort(key=lambda c: c.created_at, reverse=True)
+        return items
+
     def snapshot(self) -> dict[str, Any]:
         return {
             "schema_version": self.schema_version(),
@@ -686,6 +697,9 @@ class GoalGraphStore:
             "tasks": [t.model_dump() for t in self.list_tasks()],
             "suggestions_pending": [
                 s.model_dump() for s in self.list_suggestions(pending_only=True)
+            ],
+            "contributions_pending": [
+                c.model_dump() for c in self.list_contributions(pending_only=True)
             ],
             "audit": [a.model_dump() for a in self.audit_history(limit=20)],
         }

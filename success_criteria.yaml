@@ -321,16 +321,16 @@ criteria:
       Journal entries map to affected goals with contribution class, evidence,
       assumptions, confidence; users can edit interpretation before state changes.
     verify: python -m pytest tests/test_gg_contributions.py -q
-    pass: false
-    artifact: null
+    pass: true
+    artifact: artifacts/gl2-contributions.txt
 
   - id: GG-SUGGEST-01
     criterion: >
       Task/goal suggestions support approve, edit, reject, defer; no silent mutations;
       revision history preserved.
     verify: python -m pytest tests/test_gg_suggestions.py -q
-    pass: false
-    artifact: null
+    pass: true
+    artifact: artifacts/gl2-contributions.txt
 
   - id: GG-UI-01
     criterion: >

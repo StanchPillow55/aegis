@@ -32,6 +32,10 @@ from backend.goals.graph import (
     TaskStatus,
     TaskType,
 )
+from backend.goals.contributions import (
+    analyze_journal_entry,
+    persist_analysis_as_pending,
+)
 from backend.health.store import HealthMetricsStore
 
 __all__ = [
@@ -58,6 +62,8 @@ __all__ = [
     "SuggestionKind",
     "TaskStatus",
     "TaskType",
+    "analyze_journal_entry",
+    "persist_analysis_as_pending",
 ]
 
 

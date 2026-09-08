@@ -69,7 +69,7 @@ Branch tip: `cursor/s1-background-sync-3696` ([PR #31](https://github.com/Stanch
 ## Known limitations
 
 - Fixed four-score dashboard still present in UI (compat); not yet dynamic.  
-- Goals API is metric-target only — not full Goal Graph hierarchy.  
+- Goal Graph APIs exist (GL0–GL2 fixture); goal/task **UI** still pending (GL3).  
 - Chat sessions are in-memory (S2 pending).  
 - Live Fitbit/Calendar OAuth incomplete.  
 - No Playwright Goal Graph E2E yet.  
@@ -81,7 +81,7 @@ Branch tip: `cursor/s1-background-sync-3696` ([PR #31](https://github.com/Stanch
 
 1. **GL0** — Goal/task schema, revisions, suggestions, audit (`GG-SCHEMA-01`) — **fixture-verified**  
 2. **GL1** — Pluggable signals; stop treating FR/Sleep/Diet/WP as mandatory cards (`GG-SIGNAL-01`) — **fixture-verified**  
-3. **GL2** — Journal contribution engine + HITL (`GG-CONTRIB-01`, `GG-SUGGEST-01`)  
+3. **GL2** — Journal contribution engine + HITL (`GG-CONTRIB-01`, `GG-SUGGEST-01`) — **fixture-verified**  
 4. **GL3** — Goal/task UI + suggestion review (`GG-UI-01`)  
 5. **S2** — Chat SQLite persist/search (supports GL5)  
 6. **GL4** — Progress dashboards / bands / explain (`GG-PROGRESS-01`)  

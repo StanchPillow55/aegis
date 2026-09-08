@@ -128,7 +128,7 @@ Details: **`docs/GOAL_GRAPH.md`**.
 |---|---|---|
 | **GL0** | Model + SQLite schema: goals hierarchy, tasks, revisions, evidence links, journal contributions, suggestions, approval state, audit | **DONE fixture** (`artifacts/gl0-goal-graph-schema.txt`) — UI/E2E still open |
 | **GL1** | Signal provider interface; wrap FR/Sleep/Diet/WP/Overall; dynamic selection API; UI no longer *requires* four fixed cards | **DONE fixture** (`artifacts/gl1-signals.txt`) — compat `score_canonical` preserved |
-| **GL2** | Journal contribution engine: RAG, map to goals, classify effect, task suggestions, evidence/assumptions/confidence, approve/edit/reject/defer | Fixture path for beef/rice/run example; no mutation without confirm |
+| **GL2** | Journal contribution engine: RAG, map to goals, classify effect, task suggestions, evidence/assumptions/confidence, approve/edit/reject/defer | **DONE fixture** (`artifacts/gl2-contributions.txt`) — UI suggestion panel still open (GL3) |
 | **GL3** | Goal tree + task inbox + Today/Upcoming/Completed + editor + suggestion panel + decompose/rewrite/archive | TestClient + UI smoke; HITL buttons wired |
 | **GL4** | Progress workspace: horizons, trends, goal bands, milestones, annotations, missing/stale, explain + create-task-from-chart | Fixture charts + goal overlays; explain action returns evidence-bound text |
 | **GL5** | Typed screen context expansion; read-only tools; mutation preview tools; confirm mutations; searchable chat history; inline charts | Context regression tests; no raw HTML to LLM |

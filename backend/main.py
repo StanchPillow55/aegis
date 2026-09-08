@@ -20,7 +20,15 @@ from backend.connectors.fitindex_ocr import propose_from_image, propose_from_tex
 from backend.connectors.status import enrich_source_status
 from backend.connectors.takeout import ingest_takeout_bytes
 from backend.environment import fetch_environment
-from backend.goals import GoalCreate, GoalGraphStore, GoalStore
+from backend.goals import (
+    GoalCreate,
+    GoalGraphStore,
+    GoalStore,
+    GraphGoalCreate,
+    SuggestionDecision,
+    analyze_journal_entry,
+    persist_analysis_as_pending,
+)
 from backend.health.evidence import build_evidence_bundle
 from backend.health.schema import SAFETY_DISCLAIMER, DataQuality, DataSource
 from backend.health.store import (
@@ -77,6 +85,7 @@ class DirectiveResponse(BaseModel):
     disclaimer: str
     scores: dict
     signals: dict | None = None
+    goal_analysis: dict | None = None
     wod_decision: dict
     evidence: dict
     log_id: str
@@ -171,6 +180,19 @@ def api_directive(body: TextUpdate) -> DirectiveResponse:
             goal_store=_goal_graph,
             recent_text=body.text,
         )
+        goal_analysis = None
+        try:
+            analysis = analyze_journal_entry(
+                body.text,
+                store=_goal_graph,
+                journal_ref=log_id,
+                memory_hits=[
+                    {"log_id": h.log_id, "content": (h.content or "")[:160]} for h in hits
+                ],
+            )
+            goal_analysis = persist_analysis_as_pending(analysis, store=_goal_graph)
+        except Exception:
+            goal_analysis = None
         tts_payload = None
         if body.speak:
             spoken = _speech.synthesize(composed["directive"])
@@ -194,6 +216,7 @@ def api_directive(body: TextUpdate) -> DirectiveResponse:
             disclaimer=composed.get("disclaimer") or SAFETY_DISCLAIMER,
             scores=composed["scores"],
             signals=composed.get("signals"),
+            goal_analysis=goal_analysis,
             wod_decision=composed.get("wod_decision") or {},
             evidence=composed["evidence"],
             log_id=log_id,
@@ -535,6 +558,89 @@ def api_abandon_goal(goal_id: str) -> dict:
         return _goals.abandon(goal_id).model_dump()
     except KeyError as exc:
         raise HTTPException(status_code=404, detail="Unknown goal") from exc
+
+
+class GoalGraphAnalyzeBody(BaseModel):
+    text: str = Field(..., min_length=1)
+    journal_ref: str | None = None
+    persist: bool = True
+
+
+class DecideBody(BaseModel):
+    decision: SuggestionDecision
+    edited_payload: dict | None = None
+
+
+@app.get("/api/goal-graph")
+def api_goal_graph_snapshot() -> dict:
+    return _goal_graph.snapshot()
+
+
+@app.post("/api/goal-graph/goals")
+def api_goal_graph_create(body: GraphGoalCreate) -> dict:
+    return _goal_graph.create_goal(body).model_dump()
+
+
+@app.post("/api/goal-graph/analyze")
+def api_goal_graph_analyze(body: GoalGraphAnalyzeBody) -> dict:
+    """Journal → goal contributions + task suggestions (HITL drafts)."""
+    with start_span("api.goal_graph.analyze", chars=len(body.text)):
+        import time as _time
+
+        ref = body.journal_ref or f"manual-{int(_time.time())}"
+        hits = _memory.search(body.text[:120], k=5, dedupe=True)
+        analysis = analyze_journal_entry(
+            body.text,
+            store=_goal_graph,
+            journal_ref=ref,
+            memory_hits=[
+                {"log_id": h.log_id, "content": (h.content or "")[:160]} for h in hits
+            ],
+        )
+        if body.persist:
+            return persist_analysis_as_pending(analysis, store=_goal_graph)
+        return analysis.to_dict()
+
+
+@app.get("/api/goal-graph/suggestions")
+def api_goal_graph_suggestions(pending_only: bool = True) -> dict:
+    return {
+        "suggestions": [
+            s.model_dump() for s in _goal_graph.list_suggestions(pending_only=pending_only)
+        ]
+    }
+
+
+@app.post("/api/goal-graph/suggestions/{suggestion_id}/decide")
+def api_goal_graph_decide_suggestion(suggestion_id: str, body: DecideBody) -> dict:
+    try:
+        return _goal_graph.decide_suggestion(
+            suggestion_id, body.decision, edited_payload=body.edited_payload
+        ).model_dump()
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Unknown suggestion") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.get("/api/goal-graph/contributions")
+def api_goal_graph_contributions(pending_only: bool = False) -> dict:
+    return {
+        "contributions": [
+            c.model_dump()
+            for c in _goal_graph.list_contributions(pending_only=pending_only)
+        ]
+    }
+
+
+@app.post("/api/goal-graph/contributions/{contrib_id}/decide")
+def api_goal_graph_decide_contribution(contrib_id: str, body: DecideBody) -> dict:
+    try:
+        return _goal_graph.decide_contribution(contrib_id, body.decision).model_dump()
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Unknown contribution") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.post("/api/tools/{tool_name}")
