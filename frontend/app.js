@@ -302,6 +302,40 @@ document.getElementById("fitbit-fixture-btn").addEventListener("click", async ()
   }
 });
 
+document.getElementById("fitbit-auth-btn").addEventListener("click", async () => {
+  const el = document.getElementById("fitbit-status");
+  try {
+    const res = await fetch("/api/fitbit/status");
+    const data = await res.json();
+    el.textContent = `${data.integration_state}: ${data.detail}` +
+      (data.auth_url ? ` auth_url=${data.auth_url}` : "");
+  } catch (err) {
+    el.textContent = String(err);
+  }
+});
+
+document.getElementById("fitindex-ocr-btn").addEventListener("click", async () => {
+  const hint = document.getElementById("fitindex-ocr-hint");
+  const fileInput = document.getElementById("fitindex-ocr-file");
+  if (!fileInput.files?.length) {
+    hint.textContent = "Choose an image first.";
+    return;
+  }
+  const fd = new FormData();
+  fd.append("file", fileInput.files[0]);
+  try {
+    const res = await fetch("/api/fitindex/ocr", { method: "POST", body: fd });
+    const data = await res.json();
+    if (!data.ok) {
+      hint.textContent = data.detail || "OCR unavailable";
+      return;
+    }
+    hint.textContent = `Draft ${data.draft?.draft_id} — confirm via API before save.`;
+  } catch (err) {
+    hint.textContent = String(err);
+  }
+});
+
 document.getElementById("fitindex-upload-btn").addEventListener("click", async () => {
   const hint = document.getElementById("fitindex-hint");
   const csv = document.getElementById("fitindex-csv").value;

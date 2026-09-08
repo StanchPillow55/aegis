@@ -56,6 +56,22 @@ class WOD(BaseModel):
     )
 
 
+class Hydration(BaseModel):
+    """Optional hydration report (legacy-compatible factor)."""
+
+    water_oz: float | None = None
+    alcohol_drinks: float | None = None
+
+
+class Performance(BaseModel):
+    """Optional workout performance report (legacy-compatible factor)."""
+
+    rpe: float | None = None
+    rx: bool | None = None
+    feel: str | None = None
+    hr_max: float | None = None
+
+
 class IntakeResult(BaseModel):
     """The full structured result of parsing one daily update."""
 
@@ -73,6 +89,12 @@ class IntakeResult(BaseModel):
             "The athlete's overall readiness to train today, expressed as a short "
             "label such as 'low', 'moderate', or 'high'. Infer it from the update."
         ),
+    )
+    hydration: Hydration | None = Field(
+        None, description="Optional hydration details when stated."
+    )
+    performance: Performance | None = Field(
+        None, description="Optional workout performance details when stated."
     )
 
 

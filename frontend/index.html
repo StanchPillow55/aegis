@@ -122,6 +122,7 @@
       <div>
         <h3>Fitbit</h3>
         <p id="fitbit-status" class="hint">Loading…</p>
+        <button type="button" id="fitbit-auth-btn" class="ghost">Check OAuth / get auth URL</button>
         <button type="button" id="fitbit-fixture-btn" class="ghost">Run Fitbit fixture sync</button>
       </div>
       <div>
@@ -129,6 +130,12 @@
         <textarea id="fitindex-csv" rows="3" placeholder="date,weight_kg,body_fat_pct&#10;2026-09-07,78.2,18.5"></textarea>
         <button type="button" id="fitindex-upload-btn" class="ghost">Upload CSV draft</button>
         <p id="fitindex-hint" class="hint"></p>
+      </div>
+      <div>
+        <h3>FITINDEX screenshot OCR</h3>
+        <input type="file" id="fitindex-ocr-file" accept="image/*" />
+        <button type="button" id="fitindex-ocr-btn" class="ghost">OCR → draft</button>
+        <p id="fitindex-ocr-hint" class="hint"></p>
       </div>
       <div>
         <h3>Google Takeout ZIP</h3>

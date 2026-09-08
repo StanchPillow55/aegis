@@ -14,6 +14,9 @@ from backend.alerts import AlertEngine, AlertRule
 from backend.charts import build_metric_trend, validate_chart_spec
 from backend.chat import ChatService, ChatTurnRequest, vision_status
 from backend.config import get_settings
+from backend.connectors import fitbit_oauth
+from backend.connectors.calendar_signals import summarize_calendar_signals
+from backend.connectors.fitindex_ocr import propose_from_image, propose_from_text_heuristic
 from backend.connectors.status import enrich_source_status
 from backend.connectors.takeout import ingest_takeout_bytes
 from backend.environment import fetch_environment
@@ -26,6 +29,9 @@ from backend.health.store import (
     ManualMetricIn,
 )
 from backend.intake.schema import IntakeResult
+from backend.intelligence.context import build_system_context, format_context_text
+from backend.patterns.correlations import correlate_metrics, day_before_metric_performance
+from backend.patterns.trends import trend_direction, weekly_metric_averages
 from backend.providers.llm import LocalLLMProvider
 from backend.providers.memory import LocalMemoryProvider
 from backend.providers.speech import LocalSpeechProvider
@@ -37,7 +43,7 @@ from backend.tools.dates import parse_date_range
 
 FRONTEND_DIR = Path(__file__).resolve().parents[1] / "frontend"
 
-app = FastAPI(title="aegis", version="0.6.0")
+app = FastAPI(title="aegis", version="0.7.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -336,6 +342,49 @@ def api_fitindex_csv(body: dict) -> dict:
     return draft.model_dump()
 
 
+@app.post("/api/fitindex/ocr")
+async def api_fitindex_ocr(file: UploadFile = File(...)) -> dict:
+    """Screenshot → OCR draft via local llava when available (confirm before save)."""
+    data = await file.read()
+    if not data:
+        raise HTTPException(status_code=400, detail="Empty upload")
+    with start_span("api.fitindex.ocr", bytes=len(data)):
+        return propose_from_image(data, store=_metrics)
+
+
+@app.post("/api/fitindex/text")
+def api_fitindex_text(body: dict) -> dict:
+    """NL body-comp text → heuristic draft (confirm before save)."""
+    text = body.get("text") or ""
+    if not text.strip():
+        raise HTTPException(status_code=400, detail="text required")
+    return propose_from_text_heuristic(text, store=_metrics).model_dump()
+
+
+@app.get("/api/fitbit/status")
+def api_fitbit_status() -> dict:
+    return fitbit_oauth.status()
+
+
+@app.get("/api/fitbit/auth")
+def api_fitbit_auth() -> dict:
+    url = fitbit_oauth.auth_url()
+    if not url:
+        return {
+            **fitbit_oauth.status(),
+            "detail": "Fitbit OAuth not configured — set FITBIT_CLIENT_ID and FITBIT_CLIENT_SECRET.",
+        }
+    return {"auth_url": url, **fitbit_oauth.status()}
+
+
+@app.get("/api/fitbit/callback")
+def api_fitbit_callback(code: str, redirect_uri: str | None = None) -> dict:
+    result = fitbit_oauth.exchange_code(code, redirect_uri)
+    if not result.get("ok"):
+        raise HTTPException(status_code=400, detail=result.get("detail") or "OAuth failed")
+    return result
+
+
 @app.post("/api/takeout/zip")
 async def api_takeout_zip(file: UploadFile = File(...)) -> dict:
     """Upload a Google Takeout ZIP (future-compatible fallback)."""
@@ -469,9 +518,14 @@ def api_chat(body: ChatTurnRequest) -> dict:
 
 
 @app.get("/api/chat/history")
-def api_chat_history(limit: int = 40) -> dict:
-    msgs = _chat.history(limit=limit)
-    return {"messages": [m.model_dump() for m in msgs], "count": len(msgs)}
+def api_chat_history(limit: int = 40, session_id: str | None = None) -> dict:
+    msgs = _chat.history(limit=limit, session_id=session_id)
+    return {"messages": [m.model_dump() for m in msgs], "count": len(msgs), "session_id": session_id}
+
+
+@app.get("/api/chat/sessions")
+def api_chat_sessions() -> dict:
+    return {"sessions": _chat.list_sessions()}
 
 
 @app.get("/api/vision/status")
@@ -480,27 +534,41 @@ def api_vision_status() -> dict:
 
 
 @app.get("/api/context/screen")
-def api_screen_context() -> dict:
-    """Light AIContext feed for chat (dashboard/sync summary)."""
-    snap = _sync.snapshot()
-    env = fetch_environment(force_offline=True)
-    return {
-        "panel": "overview",
-        "sources": [
-            {
-                "source_id": s["source_id"],
-                "enabled": s["enabled"],
-                "stale": s["stale"],
-                "last_success_at": s.get("last_success_at"),
-            }
-            for s in snap["sources"]
-        ],
-        "stale": snap.get("stale") or [],
-        "alerts_active": len(_alerts.active()),
-        "goals": len(_goals.list()),
-        "environment_mode": env.get("mode"),
-        "geo_enabled": False,
-    }
+def api_screen_context(panel: str = "overview") -> dict:
+    """Rich AIContext feed for chat (vitals, alerts, goals, sync, calendar)."""
+    ctx = build_system_context(
+        metrics=_metrics, alerts=_alerts, goals=_goals, sync=_sync, panel=panel
+    )
+    ctx["text"] = format_context_text(ctx)
+    return ctx
+
+
+@app.get("/api/patterns/trend/{metric}")
+def api_pattern_trend(metric: str) -> dict:
+    return trend_direction(metric, metrics=_metrics)
+
+
+@app.get("/api/patterns/weekly/{metric}")
+def api_pattern_weekly(metric: str) -> dict:
+    return weekly_metric_averages(metric, metrics=_metrics)
+
+
+@app.get("/api/patterns/correlate")
+def api_pattern_correlate(metric_a: str, metric_b: str) -> dict:
+    return correlate_metrics(metric_a, metric_b, metrics=_metrics)
+
+
+@app.get("/api/patterns/predictors")
+def api_pattern_predictors() -> dict:
+    return day_before_metric_performance(metrics=_metrics)
+
+
+@app.get("/api/calendar/signals")
+def api_calendar_signals() -> dict:
+    events = []
+    for pt in _metrics.series("calendar_event", limit=40):
+        events.append(pt.meta or {"value": pt.value})
+    return summarize_calendar_signals(events)
 
 
 @app.post("/api/tools/parse_date")

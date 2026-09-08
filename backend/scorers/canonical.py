@@ -93,7 +93,9 @@ def score_overall(intake: IntakeResult) -> dict:
 
 def score_canonical(intake: IntakeResult) -> dict:
     """Product-contract scores (+ transitional block for compatibility)."""
+    from backend.scorers.hydration import score_hydration
     from backend.scorers.macro_pool import macro_pool_status
+    from backend.scorers.performance import score_performance
 
     transitional = score_transitional(intake)
     diet = score_diet(intake)
@@ -104,6 +106,11 @@ def score_canonical(intake: IntakeResult) -> dict:
         "macro_pool": macro_pool_status(intake),
         "workout_preparation": score_workout_preparation(intake),
         "overall": score_overall(intake),
+        # legacy-compatible factors — not part of the published four-score contract
+        "factors": {
+            "hydration": score_hydration(intake),
+            "performance": score_performance(intake),
+        },
         # transitional — not permanent top-level contract
         "transitional": transitional,
     }

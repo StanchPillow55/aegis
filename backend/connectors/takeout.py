@@ -1,15 +1,20 @@
 """Google Takeout ZIP → health metrics (future-compatible fallback).
 
-Parses Daily activity metrics CSVs inside a Takeout archive. Does not require
-a live Google account. Fixture sync remains available separately for demos.
+Supports:
+- Daily activity metrics CSV (Google Takeout Fit export)
+- Google Fit JSON "Data Points" files (legacy prototype format)
+
+Does not require a live Google account. Fixture sync remains available separately.
 """
 
 from __future__ import annotations
 
 import csv
 import io
+import json
 import time
 import zipfile
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import BinaryIO
 
@@ -31,6 +36,81 @@ _COLUMN_MAP = {
     "move minutes": "active_minutes",
 }
 
+_JSON_NAME_MAP = {
+    "heart_rate_variability": ("hrv", "ms"),
+    "hrv": ("hrv", "ms"),
+    "heart_rate": ("heart_rate", "bpm"),
+    "step_count": ("steps", "steps"),
+    "calories": ("calories", "kcal"),
+    "sleep_segment": ("sleep_minutes", "minutes"),
+}
+
+
+def _json_metric_for_name(filename: str) -> tuple[str, str] | None:
+    name_lower = filename.lower()
+    for key, mapped in _JSON_NAME_MAP.items():
+        if key in name_lower:
+            return mapped
+    return None
+
+
+def _ingest_json_member(
+    store: HealthMetricsStore,
+    *,
+    name: str,
+    raw: bytes,
+    prov: Provenance,
+) -> tuple[int, set[str]]:
+    written = 0
+    metrics_seen: set[str] = set()
+    mapped = _json_metric_for_name(name)
+    if mapped is None:
+        return 0, metrics_seen
+    metric, unit = mapped
+    try:
+        data = json.loads(raw.decode("utf-8", errors="replace"))
+    except json.JSONDecodeError:
+        return 0, metrics_seen
+    points = data.get("Data Points") or data.get("dataPoints") or []
+    if not isinstance(points, list):
+        return 0, metrics_seen
+    for pt in points:
+        try:
+            start_n = int(pt["startTimeNanos"])
+            observed = start_n / 1e9
+            day = datetime.fromtimestamp(observed, tz=timezone.utc).date().isoformat()
+            if metric == "sleep_minutes":
+                end_n = int(pt["endTimeNanos"])
+                value = (end_n - start_n) / 1e9 / 60.0
+            else:
+                value = float(pt["fitValue"][0]["value"]["fpVal"])
+            store.upsert_point(
+                metric=metric,
+                value=value,
+                day=day,
+                observed_at=observed,
+                provenance=prov.model_copy(update={"observed_at": observed, "extractor": "takeout_json"}),
+                meta={"takeout_file": name, "unit": unit},
+            )
+            written += 1
+            metrics_seen.add(metric)
+            if metric == "sleep_minutes":
+                store.upsert_point(
+                    metric="sleep_hours",
+                    value=round(value / 60.0, 2),
+                    day=day,
+                    observed_at=observed,
+                    provenance=prov.model_copy(
+                        update={"observed_at": observed, "extractor": "takeout_json"}
+                    ),
+                    meta={"takeout_file": name, "derived_from": "sleep_minutes"},
+                )
+                written += 1
+                metrics_seen.add("sleep_hours")
+        except (KeyError, TypeError, ValueError, IndexError):
+            continue
+    return written, metrics_seen
+
 
 def ingest_takeout_zip(
     store: HealthMetricsStore,
@@ -38,14 +118,11 @@ def ingest_takeout_zip(
     *,
     notes: str = "Takeout ZIP fallback import",
 ) -> dict:
-    """Ingest CSV rows from a Takeout ZIP into the metrics store.
-
-    Returns counts and list of metrics written. Empty/unknown CSVs are skipped
-    without raising (partial success).
-    """
+    """Ingest CSV + Google Fit JSON from a Takeout ZIP into the metrics store."""
     written = 0
     metrics_seen: set[str] = set()
     files_parsed = 0
+    json_files = 0
     now = time.time()
     prov = Provenance(
         source=DataSource.TAKEOUT,
@@ -63,7 +140,19 @@ def ingest_takeout_zip(
 
     with _open_zip() as zf:
         for name in zf.namelist():
-            if name.endswith("/") or not name.lower().endswith(".csv"):
+            if name.endswith("/"):
+                continue
+            lower = name.lower()
+            if lower.endswith(".json"):
+                raw = zf.read(name)
+                w, ms = _ingest_json_member(store, name=name, raw=raw, prov=prov)
+                if w:
+                    json_files += 1
+                    files_parsed += 1
+                    written += w
+                    metrics_seen |= ms
+                continue
+            if not lower.endswith(".csv"):
                 continue
             text = zf.read(name).decode("utf-8", errors="replace")
             if not text.strip():
@@ -76,15 +165,15 @@ def ingest_takeout_zip(
                 day = row.get("Date") or row.get("date") or row.get("Start date")
                 observed = _day_to_epoch(day) if day else now
                 row_prov = prov.model_copy(update={"observed_at": observed})
-                for col, raw in row.items():
-                    if col is None or raw is None or str(raw).strip() == "":
+                for col, raw_val in row.items():
+                    if col is None or raw_val is None or str(raw_val).strip() == "":
                         continue
                     key = col.strip().lower()
                     metric = _COLUMN_MAP.get(key)
                     if metric is None:
                         continue
                     try:
-                        value = float(str(raw).replace(",", ""))
+                        value = float(str(raw_val).replace(",", ""))
                     except ValueError:
                         continue
                     store.upsert_point(
@@ -102,6 +191,7 @@ def ingest_takeout_zip(
         "written": written,
         "metrics": sorted(metrics_seen),
         "files_parsed": files_parsed,
+        "json_files": json_files,
         "mode": "takeout_zip",
         "quality": DataQuality.LOW.value,
     }

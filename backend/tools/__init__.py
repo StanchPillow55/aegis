@@ -95,6 +95,46 @@ class HealthQueryTools:
 
         return parse_date_range(text)
 
+    def body_composition(self) -> dict[str, Any]:
+        weight = self.metrics.latest("weight_kg")
+        fat = self.metrics.latest("body_fat_pct")
+        if weight is None and fat is None:
+            return {"limitation": "No body composition metrics stored"}
+        return {
+            "weight_kg": None
+            if weight is None
+            else {
+                "value": weight.value,
+                "day": weight.day,
+                "source": weight.provenance.source.value,
+            },
+            "body_fat_pct": None
+            if fat is None
+            else {
+                "value": fat.value,
+                "day": fat.day,
+                "source": fat.provenance.source.value,
+            },
+        }
+
+    def calendar_context(self) -> dict[str, Any]:
+        from backend.connectors.calendar_signals import summarize_calendar_signals
+
+        events = []
+        for pt in self.metrics.series("calendar_event", limit=40):
+            events.append(pt.meta or {"value": pt.value, "observed_at": pt.observed_at})
+        return summarize_calendar_signals(events)
+
+    def correlate(self, metric_a: str, metric_b: str) -> dict[str, Any]:
+        from backend.patterns.correlations import correlate_metrics
+
+        return correlate_metrics(metric_a, metric_b, metrics=self.metrics)
+
+    def trend(self, metric: str) -> dict[str, Any]:
+        from backend.patterns.trends import trend_direction
+
+        return trend_direction(metric, metrics=self.metrics)
+
     def source_freshness(self) -> dict[str, Any]:
         return {
             "sources": [
@@ -158,6 +198,10 @@ class HealthQueryTools:
             "search_conversations": self.search_conversations,
             "evidence": self.evidence,
             "parse_date": self.parse_date,
+            "body_composition": self.body_composition,
+            "calendar_context": self.calendar_context,
+            "correlate": self.correlate,
+            "trend": self.trend,
         }
         if tool not in mapping:
             return {"error": f"Unknown tool {tool}", "available": sorted(mapping)}
