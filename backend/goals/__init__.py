@@ -1,8 +1,7 @@
-"""Goal planning with confirmation-before-complete."""
+"""Goal planning — compat metric goals + Goal Graph (GL0)."""
 
 from __future__ import annotations
 
-import json
 import sqlite3
 import time
 import uuid
@@ -12,7 +11,54 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from backend.goals.graph import (
+    AuditEntry,
+    ContributionEffect,
+    EvidenceLink,
+    GoalDirection,
+    GoalGraphStore,
+    GoalOrigin,
+    GoalType,
+    GraphGoal,
+    GraphGoalCreate,
+    GraphGoalStatus,
+    GraphTask,
+    GraphTaskCreate,
+    JournalContribution,
+    Suggestion,
+    SuggestionCreate,
+    SuggestionDecision,
+    SuggestionKind,
+    TaskStatus,
+    TaskType,
+)
 from backend.health.store import HealthMetricsStore
+
+__all__ = [
+    "AuditEntry",
+    "ContributionEffect",
+    "EvidenceLink",
+    "Goal",
+    "GoalCreate",
+    "GoalDirection",
+    "GoalGraphStore",
+    "GoalOrigin",
+    "GoalStatus",
+    "GoalStore",
+    "GoalType",
+    "GraphGoal",
+    "GraphGoalCreate",
+    "GraphGoalStatus",
+    "GraphTask",
+    "GraphTaskCreate",
+    "JournalContribution",
+    "Suggestion",
+    "SuggestionCreate",
+    "SuggestionDecision",
+    "SuggestionKind",
+    "TaskStatus",
+    "TaskType",
+]
 
 
 class GoalStatus(str, Enum):

@@ -1,18 +1,29 @@
-# Aegis Implementation Plan — next agent handoff (QA-revised)
+# Aegis Implementation Plan — Goal Graph era (QA + product revision)
 
-**Canonical branch:** `cursor/feature-merge-aggregate-766c` · [PR #29](https://github.com/StanchPillow55/aegis/pull/29)  
-**Base for new work:** stack on #29 (or merge #22–#29 into `master` first)  
-**DoD:** `success_criteria.yaml` · Maturity map: `docs/SC_MATURITY.md` · Spec: `docs/PRODUCT_SPEC.md` · Matrix: `docs/FEATURE_MERGE_MATRIX.md`  
-**Date:** 2026-09-08 (revised after QA review)  
-**Tip when written:** `b04f0fa`+
+**Canonical branch tip:** `cursor/s1-background-sync-3696` · [PR #31](https://github.com/StanchPillow55/aegis/pull/31) (on #29)  
+**DoD:** `success_criteria.yaml` · Maturity: `docs/SC_MATURITY.md` · Spec: `docs/PRODUCT_SPEC.md` · Goal Graph: `docs/GOAL_GRAPH.md` · Matrix: `docs/FEATURE_MERGE_MATRIX.md`  
+**Date:** 2026-09-08 (Goal Graph + context-aware planning layer added; slices reordered)  
 
 ---
 
 ## 0. Where we are (honest)
 
-Aegis is a **local-first** daily training-decision / personal health copilot on FastAPI + SQLite + static frontend. Stacked PRs **#22–#29** are CI-green and deliver a working foundation: schema/evidence, sync registry, fixture connectors, canonical scores, alerts/goals APIs, chat dock, light dashboard, legacy residual ports.
+Aegis is a **local-first** daily training-decision / personal health copilot (FastAPI + SQLite + static frontend). Foundation through PR **#29** is CI-green. On this tip:
 
-**What is NOT done:** operational completion — required background sync, full live Fitbit/Calendar parity + OAuth security, persistent/searchable chat, interactive Grafana-style charts, geo consent UI, authenticated remote/PWA install, and true E2E verification. Treat `pass: true` in `success_criteria.yaml` as **automated verify green**, not product-complete; see §1.1 and `docs/SC_MATURITY.md`.
+| Capability | Status |
+|---|---|
+| Schema / evidence / directive loop | Working |
+| Sync registry + **required background sync (S1)** | Fixture-verified |
+| Fixture connectors (Fitbit/Calendar/Takeout) | Fixture-verified |
+| Canonical scorers (FR/Sleep/Diet/WP/Overall) | Working as **compat signal layer** |
+| Simple goals API (metric-target + confirm) | Thin — **superseded by Goal Graph plan** |
+| Unified expanding composer + click-to-pin | Working (no floating chat dock) |
+| Live OAuth / Playwright E2E / PWA install | Open |
+
+**Next major product layer:** **Goal Graph and Context-Aware Planning Layer** (`docs/GOAL_GRAPH.md`).  
+Fixed scores become **optional, goal-relevant signals** — not permanent top-level dashboard categories.
+
+Treat `pass: true` as automated verify green, not product-complete. See `docs/SC_MATURITY.md`.
 
 ---
 
@@ -25,252 +36,168 @@ Aegis is a **local-first** daily training-decision / personal health copilot on 
 | 0 Schema / evidence / disclaimer | #24 | CI green |
 | 1 Source registry + sync | #25 | CI green |
 | 2–5 Metrics ingest + fixture connectors | #26 | CI green |
-| 6–11 Scores, WOD, alerts, goals, tools, charts, PWA, Tailscale docs | #27 | CI green |
-| BUG-LOCALHOST-01 docs + Makefile/os-health | #28 | CI green |
+| 6–11 Scores, WOD, alerts, goals, tools, charts, PWA docs | #27 | CI green |
+| BUG-LOCALHOST-01 | #28 | CI green |
 | Feature aggregate + legacy residual ports | #29 | CI green |
+| **S1** Required background sync | #31 | CI green |
+| Unified composer (journal + Ask + pin context) | #31 | CI green |
 
-### Verification (foundation layer)
+---
 
-| Check | Result | Meaning |
-|---|---|---|
-| `make os-test` | **103** pytest passed | Unit/integration contracts green |
-| `success_criteria.yaml` `pass: true` | **43/43** | Automated `verify` commands pass — **not** all live/E2E complete |
-| Live Open-Meteo | `mode=live` | Real network path works when egress allowed |
-| Demos | `make mvp-demo` / `make os-demo` | Scripted demos OK |
+## 2. Product-model migration (critical)
 
-### 1.1 Success-criteria maturity (required reading)
+### Before (current contract debt)
+Dashboard + directive assume permanent top-level: Front-rack / Sleep / Diet / Workout-prep / Overall.
 
-Do **not** claim live Fitbit, remote access, or full chat complete because a scaffold/fixture/docs exists.
+### After (Goal Graph contract)
+1. Those scorers remain as **pluggable signal providers** (backward compatible).  
+2. Dashboard + directive surface **signals relevant to active goals + recent entries**.  
+3. Universal **overall** score is **optional**.  
+4. Existing `MVP-SCORE-01` stays green via compat providers; new `GG-*` criteria own the dynamic contract.
 
-| Maturity | Meaning |
+Example journal: *“Ate beef and rice, run was good, averaged 10:30 for 3 miles.”*
+
+| Goal | Contribution |
 |---|---|
-| `verified` | Real path exercised end-to-end in intended environment |
-| `fixture-verified` | Deterministic fixtures/tests prove shape + honesty; not live provider |
-| `implemented-but-not-E2E-tested` | Code/UI present; no Playwright/mobile acceptance |
-| `blocked-on-secrets` | Code ready; needs OAuth client secrets / browser callback |
-| `planned` | Specced in this plan; not shipped |
+| Conditioning | Positive progress |
+| Nutrition | Protein/meal recorded (partial) |
+| Running task | Suggest pace tracking |
+| Recovery | Insufficient evidence |
+| Body composition | No direct update |
 
-Full ID map: **`docs/SC_MATURITY.md`**. Next agent should update that map when maturity improves, and only flip narrative “complete” when maturity ≥ `verified` (or `fixture-verified` when fixture is the accepted permanent mode).
+Details: **`docs/GOAL_GRAPH.md`**.
 
----
-
-## 2. Functionality map (what exists today)
-
-### Core training loop
-- Text intake → heuristic/Ollama extract → evidence (today/history/conflicts, today_wins)
-- Canonical scores: Front-rack / Sleep / Diet / Workout-prep / Overall (+ Macro Pool)
-- Optional hydration/performance **factors**
-- WOD negotiation + safety disclaimer
-- Durable SQLite memory + health metrics
-
-### Ingestion & sync (partial vs product requirement)
-- Source registry, per-source enable, on-demand sync, last-success + 24h stale flags — **fixture-verified**
-- **Background scheduled sync:** required loop shipped (S1) — interval, retries, fail-soft boot, UI/chat/voice triggers — **fixture-verified** (Playwright E2E still open)
-- Fixture Fitbit / Calendar / Takeout — **fixture-verified**
-- FITINDEX CSV + manual review API; OCR draft when llava present — **implemented-but-not-E2E**
-- Takeout CSV + JSON Data Points — **I**
-
-### Environment & connectors
-- Geo default-off API contract — **fixture-verified**; **UI consent/revoke/home/threshold missing** → P2
-- Open-Meteo live/offline/disabled — **verified** (live smoke)
-- Fitbit OAuth scaffold (status/auth/callback) — **blocked-on-secrets** / incomplete security checklist
-- Calendar signals on stored events — **I**; live Google OAuth — **planned**
-
-### Intelligence & chat (partial)
-- In-memory chat sessions + guardrails + screen context — **implemented-but-not-E2E**
-- Tools/patterns APIs exist — chat UI does not fully drive tools/charts yet
-- Chart specs + basic SVG — **not** Grafana-style interactive yet
-- PWA: thin manifest only; Tailscale: **docs only**
-
-### Safety output model (clarified — implement in copy + reasoner)
-
-Two distinct outputs; do not conflate:
-
-1. **Health analysis** — factual/observational only; guardrails suppress unsupported prescriptive language; no diagnosis.  
-2. **Training planning (directive)** — optional, clearly labeled **non-medical decision support**; WOD negotiation may propose intensity/substitutions; require user confirmation when changing plan materially; always show disclaimer.
-
-Never claim “observational only” while emitting unmarked commands like “hit today’s plan with normal intensity” without the training-planning label + disclaimer.
+### Safety dual outputs (unchanged)
+1. **Health analysis** — observational.  
+2. **Training planning (directive)** — labeled non-medical decision support + disclaimer + confirm material plan changes.
 
 ---
 
-## 3. Gaps raised by QA (must address)
+## 3. Priority backlog (reordered)
 
-| # | Issue | Plan response |
+### P0 — Docs / merge hygiene
+1. Keep Goal Graph docs + SC rows honest (`planned` until path tested).  
+2. Merge hygiene for #22–#31 when ready.
+
+### P1 — Goal Graph core (start here)
+| ID | Work |
+|---|---|
+| **GL0** | Goal/task hierarchy schema, revisions, evidence links, suggestions, audit |
+| **GL1** | Dynamic signal abstraction (preserve scorers as providers) |
+| **GL2** | Journal contribution engine (RAG + classify + suggestions + HITL) |
+| **GL3** | Goal/task UI (tree, inbox, editor, suggestion review) |
+
+### P1 — Supporting operational (interleave as needed)
+| ID | Work | Notes |
 |---|---|---|
-| 1 | Background sync marked optional | **Promote to required P1** |
-| 2 | Fitbit metric list incomplete | Full metric matrix in §4.1 |
-| 3 | OAuth security under-specified | Full checklist in §4.2 (Fitbit + Calendar) |
-| 4 | Chat incomplete | Persist/search/images/llava/tools/inline charts/context tests — P1 |
-| 5 | Goals/alerts E2E incomplete | NL goals, statuses, history, custom alerts, proactive chat — P1/P2 |
-| 6 | Dashboard quietly reduced | Keep static stack but require Grafana-style interactions — P2 |
-| 7 | Remote mostly docs | Authenticated Tailscale remote + PWA install tests — P2 |
-| 8 | Geo privacy needs UI | Consent/revoke/delete/home/threshold — P2 |
-| 9 | Safety policy conflict | Dual output model above — enforce in reasoner/UI |
-| 10 | `43/43 pass` misleading | Maturity map; do not over-claim |
+| **S2** | Chat SQLite persist + search | Feeds GL5; still required |
+| **S5** | Fitbit live metrics + OAuth security | Evidence richness for Goal Graph |
+| Dual safety labels in reasoner/UI | Enforce analysis vs planning |
 
----
+### P2 — Progress surfaces + connectors
+| ID | Work |
+|---|---|
+| **GL4** | Long-term progress dashboards (horizons, bands, explain/create-task) |
+| **GL5** | Context-aware chat (typed screen context, read vs mutate tools) |
+| **S4** | Interactive chart behaviors (absorbed into GL4 where overlapping) |
+| Calendar live OAuth | S6 partial |
+| Geo privacy UI | S6 partial |
+| FITINDEX confirm UI | |
 
-## 4. Priority backlog (QA-aligned)
-
-### P0 — Merge hygiene
-1. Merge/rebase `#22–#29` onto preferred base.  
-2. Supersede/close #30 if redundant with `legacy-aegis`.
-
-### P1 — Operational completion (required)
-
-#### 4.1 Background sync (**required**, not optional)
-- Configurable interval (`SyncConfig.interval_seconds`)
-- Per-source enable/disable
-- Automatic background loop when `background_enabled=true` (fail-soft; no boot hang)
-- Retry/backoff on failure
-- Last-successful-sync tracking (already partial)
-- Source-specific stale warnings (UI + chat)
-- On-demand sync via: **button**, **chat**, **voice/dictate command**
-- Tests: schedule tick, retry, stale, disabled source skipped
-
-#### 4.2 Fitbit live ingestion + OAuth security
-**Metrics (each with units, timestamps, source, confidence/quality, provenance):**
-- Heart rate, HRV, **resting HR**, SpO2
-- Sleep duration / minutes asleep
-- **Steps, distance, active minutes, calories**
-- **Body weight, body-fat %**
-- **Stress score, breathing rate**
-- **Activities** (sessions/minutes)
-Keep fixture path for CI. Live path **blocked-on-secrets** until clients exist.
-
-**OAuth security (Fitbit + Google Calendar):**
-- OAuth `state` validation
-- Callback validation / redirect-error handling
-- Token refresh + expiry handling
-- Token revocation / disconnect UX
-- Least-privilege scopes
-- Encrypted local token storage (`AEGIS_TOKEN_KEY` / Fernet; never hardcoded demo seed as production)
-- No credentials/tokens in logs
-- Clear UI states: `disconnected | needs_credentials | authorizing | connected | error | token_expired`
-- Tests: mocked provider OAuth; assert no mock auth backdoors
-
-#### 4.3 Chat completion
-- SQLite-persisted conversations (survive restart)
-- Searchable conversation history (tool + UI)
-- Image persistence or safe local file refs (not only data-URL in RAM)
-- Full **llava** image-processing click path (FITINDEX + chat)
-- LLM query tools invoked from chat UI (not only heuristic intent)
-- **Inline chart rendering inside chat** from validated chart specs
-- Screen-context regression tests
-
-#### 4.4 Goals & alerts E2E
-- Goal creation from **natural-language chat**
-- Statuses: `in_progress | completed | abandoned | paused`
-- Confirmation before automatic completion
-- Goal history preservation
-- Custom alert creation for any supported metric
-- Alert history + critical-alert **deduplication**
-- Proactive alert mentions in chat
-- Tests for stale, missing, and conflicting data
-
-### P2 — UI, remote, geo, calendar live
-
-#### 4.5 Interactive dashboard (static stack OK; Grafana-style behavior required)
-Not a full Vite/Grafana rewrite, but must include:
-- Clickable charts
-- Date-range controls
-- Tooltips
-- Goal lines/bands
-- Missing-data indicators
-- Source + timestamp display
-- Inline charts in chat (ties to §4.3)
-
-#### 4.6 Google Calendar live
-- Live OAuth + read-only ingest (name, location, description, start/end)
-- Signal derivation (early/late/busy/travel)
-- Same OAuth security checklist as Fitbit
-
-#### 4.7 FITINDEX confirmation UI
-- Draft → edit → confirm in Settings (API already gates confirm)
-
-#### 4.8 Geolocation privacy UI
-- Permission prompt
-- Enable/disable control
-- Revocation behavior
-- Stored-location deletion
-- Home-location configuration
-- Travel-distance threshold configuration
-- Assert never transmitted to cloud LLMs (tests)
-
-#### 4.9 Remote experience + PWA
-- Authenticated remote access (Tailscale recommended; **no Funnel / no public DB**)
-- Frontend/API routing decision documented + implemented
-- No direct database exposure
-- Mobile browser acceptance test
-- PWA service worker + icons
-- iPhone installation test
-- Secure cookies / CORS / CSRF / rate-limit handling as applicable to local+Tailscale topology
-
-### P3 — Verification depth
-- Playwright E2E on **same host** as `os-dev`
-- OAuth integration tests with mocked providers
-- Offline / source-failure tests
-- M2 performance + local-model resource tests
-- SQLite backup/export/restore testing for health data
+### P2/P3 — Remote + verification
+| ID | Work |
+|---|---|
+| **GL6** | Mobile/PWA goal-task views + Tailscale remote parity |
+| **S7** | PWA SW/icons + authenticated remote acceptance |
+| **S8** | Playwright E2E incl. Goal Graph path |
+| Offline / backup / M2 perf | |
 
 ### Do not do
+- Silent goal/task mutations  
 - Fake OAuth / silent fake weather  
+- Delete score implementations (migrate to providers)  
+- Mark Goal Graph complete from stubs/placeholders  
 - Boot-required Redis/Deepgram/Anthropic/Browserbase  
-- Chroma as DoD replacement for SQLite memory  
-- Blind git merge of `legacy-aegis`  
 - Modify remote `legacy-aegis`  
-- Mark live integrations `verified` without live/E2E evidence  
 
 ---
 
-## 5. Suggested next-agent slices (revised)
+## 4. Goal Graph slices (exit criteria)
 
 | Slice | Scope | Exit criteria |
 |---|---|---|
-| **A** | Merge hygiene #22–#29 | Single preferred tip green |
-| **S1** | Required background sync loop + tests + UI/chat/voice triggers | **DONE** (`artifacts/s1-background-sync.txt`) — config interval; retries; stale; on-demand three channels |
-| **S2** | Chat SQLite persist + search + inline charts + context tests | Restart-durable history; searchable; chart in bubble |
-| **S3** | Goals NL extract + statuses/history + alert custom/dedupe + proactive chat | E2E TestClient + UI path |
-| **S4** | Interactive charts (click/range/tooltip/bands/missing/source) | Manual + automated UI checks |
-| **S5** | Fitbit full metric map + OAuth security checklist | Live **or** `blocked-on-secrets` artifact; mocked OAuth tests green |
-| **S6** | Geo consent UI + Calendar live OAuth | Privacy UX + honesty states |
-| **S7** | PWA SW/icons + Tailscale authenticated remote acceptance | Mobile install notes + checklist artifact |
-| **S8** | Playwright + offline/failure + backup/restore | Documented green runs |
+| **GL0** | Model + SQLite schema: goals hierarchy, tasks, revisions, evidence links, journal contributions, suggestions, approval state, audit | **DONE fixture** (`artifacts/gl0-goal-graph-schema.txt`) — UI/E2E still open |
+| **GL1** | Signal provider interface; wrap FR/Sleep/Diet/WP/Overall; dynamic selection API; UI no longer *requires* four fixed cards | Compat scorers still pass `MVP-SCORE-*`; `GG-SIGNAL-*` fixture-verified |
+| **GL2** | Journal contribution engine: RAG, map to goals, classify effect, task suggestions, evidence/assumptions/confidence, approve/edit/reject/defer | Fixture path for beef/rice/run example; no mutation without confirm |
+| **GL3** | Goal tree + task inbox + Today/Upcoming/Completed + editor + suggestion panel + decompose/rewrite/archive | TestClient + UI smoke; HITL buttons wired |
+| **GL4** | Progress workspace: horizons, trends, goal bands, milestones, annotations, missing/stale, explain + create-task-from-chart | Fixture charts + goal overlays; explain action returns evidence-bound text |
+| **GL5** | Typed screen context expansion; read-only tools; mutation preview tools; confirm mutations; searchable chat history; inline charts | Context regression tests; no raw HTML to LLM |
+| **GL6** | Responsive goal/task + suggestion review; PWA; Tailscale remote same behavior | Checklist artifact; maturity not `verified` until operator accept |
 
-**Recommended start without secrets:** **S2 → S3 → S4** (S1 done on `cursor/s1-background-sync-3696`).  
-**With Fitbit secrets:** insert **S5** next.  
-**With Google secrets:** **S6**.
+### Required E2E story (fixture → then Playwright)
+1. Create goal from conversation  
+2. Submit journal entry  
+3. Retrieve prior evidence  
+4. Propose goal contribution  
+5. Suggest task  
+6. Edit + approve  
+7. Dashboard + history update  
+8. Screen-aware chat about updated dashboard  
+
+**Completion requires this path.** Models/UI placeholders alone are insufficient.
 
 ---
 
-## 6. Commands
+## 5. Operational slices (retained, reordered relative to Goal Graph)
+
+| Slice | Scope | Status / note |
+|---|---|---|
+| **S1** | Background sync | **DONE** |
+| **S2** | Chat SQLite persist + search | After GL0 or parallel with GL5 |
+| **S3** | Thin NL goals/alerts (old) | **Superseded by GL0–GL3**; keep alerts work |
+| **S4** | Interactive charts | Prefer implement inside **GL4** |
+| **S5** | Fitbit full metrics + OAuth security | After GL2 or when secrets available |
+| **S6** | Geo UI + Calendar live | After GL4 or with secrets |
+| **S7** | PWA + Tailscale accept | Align with **GL6** |
+| **S8** | Playwright + offline/backup | Include Goal Graph E2E |
+
+**Recommended start (no secrets):**  
+**GL0 (done fixture) → GL1 → GL2 → GL3 → S2 → GL4 → GL5 → S8(partial)**  
+**With Fitbit secrets:** insert **S5** after GL2.  
+**Remote polish:** **GL6 / S7**.
+
+---
+
+## 6. Fitbit / OAuth checklist (still required)
+
+Full metric list + OAuth security checklist unchanged from QA revision (see prior §4.2). Live path remains `blocked-on-secrets` until clients exist. Goal Graph uses fixture metrics until then.
+
+---
+
+## 7. Commands
 
 ```bash
 python3 -m pip install -r requirements.txt
+python3 scripts/validate_product_docs.py
+python3 scripts/validate_success_criteria.py
 make os-test
 make os-dev          # SAME machine as browser → http://127.0.0.1:8000/
 make os-health
-
-# legacy mirror (read-only)
-git fetch origin legacy-aegis
-rm -rf /workspace/legacy-aegis && mkdir -p /workspace/legacy-aegis
-git archive origin/legacy-aegis | tar -x -C /workspace/legacy-aegis
 ```
 
 Localhost trap: `docs/bugs/BUG-LOCALHOST-01.md`.
 
 ---
 
-## 7. Key paths
+## 8. Key paths
 
 | Area | Path |
 |---|---|
+| Goal Graph spec | `docs/GOAL_GRAPH.md` |
 | App | `backend/main.py` |
-| Sync | `backend/sync/registry.py` |
-| Fitbit OAuth | `backend/connectors/fitbit_oauth.py` |
-| Chat | `backend/chat/` |
-| Safety dual-output | `backend/reasoner/`, `backend/safety/guardrails.py` |
-| Frontend | `frontend/` |
-| Maturity map | `docs/SC_MATURITY.md` |
-| Matrix | `docs/FEATURE_MERGE_MATRIX.md` |
-| Legacy | `/workspace/legacy-aegis` (gitignored) |
+| Goals (compat → graph) | `backend/goals/` |
+| Signals / scorers | `backend/scorers/`, future `backend/signals/` |
+| Sync | `backend/sync/` |
+| Chat / context | `backend/chat/`, `backend/intelligence/context.py` |
+| Frontend composer | `frontend/` |
+| Maturity | `docs/SC_MATURITY.md` |

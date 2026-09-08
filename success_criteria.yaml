@@ -1,12 +1,14 @@
 meta:
   project: aegis
   description: >
-    Local-first daily training-decision copilot for functional longevity,
-    expanding into a personal health copilot. Canonical spec: docs/PRODUCT_SPEC.md.
-    `pass: true` means the listed verify command succeeded — NOT always live/E2E
-    product completion. Maturity tiers live in docs/SC_MATURITY.md (QA 2026-09-08).
+    Local-first daily training-decision copilot for functional longevity and a
+    living evidence-backed goal system. Canonical spec: docs/PRODUCT_SPEC.md;
+    Goal Graph: docs/GOAL_GRAPH.md. `pass: true` means the listed verify command
+    succeeded — NOT always live/E2E product completion. Maturity tiers live in
+    docs/SC_MATURITY.md (Goal Graph revision 2026-09-08).
   maturity_doc: docs/SC_MATURITY.md
   implementation_plan: docs/IMPLEMENTATION_PLAN.md
+  goal_graph_doc: docs/GOAL_GRAPH.md
 
 criteria:
   # --- Closed: OS foundation ---
@@ -290,7 +292,82 @@ criteria:
     artifact: artifacts/slice6-product-wave.txt
 
   - id: PHC-DOCS-01
-    criterion: PRODUCT_SPEC, AGENT_HANDOFF, README, and success_criteria stay consistent on identity and scores.
+    criterion: PRODUCT_SPEC, AGENT_HANDOFF, README, GOAL_GRAPH, and success_criteria stay consistent on identity and signals.
     verify: python scripts/validate_product_docs.py
     pass: true
     artifact: artifacts/product-docs-verify.txt
+
+  # --- Planned: Goal Graph and Context-Aware Planning Layer (GG) ---
+  # Do not set pass: true until fixture/E2E path in docs/GOAL_GRAPH.md §12 is evidenced.
+
+  - id: GG-SCHEMA-01
+    criterion: >
+      Goal/task hierarchy, revisions, evidence links, journal contributions,
+      suggestion records, user approval state, and audit history persist in SQLite.
+    verify: python -m pytest tests/test_gg_schema.py -q
+    pass: true
+    artifact: artifacts/gl0-goal-graph-schema.txt
+
+  - id: GG-SIGNAL-01
+    criterion: >
+      Fixed scorers are pluggable signal providers; dashboard/directive select
+      goal-relevant signals; overall score is optional; FR/Sleep/Diet/WP remain available.
+    verify: python -m pytest tests/test_gg_signals.py -q
+    pass: false
+    artifact: null
+
+  - id: GG-CONTRIB-01
+    criterion: >
+      Journal entries map to affected goals with contribution class, evidence,
+      assumptions, confidence; users can edit interpretation before state changes.
+    verify: python -m pytest tests/test_gg_contributions.py -q
+    pass: false
+    artifact: null
+
+  - id: GG-SUGGEST-01
+    criterion: >
+      Task/goal suggestions support approve, edit, reject, defer; no silent mutations;
+      revision history preserved.
+    verify: python -m pytest tests/test_gg_suggestions.py -q
+    pass: false
+    artifact: null
+
+  - id: GG-UI-01
+    criterion: >
+      Goal tree, task inbox/today/upcoming/completed, editor, and suggestion review
+      panel are usable in the local UI.
+    verify: python -m pytest tests/test_gg_ui.py -q
+    pass: false
+    artifact: null
+
+  - id: GG-PROGRESS-01
+    criterion: >
+      Long-term progress charts support horizons, goal lines/bands, milestones,
+      provenance, missing/stale indicators, explain-chart and create-task-from-chart.
+    verify: python -m pytest tests/test_gg_progress.py -q
+    pass: false
+    artifact: null
+
+  - id: GG-CONTEXT-01
+    criterion: >
+      Validated typed screen context (route/goal/task/chart/range/filters/pins)
+      is passed to chat; read tools vs mutation-preview tools are separated.
+    verify: python -m pytest tests/test_gg_context.py -q
+    pass: false
+    artifact: null
+
+  - id: GG-E2E-01
+    criterion: >
+      Fixture or Playwright path: create goal from conversation → journal → evidence →
+      contribution suggestion → edit/approve → dashboard/history update → screen-aware chat.
+    verify: python -m pytest tests/test_gg_e2e.py -q
+    pass: false
+    artifact: null
+
+  - id: GG-SAFETY-01
+    criterion: >
+      Progress language distinguishes observations vs interpretations; insufficient
+      evidence is explicit; intake/directive behavior preserved for users with no goals.
+    verify: python -m pytest tests/test_gg_safety.py -q
+    pass: false
+    artifact: null

@@ -1,9 +1,11 @@
 # aegis Product Specification
 
 **Canonical product + architecture spec** (do not fork parallel specs).  
-**Status date:** 2026-09-07  
+**Status date:** 2026-09-08  
 **DoD:** `success_criteria.yaml`  
-**Handoff:** `AGENT_HANDOFF.md`
+**Handoff:** `AGENT_HANDOFF.md`  
+**Goal Graph:** `docs/GOAL_GRAPH.md`  
+**Implementation plan:** `docs/IMPLEMENTATION_PLAN.md`
 
 ---
 
@@ -13,30 +15,43 @@ Aegis is a **daily training-decision copilot for functional longevity**.
 
 Expanded product direction (same core, wider inputs):
 
-> Aegis is a **local-first personal health copilot** that combines wearable data, body composition, calendar/lifestyle context, natural-language logging, image understanding, environmental context, health scoring, goal tracking, alerts, and a conversational dashboard — and still emits **one evidence-bound daily training directive**.
+> Aegis is a **local-first personal health copilot** and a **living evidence-backed goal system**: wearable data, body composition, calendar/lifestyle context, natural-language logging, image understanding, environmental context, **pluggable health signals**, goal/task hierarchy, alerts, and a conversational dashboard — still able to emit **one evidence-bound daily training directive**.
 
 ### Preserved daily-directive flow
 
 ```
-Intake / synced health data
+Intake / synced health data / journal
   → structured health records (with provenance)
   → evidence retrieval (today vs history)
-  → health scores
-  → WOD / training context (+ negotiation)
-  → ONE evidence-bound daily directive
+  → goal-relevant signals (+ optional overall)
+  → WOD / training context (+ negotiation) when planning
+  → ONE evidence-bound daily directive (when requested)
+  → goal/task suggestions (human-in-the-loop)
 ```
 
-### Canonical health score model
+### Signal model (replaces permanent fixed score cards)
 
-| Score | Role |
+**Front-rack, Sleep, Diet, Workout preparation** remain available as **analyzers / signal providers**. They are **not** permanent top-level product categories.
+
+| Signal | Role when relevant |
 |---|---|
 | **Front-rack** | Mobility / front-rack readiness for loaded upper-body positions |
 | **Sleep** | Overnight recovery quality |
 | **Diet** | Fueling vs Macro Pool / nutrition targets |
 | **Workout preparation** | Readiness to execute *today’s* training plan / WOD |
-| **Overall health/fitness** | Derived summary from the four scores + selected wearable signals |
+| **Overall** | **Optional** derived summary — prefer goal-specific progress |
+| Future examples | body composition, running pace, strength, hydration, recovery, activity volume, mobility, environmental exposure |
 
-**Transitional implementation detail (current code):** the UI/API still expose temporary labels **`readiness`** and **`soreness`** (plus sleep/diet). Those are **not** the permanent product contract. Internal soreness may remain a *factor* feeding Front-rack and Workout preparation; it must not permanently replace Front-rack or Workout preparation as top-level scores.
+Dashboard and directive surfaces select signals from:
+
+- active goals and tasks  
+- recent journal entries  
+- available health data + freshness/confidence  
+- selected dashboard view / user question  
+
+**Backward compatibility:** existing scorers and `MVP-SCORE-*` tests remain; UI migrates under Goal Graph slices (`GG-*` / GL1).
+
+**Transitional implementation detail:** code may still expose temporary labels **`readiness`** / **`soreness`**. Those are debt — not the permanent contract.
 
 ---
 
@@ -260,23 +275,33 @@ Prominent UI; available to assistant; proactive mention when relevant; include v
 
 ---
 
-## 11. Goal planning
+## 11. Goal Graph and task planning
 
-Goals may be created via UI form, natural language, or manual edit.
+Canonical detail: **`docs/GOAL_GRAPH.md`**.
 
-Fields: metric, target, direction, optional timeframe, success criteria, status, created_at, confirmation state, history.
+Aegis maintains a living editable hierarchy:
 
-Statuses: `in_progress` | `completed` | `abandoned` | `paused`.
+`Vision → Goal → Project → Milestone → Task → Subtask → Evidence`
 
-Flow: detect possible completion → show evidence → **ask user to confirm** → mark complete only after confirmation; allow manual complete/abandon; **preserve history permanently**. Goals appear as chart reference lines/bands.
+- Goals: outcomes / maintenance / habits / projects (vague wording preserved + editable structure).  
+- Tasks: actions with inbox/today/upcoming/completed views.  
+- Journal entries map to **goal contributions** (positive/negative/neutral/insufficient/conflicting) with evidence + confidence.  
+- All meaningful mutations are **suggestions** until Approve / Edit / Reject / Defer.  
+- Thin metric-target goals API remains as a compat layer until GL0–GL3 land.
+
+Statuses (goals): `in_progress` | `completed` | `abandoned` | `paused`.  
+Task statuses include `inbox` | `proposed` | `planned` | `in_progress` | `completed` | `skipped` | `canceled`.
+
+Completion of Goal Graph requires the tested path:  
+journal → evidence → suggestion → human approval → dashboard update.
 
 ---
 
 ## 12. Interface and deployment
 
-### Desktop dashboard (Grafana-style)
+### Desktop dashboard (progress workspace)
 
-Daily directive, health scores, alerts, source freshness, interactive charts, goal progress, evidence/history, sync controls.
+Daily directive (when requested), **goal-relevant signals** (not hardcoded four cards), alerts, source freshness, interactive long-term charts with goal bands, goal/task progress, evidence/history, sync controls, suggestion review.
 
 ### Conversation
 
@@ -306,17 +331,19 @@ Searchable durable history still planned (S2).
 ## 13. Architecture (target modules)
 
 ```
-frontend/          PWA + dashboard + unified composer (no floating chat dock)
+frontend/          PWA + progress workspace + unified composer
 backend/
   intake/          NL + image → structured records
   connectors/      fitbit, calendar, fitindex, takeout, weather
-  sync/            registry, jobs, staleness
+  sync/            registry, background loop, staleness
   memory/          SQLite health DB + vector/evidence index
-  scorers/         front_rack, sleep, diet, workout_prep, overall
-  reasoner/        directive + tool-using chat
+  signals/         pluggable providers (wrap scorers; GL1)
+  scorers/         front_rack, sleep, diet, workout_prep, overall (compat)
+  reasoner/        directive + tool-using chat + dual safety modes
   alerts/          thresholds + history
-  goals/           CRUD + confirmation
-  charts/          validated chart specs
+  goals/           Goal Graph + HITL suggestions (GL0+)
+  charts/          validated chart specs + goal overlays
+  intelligence/    typed screen context
   obs/             local tracing
 ```
 
@@ -326,19 +353,14 @@ External connectors are adapters; core reasoning never hard-depends on them.
 
 ## 14. Implementation order (next)
 
-1. Canonical schema, provenance, SQLite durability — **done**  
-2. Source registry + sync status — **done**  
-3. Manual/fixture ingestion — **done**  
-4. Fitbit + Calendar adapters (fixture; live OAuth deferred) — **done F**  
-5. FITINDEX CSV/manual (OCR later) — **done / OCR deferred**  
-6. Alerts + staleness — **done**  
-7. Goals + progress — **done**  
-8. LLM query tools + inline charts — **done**  
-9. Canonical four-score + WOD + Macro Pool — **done**  
-10. Mobile/PWA + Tailscale hardening — **done thin**  
-11. Feature aggregate (Takeout prod, Open-Meteo, chat, dashboard) — **done this pass**  
-12. Older-prototype residual port — **blocked** until tree available  
-13. Live OAuth + Playwright E2E — optional when secrets/scope allow  
+See **`docs/IMPLEMENTATION_PLAN.md`** for the authoritative ordered slices.
+
+1. Foundation slices 0–11 + feature aggregate — **done**  
+2. S1 background sync + unified composer — **done**  
+3. **GL0–GL3 Goal Graph core** — **next**  
+4. S2 chat persist · GL4 progress dashboards · GL5 context-aware chat  
+5. S5 Fitbit live/OAuth when secrets · S6 geo/calendar · GL6/S7 remote/PWA  
+6. S8 Playwright incl. Goal Graph E2E  
 
 **Dev command:** `make os-dev` (alias: `make dev`).
 

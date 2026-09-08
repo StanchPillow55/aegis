@@ -8,12 +8,13 @@ Still centered on one evidence-bound daily training directive:
 
 ## Docs (read in order)
 1. [`docs/PRODUCT_SPEC.md`](docs/PRODUCT_SPEC.md) — canonical product + architecture spec  
-2. [`success_criteria.yaml`](success_criteria.yaml) — Definition of Done (automation)  
-3. [`docs/SC_MATURITY.md`](docs/SC_MATURITY.md) — verified vs fixture vs planned  
-4. [`AGENT_HANDOFF.md`](AGENT_HANDOFF.md) — current state + next slice  
-5. [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) — next-agent implementation plan  
-6. [`docs/FEATURE_MERGE_MATRIX.md`](docs/FEATURE_MERGE_MATRIX.md) — cross-prototype feature status  
-7. [`CLAUDE.md`](CLAUDE.md) — build contract  
+2. [`docs/GOAL_GRAPH.md`](docs/GOAL_GRAPH.md) — Goal Graph + context-aware planning  
+3. [`success_criteria.yaml`](success_criteria.yaml) — Definition of Done (automation)  
+4. [`docs/SC_MATURITY.md`](docs/SC_MATURITY.md) — verified vs fixture vs planned  
+5. [`AGENT_HANDOFF.md`](AGENT_HANDOFF.md) — current state + next slice  
+6. [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) — ordered implementation slices  
+7. [`docs/FEATURE_MERGE_MATRIX.md`](docs/FEATURE_MERGE_MATRIX.md) — cross-prototype feature status  
+8. [`CLAUDE.md`](CLAUDE.md) — build contract  
 
 ## Quickstart (Apple Silicon M2 or Linux)
 ```bash

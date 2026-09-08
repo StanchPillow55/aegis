@@ -52,18 +52,19 @@
 | Calendar lifestyle signals | older | I | V | Y | Ported early/late/busy/travel derivation | optional geopy | `/api/calendar/signals` | **Done** |
 | Geolocation privacy default-off | both | I | V | Y | Keep; never cloud LLM | — | `/api/geo/status` | **Keep** |
 | Open-Meteo weather/AQI | both | I | V (fake fallback CONFLICT) | Y | Canonical honest modes win; live verified | network | `mode=live` smoke | **Done** |
-| Front-rack/Sleep/Diet/WP/Overall | target | I | — | Y | Keep contract | — | MVP-SCORE | **Keep** |
+| Front-rack/Sleep/Diet/WP/Overall | target | I | — | Y | Keep as **pluggable signal providers**; dashboard migrates to Goal Graph | — | MVP-SCORE + GG-SIGNAL | **Migrate** |
+| Goal Graph hierarchy + HITL | plan | M | — | Y | New major layer (`docs/GOAL_GRAPH.md`) | GL0–GL5 | GG-* | **Planned** |
 | Hydration + performance factors | older | I | V | Y | Ported as `scores.factors.*` (not top-level) | optional intake fields | `test_legacy_ports` | **Done** |
 | Macro Pool | target | I | — | Y | Keep | — | MVP-MACRO | **Keep** |
 | WOD negotiation | target | I | V (partial) | Y | Keep | — | MVP-WOD | **Keep** |
-| Goals + confirm | both | I | V | Y | Keep API; light UI | — | PHC-GOALS | **Keep** |
+| Goals + confirm (metric-target) | both | I | V | Y | Compat until Goal Graph replaces UI contract | — | PHC-GOALS | **Compat** |
 | Alerts defaults/custom | both | I | V | Y | Keep API; light UI | — | PHC-ALERTS | **Keep** |
 | LLM tools + dateparser | both | I | V | Y | Keep + body_comp/calendar/correlate/trend | — | tools | **Done** |
 | Patterns / correlations / trends | older | I | V | Y | Ported SQL-free metric trends + Pearson | metrics store | `/api/patterns/*` | **Done** |
 | Chroma semantic search | older | M | V | N* | Skip — SQLite memory is DoD | — | — | **D** |
-| Chart specs + SVG render | target | I | V (Recharts) | Y | Keep SVG; skip Vite SPA | — | charts | **Keep** |
-| Text chat + sessions | older→target | I | V | Y | Sessions + guardrails + rich context | — | `/api/chat/sessions` | **Done** |
-| Image attach/preview | target | P | V | Y | Keep preview; OCR via FITINDEX path | — | chat dock | **Partial** |
+| Chart specs + SVG render | target | I | V (Recharts) | Y | Keep SVG; skip Vite SPA; bands via GL4 | — | charts | **Keep** |
+| Text chat + sessions | older→target | I | V | Y | Unified composer + sessions; SQLite persist planned | — | `/api/chat` | **Done / S2** |
+| Image attach/preview | target | P | V | Y | Unified composer (no chat dock) | — | composer | **Partial** |
 | Vision / llava status + OCR | both | I | V | Y | Status + FITINDEX OCR when model present | Ollama | vision + ocr | **Done** |
 | Rich AIContext / system context | older | I | V | Y | Ported vitals/alerts/goals/stale/calendar | — | `/api/context/screen` | **Done** |
 | Sync/settings/overview UI | target | I light | V (Vite SPA) | Y | Keep static UI; skip SPA rewrite | — | frontend | **Keep light** |
