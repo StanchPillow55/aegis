@@ -28,6 +28,7 @@ class SourceId(str, Enum):
     CALENDAR = "calendar"
     FITINDEX = "fitindex"
     TAKEOUT = "takeout"
+    GOOGLE_HEALTH = "google_health"
     WEATHER = "weather"
 
 
@@ -127,6 +128,18 @@ def _default_sources() -> dict[str, SourceStatus]:
             supports_background=False,
             kind="external",
             coverage={"primary_metric_path": True, "modes": ["zip_preview", "zip_confirm"]},
+        ),
+        SourceId.GOOGLE_HEALTH.value: SourceStatus(
+            source_id=SourceId.GOOGLE_HEALTH,
+            label="Google Health API (live OAuth scaffold)",
+            enabled=False,
+            supports_background=True,
+            kind="external",
+            coverage={
+                "primary_metric_path": True,
+                "oauth": True,
+                "scopes": ["fitness.activity", "fitness.heart_rate", "fitness.sleep", "fitness.body"],
+            },
         ),
         SourceId.WEATHER.value: SourceStatus(
             source_id=SourceId.WEATHER,

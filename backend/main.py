@@ -16,6 +16,7 @@ from backend.charts import build_metric_trend, validate_chart_spec
 from backend.chat import ChatService, ChatStore, ChatTurnRequest, vision_status
 from backend.config import get_settings
 from backend.connectors import fitbit_oauth
+from backend.connectors import google_oauth
 from backend.connectors.calendar_signals import summarize_calendar_signals
 from backend.connectors.fitindex_ocr import propose_from_image, propose_from_text_heuristic
 from backend.connectors.status import enrich_source_status
@@ -517,6 +518,82 @@ def api_fitbit_callback(code: str, redirect_uri: str | None = None) -> dict:
     if not result.get("ok"):
         raise HTTPException(status_code=400, detail=result.get("detail") or "OAuth failed")
     return result
+
+
+@app.get("/api/google/calendar/status")
+def api_google_calendar_status() -> dict:
+    return google_oauth.status(google_oauth.SOURCE_CALENDAR)
+
+
+@app.get("/api/google/calendar/auth")
+def api_google_calendar_auth() -> dict:
+    st = google_oauth.status(google_oauth.SOURCE_CALENDAR)
+    url = google_oauth.auth_url(google_oauth.SOURCE_CALENDAR)
+    if not url:
+        return {
+            **st,
+            "detail": "Google OAuth not configured — set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.",
+        }
+    return {**st, "auth_url": url}
+
+
+@app.get("/api/google/calendar/callback")
+def api_google_calendar_callback(code: str, redirect_uri: str | None = None) -> dict:
+    result = google_oauth.exchange_code(
+        google_oauth.SOURCE_CALENDAR, code, redirect_uri=redirect_uri
+    )
+    if not result.get("ok"):
+        raise HTTPException(status_code=400, detail=result.get("detail") or "OAuth failed")
+    return result
+
+
+@app.post("/api/google/calendar/revoke")
+def api_google_calendar_revoke() -> dict:
+    return google_oauth.revoke(google_oauth.SOURCE_CALENDAR)
+
+
+@app.get("/api/google/calendar/events")
+def api_google_calendar_events(max_results: int = 10) -> dict:
+    """Live read-only events when authorized; otherwise honest needs_token."""
+    return google_oauth.calendar_events_live(max_results=max_results)
+
+
+@app.get("/api/google/health/status")
+def api_google_health_status() -> dict:
+    return google_oauth.status(google_oauth.SOURCE_HEALTH)
+
+
+@app.get("/api/google/health/auth")
+def api_google_health_auth() -> dict:
+    st = google_oauth.status(google_oauth.SOURCE_HEALTH)
+    url = google_oauth.auth_url(google_oauth.SOURCE_HEALTH)
+    if not url:
+        return {
+            **st,
+            "detail": "Google OAuth not configured — set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.",
+        }
+    return {**st, "auth_url": url}
+
+
+@app.get("/api/google/health/callback")
+def api_google_health_callback(code: str, redirect_uri: str | None = None) -> dict:
+    result = google_oauth.exchange_code(
+        google_oauth.SOURCE_HEALTH, code, redirect_uri=redirect_uri
+    )
+    if not result.get("ok"):
+        raise HTTPException(status_code=400, detail=result.get("detail") or "OAuth failed")
+    return result
+
+
+@app.post("/api/google/health/revoke")
+def api_google_health_revoke() -> dict:
+    return google_oauth.revoke(google_oauth.SOURCE_HEALTH)
+
+
+@app.post("/api/google/health/pull")
+def api_google_health_pull() -> dict:
+    """Scaffold gate for live Health pull — never fakes metrics without a token."""
+    return google_oauth.health_pull_scaffold()
 
 
 @app.post("/api/takeout/preview")

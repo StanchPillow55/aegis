@@ -5,6 +5,8 @@ from __future__ import annotations
 import os
 from typing import Any
 
+from backend.connectors import google_oauth
+
 
 def fitbit_config_state() -> dict[str, Any]:
     client_id = os.environ.get("FITBIT_CLIENT_ID") or os.environ.get("AEGIS_FITBIT_CLIENT_ID")
@@ -15,31 +17,45 @@ def fitbit_config_state() -> dict[str, Any]:
         return {
             "integration_state": "configured",
             "live_oauth": False,
-            "detail": "Credentials present but live OAuth adapter not enabled in this build; use fixture sync.",
-            "mode": "needs_adapter",
+            "detail": (
+                "Fitbit credentials present but Fitbit is not the primary sync path "
+                "(legacy fixture only). Prefer Google Health / Takeout."
+            ),
+            "mode": "legacy_fixture",
+            "primary": False,
         }
     return {
         "integration_state": "needs_credentials",
         "live_oauth": False,
-        "detail": "Fitbit OAuth not configured. Fixture sync available when source enabled.",
+        "detail": "Fitbit OAuth not configured. Legacy fixture sync available when source enabled.",
         "mode": "fixture_available",
+        "primary": False,
     }
 
 
 def calendar_config_state() -> dict[str, Any]:
-    token = os.environ.get("GOOGLE_CALENDAR_TOKEN") or os.environ.get("AEGIS_CALENDAR_TOKEN")
-    if token:
-        return {
-            "integration_state": "configured",
-            "live_oauth": False,
-            "detail": "Token present but live Calendar adapter not enabled; use fixture sync.",
-            "mode": "needs_adapter",
-        }
+    st = google_oauth.status(google_oauth.SOURCE_CALENDAR)
     return {
-        "integration_state": "needs_credentials",
-        "live_oauth": False,
-        "detail": "Google Calendar not configured. Fixture sync available when source enabled.",
-        "mode": "fixture_available",
+        "integration_state": st["integration_state"],
+        "live_oauth": bool(st.get("live_oauth")),
+        "authenticated": bool(st.get("authenticated")),
+        "auth_url": st.get("auth_url"),
+        "detail": st.get("detail"),
+        "mode": st["integration_state"],
+        "primary": False,
+    }
+
+
+def google_health_config_state() -> dict[str, Any]:
+    st = google_oauth.status(google_oauth.SOURCE_HEALTH)
+    return {
+        "integration_state": st["integration_state"],
+        "live_oauth": bool(st.get("live_oauth")),
+        "authenticated": bool(st.get("authenticated")),
+        "auth_url": st.get("auth_url"),
+        "detail": st.get("detail"),
+        "mode": st["integration_state"],
+        "primary_metric_path": True,
     }
 
 
@@ -47,8 +63,12 @@ def takeout_config_state() -> dict[str, Any]:
     return {
         "integration_state": "local_upload",
         "live_oauth": False,
-        "detail": "Upload a Takeout ZIP via /api/takeout/zip; fixture sync also available.",
+        "detail": (
+            "Primary offline metric path: upload a Takeout ZIP via preview→confirm. "
+            "Live Google Health API uses separate OAuth scaffold."
+        ),
         "mode": "upload_or_fixture",
+        "primary_metric_path": True,
     }
 
 
@@ -80,6 +100,7 @@ def enrich_source_status(payload: dict[str, Any]) -> dict[str, Any]:
     mapping = {
         "fitbit": fitbit_config_state,
         "calendar": calendar_config_state,
+        "google_health": google_health_config_state,
         "takeout": takeout_config_state,
         "weather": weather_config_state,
     }
@@ -95,11 +116,12 @@ def enrich_source_status(payload: dict[str, Any]) -> dict[str, Any]:
         }
     else:
         payload.setdefault("integration_state", "unknown")
-    # Never claim live OAuth connected
-    if payload.get("live_oauth") is True and sid in {"fitbit", "calendar"}:
-        payload["live_oauth"] = False
-        payload["detail"] = (payload.get("detail") or "") + " (forced: no fake OAuth)"
-    # Normalize enum source_id for JSON clients
+    # Never claim live OAuth connected without authenticated=true
+    if payload.get("live_oauth") is True and not payload.get("authenticated"):
+        # configured-but-not-authed is allowed (auth_url present); connected requires token
+        if payload.get("integration_state") == "connected":
+            payload["integration_state"] = "configured"
+            payload["detail"] = (payload.get("detail") or "") + " (no token on disk)"
     if hasattr(payload.get("source_id"), "value"):
         payload["source_id"] = payload["source_id"].value
     return payload
