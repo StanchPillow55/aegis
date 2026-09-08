@@ -1,8 +1,8 @@
 # Feature Merge Decisions
 
-**Date:** 2026-09-07  
-**Target:** current Cursor workspace (`/workspace`)  
-**Older prototype:** `/Users/bradleyharaguchi/Downloads/aegis` (**not readable on Cloud Agent**)
+**Date:** 2026-09-08  
+**Target:** `/workspace` (`cursor/feature-merge-aggregate-766c`)  
+**Older prototype:** `origin/legacy-aegis` → `/workspace/legacy-aegis` (read-only archive; remote branch untouched)
 
 ---
 
@@ -10,14 +10,13 @@
 
 | Decision | Choice | Rationale |
 |---|---|---|
-| Canonical architecture | **Current workspace** FastAPI + SQLite + local providers + static frontend | Passing tests, Slice 0–6 already land; PRODUCT_SPEC local-first |
-| Older tree role | Read-only feature source | Must not overwrite target history or break tests |
-| Merge style | Semantic port, not `git merge` | Paths/layouts differ; blind copy would destroy contracts |
-| Cloud APIs | Optional connectors; never required for boot | User local-only direction; fail soft with **clear disabled/config state** |
-| Fixtures | Allowed for tests/demos | Must be labeled `fixture` / `offline` — never presented as live sync success |
-| Fake OAuth / mock auth | **Forbidden** | PRODUCT_SPEC + PHC-OAUTH-01 |
-| Voice | Browser STT/TTS optional; Deepgram out of core | Local-first |
-| Score contract | Front-rack, Sleep, Diet, Workout-prep, Overall | Transitional readiness/soreness may remain internal factors only |
+| Canonical architecture | Current FastAPI + SQLite + static frontend | Passing tests; product local-first |
+| Older tree role | Read-only feature source at `/workspace/legacy-aegis` | Extracted via `git archive`; never push to `legacy-aegis` |
+| Merge style | Semantic port | Layouts differ (`src/backend` vs `backend`) |
+| Score contract | Keep Front-rack/Sleep/Diet/WP/Overall | Hydration/performance ported as **factors** only |
+| Chroma | Skip | SQLite memory is DoD |
+| Vite/Recharts SPA | Skip wholesale rewrite | Enhance static UI; single `make os-dev` |
+| Fake weather / fake OAuth | Forbidden | Legacy silent 22.5°C fallback not ported |
 
 ---
 
@@ -25,71 +24,52 @@
 
 | Conflict | Resolution |
 |---|---|
-| Older prototype unreachable on agent | Document blocker; continue independent ports from PRODUCT_SPEC + matrix; re-audit when tree provided |
-| PRODUCT_SPEC §3–4 status table stale vs code | Refresh status table to match AGENT_HANDOFF + matrix |
-| Macro Pool exists only in tests | Wire into production diet/canonical scoring |
-| Takeout ZIP parser only in tests | Promote to `backend/connectors/takeout.py` + API |
-| `/api/environment` always returns ok fixture | Distinguish `live` vs `offline_fixture` vs `disabled`; never imply live success when offline |
-| Fitbit “sync success” via fixture while OAuth missing | Expose `auth_state=needs_credentials|fixture_mode`; UI must not say “connected to Fitbit” for fixture |
-| Chat/vision “reported” features absent | Implement minimal real chat+tools; vision status honest if llava absent |
-| Grafana full dashboard vs composer | Ship **light dashboard** (sync/alerts/goals/charts) now; defer full Grafana clone |
-| Legacy Redis/Fetch/Browserbase modules | Leave quarantined; do not make them boot-required |
+| Legacy 6-dim scores vs canonical 5-dim | Canonical wins; hydration/performance → `scores.factors` |
+| Legacy Open-Meteo hardcoded fallback | Canonical `live\|offline\|disabled` labeling |
+| Legacy “Live Sync” UI badge | Not ported; sync panel shows honest states |
+| Calendar OAuth token field mismatch in legacy | Do not port buggy Google token store blindly; signals only for now |
+| Fitbit Fernet demo seed | Prefer `AEGIS_TOKEN_KEY` / data-dir-derived key; no fake authenticated |
+| Dual-process Makefile (backend+frontend) | Keep single `make os-dev` (+ `make dev` alias) |
 
 ---
 
-## 3. Migrations performed this run
+## 3. Migrations performed (legacy re-audit pass)
 
-1. `docs/FEATURE_MERGE_MATRIX.md` + this decisions doc.  
-2. Takeout ZIP → `backend/connectors/takeout.py` + `/api/takeout/zip`.  
-3. Macro Pool → `backend/scorers/macro_pool.py` wired into diet + canonical scores.  
-4. Open-Meteo client with `mode=live|offline|disabled` (never claims live when offline).  
-5. Connector honesty: `integration_state` + `live_oauth=false` on `/api/sources`.  
-6. Frontend overview (sync/env/alerts/chart), settings/imports, floating chat dock.  
-7. Chat service + `/api/context/screen` + `/api/vision/status` + date parsing tool.  
-8. `make dev` alias → `make os-dev` (single startup path).  
-9. PRODUCT_SPEC / AGENT_HANDOFF updates.
+1. Fetched `origin/legacy-aegis` → `/workspace/legacy-aegis` (gitignored).  
+2. Re-audited matrix with verified **V** older columns.  
+3. Ported: guardrails, Fitbit OAuth scaffold, FITINDEX OCR/text drafts, Takeout JSON, calendar signals, rich context, chat sessions, patterns/correlations, hydration/performance factors.  
+4. Live Open-Meteo verified after egress approval (`mode=live`).  
+5. Frontend: Fitbit status check + FITINDEX OCR upload control.
 
 ---
 
 ## 4. Intentionally deferred
 
-| Feature | Why deferred |
+| Feature | Why |
 |---|---|
-| Live Fitbit OAuth token exchange | Requires user secrets + redirect URI; show `needs_credentials` instead |
-| Live Google Calendar OAuth | Same |
-| FITINDEX OCR / llava screenshot pipeline | Needs local vision model + UX review loop; CSV/manual already ship |
-| Full Grafana-style multi-page analytics | Large UI rewrite; light dashboard first |
-| Deepgram voice-first | Conflicts with local-first decision |
-| Calendar travel detection | Needs live calendar + geo consent path |
-| Playwright E2E against live `os-dev` | Optional hardening; CI uses TestClient |
-| Re-inspection of older Downloads tree | **Blocked** until user provides zip/repo/sync |
+| Live Fitbit data pull after OAuth | Needs user secrets + callback exercise in real browser |
+| Live Google Calendar OAuth | Needs Google client secrets; signals work on fixture events |
+| Full Recharts Vite SPA | Conflicts with single-process static serve |
+| ChromaDB | Product chose SQLite memory |
+| Multi-user isolation | Local single-user MVP |
+| APScheduler background jobs | Registry on-demand + config flag sufficient |
+| Claude-required extraction | Keep Ollama optional + heuristic |
 
 ---
 
-## 5. Credentials / permissions blockers
+## 5. Credentials still optional
 
-When available, wire without fake success:
-
-- `FITBIT_CLIENT_ID`, `FITBIT_CLIENT_SECRET`, `FITBIT_REDIRECT_URI`
-- Google Calendar OAuth client JSON
-- Optional: nothing required for Open-Meteo (no key), but network egress must work
-
-Until then: UI/API must report **disabled / needs_credentials / offline_fixture**.
+- `FITBIT_CLIENT_ID`, `FITBIT_CLIENT_SECRET`, `FITBIT_REDIRECT_URI`, `AEGIS_TOKEN_KEY`
+- `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` (calendar live)
+- Open-Meteo: no key; egress now allowed → live mode works
 
 ---
 
-## 6. Definition of “aggregate complete” for this agent pass
-
-- Matrix + decisions committed.  
-- Independent ports above implemented + tested.  
-- No fake live integrations.  
-- Older-prototype unique features marked **U** until the tree is supplied; then a follow-up pass updates the matrix and ports residuals.
-
-### Evidence (this pass)
+## 6. Evidence
 
 | Check | Result |
 |---|---|
-| Local `make os-test` | 94 pytest passed |
-| GitHub CI on `cursor/feature-merge-aggregate-766c` @ `2342e0a` | **success** (2 checks) |
+| `make os-test` | 103 pytest passed |
+| Open-Meteo live smoke | `mode=live` |
 | PR | https://github.com/StanchPillow55/aegis/pull/29 |
-| Older prototype inspection | Still blocked (path not on agent) |
+| Remote `legacy-aegis` | **not modified** |
