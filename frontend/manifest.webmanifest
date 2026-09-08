@@ -1,0 +1,18 @@
+{
+  "name": "aegis",
+  "short_name": "aegis",
+  "description": "Local-first daily training-decision copilot",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f4faf6",
+  "theme_color": "#0f3d32",
+  "lang": "en",
+  "icons": [
+    {
+      "src": "/static/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

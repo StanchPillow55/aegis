@@ -1,30 +1,135 @@
-# Agent Handoff Document
+# AGENT_HANDOFF — aegis
 
-## Current Status
+**Read first (in order):**
+1. `docs/PRODUCT_SPEC.md` — product + architecture contract  
+2. `docs/GOAL_GRAPH.md` — Goal Graph + context-aware planning (next major layer)  
+3. `docs/CONNECTORS.md` — Google Health primary; Calendar OAuth; no scale/Fitbit-primary OAuth  
+4. `docs/IMPLEMENTATION_PLAN.md` — ordered slices (GL0–GL6 + S*)  
+5. `docs/SC_MATURITY.md` — what `pass: true` actually means  
+6. `docs/FEATURE_MERGE_MATRIX.md` — legacy vs canonical feature status  
+7. `success_criteria.yaml` — DoD automation  
+8. `CLAUDE.md` — build contract  
+9. `docs/bugs/BUG-LOCALHOST-01.md` — if UI “won’t open” from a Cloud Agent
 
-- OS migration foundation has been merged into `master`.
-- Provider skeletons have been added.
-- Local LLM fallback now returns an IntakeResult-compatible dictionary shape.
-- Redis workflow trigger has been narrowed so OS migration branches should not be blocked by Redis checks.
+---
 
-## Validation Status
+## TL;DR for a new agent
 
-Current blocker:
-- `make os-test` failed because `success_criteria.yaml` did not parse with `criteria` as a list.
+Branch tip: `cursor/s1-background-sync-3696` ([PR #31](https://github.com/StanchPillow55/aegis/pull/31)).
 
-Required before next wave:
-- `python scripts/validate_success_criteria.py` must pass.
-- `make os-test` must pass.
+**Foundation + S1 + unified composer are shipped.** Next major product layer is the **Goal Graph and Context-Aware Planning Layer** — not “add Google Tasks,” and not more fixed score cards.
 
-## Next Recommended Branches
+**Product decision:** Front-rack / Sleep / Diet / Workout preparation remain **analyzers**. Dashboard + directive surface **goal-relevant signals**. Overall score is optional.
 
-Only start these after `make os-test` passes on `master`:
+**Do not** treat SC `pass: true` as product complete. Use `docs/SC_MATURITY.md`.  
+**Do not** mark Goal Graph done from schema/UI placeholders — need journal → evidence → suggestion → approval → dashboard E2E.  
+**Do not** modify remote `legacy-aegis`. **Do not** fake OAuth or silent mutations.  
+**Connectors:** see `docs/CONNECTORS.md` — Google Health primary; Google Calendar OAuth OK; FITINDEX = CSV+image only; Fitbit API not primary.
 
-- `feat/os-memory`: SQLite/Chroma local memory.
-- `feat/os-voice`: faster-whisper and Piper skeletons.
-- `feat/os-tracing`: OpenTelemetry and Jaeger skeleton.
+---
 
-## Rules
+## Progress (stacked PRs — CI green)
 
-- Do not mark success criteria `pass: true` unless the verify command passed and the artifact field is non-null.
-- Missing local services should become skip guards and bucket-list entries, not hard failures.
+| Slice | PR | Result |
+|---|---|---|
+| OS → feature aggregate | #22–#29 | CI green |
+| S1 background sync + unified composer | #31 | CI green |
+
+### Verification (foundation)
+
+| Check | Result |
+|---|---|
+| Tests | **114+** pytest (`make os-test`) |
+| SC automation | Existing rows `pass: true` = verify scripts green — see maturity map |
+| Open-Meteo | Live when egress allowed |
+| Demos | `make mvp-demo` / `make os-demo` |
+
+---
+
+## What works today (vs Goal Graph)
+
+### Existing working score / directive behavior
+- Text/journal → extract → evidence (today_wins) → directive  
+- Scorers: Front-rack / Sleep / Diet / Workout-prep / Overall (+ Macro Pool, WOD)  
+- Dual safety modes: directive=`training_planning`, chat=`health_analysis` (labeled in UI).  
+- Geo consent UI available (default off).  
+- PWA service worker + icon present; install acceptance still operator-owned.  
+- Playwright smoke available behind `AEGIS_PLAYWRIGHT=1`.  
+- **Metric sync policy:** Google Health / Takeout primary; Google Calendar OAuth kept; FITINDEX = CSV + image only; Fitbit API not primary (legacy fixture only).  
+- Recovery / running_pace signals are computed from journal (not stubs).  
+- Local backup/restore available under Settings.  
+- `pass: true` ≠ live/E2E complete.
+
+---
+
+## Known limitations
+
+- Fixed four-score dashboard still present in UI (compat); dynamic signals preferred when goals exist.  
+- Goal Graph GL0–GL5 + GG-E2E fixture verified; Playwright full §12 browser path still open.  
+- Chat sessions persist in SQLite (S2).  
+- Live Google Calendar / Google Health OAuth still needs operator credentials (Calendar path is the intended live OAuth — not Fitbit).  
+- Fitbit live API intentionally deprioritized (refresh cadence / deprecated for this product).  
+- `pass: true` ≠ live/E2E complete.
+
+---
+
+## Next implementation order
+
+1. **GL0–GL5 + GG-E2E/SAFETY + S8 Playwright §12** — **done** (Playwright opt-in `AEGIS_PLAYWRIGHT=1`)  
+2. **S5a / S5b** — FITINDEX confirm UX + Takeout preview/provenance — **done**  
+3. **S9** — PDF gap polish (computed signals, sync labels, backup) — **done**  
+4. **(secrets) S6** — Live Google Calendar OAuth; geo consent UI already present  
+5. **(secrets) S5** — Live Google Health API beyond Takeout (**not Fitbit**)  
+6. **GL6 / S7** — Remote/PWA operator acceptance (Tailscale mesh)  
+
+Details: `docs/IMPLEMENTATION_PLAN.md` · connectors: `docs/CONNECTORS.md` · backup: `docs/BACKUP.md`.
+
+Historical note: **Slice 0** (schema/evidence) is already done; do not restart it.
+
+---
+
+## Safety: two output modes (enforce)
+
+1. **Health analysis** — observational / non-prescriptive.  
+2. **Training planning (directive)** — labeled non-medical decision support; disclaimer; confirm material plan changes.
+
+Goal suggestions are a third HITL surface — never silent writes.
+
+---
+
+## Localhost / browser
+
+`make os-dev` → `http://127.0.0.1:8000/` on the **same host**.  
+Cloud Agent localhost ≠ laptop localhost. See `docs/bugs/BUG-LOCALHOST-01.md`.
+
+---
+
+## Legacy prototype
+
+| Item | Detail |
+|---|---|
+| Remote | `origin/legacy-aegis` — **do not push/modify** |
+| Local | `/workspace/legacy-aegis` via `git archive` (gitignored) |
+
+---
+
+## Rules (non-negotiable)
+
+1. Mark complete in prose only when `docs/SC_MATURITY.md` says so.  
+2. Preserve intake/directive behavior while migrating signals.  
+3. Never silent goal/task mutations.  
+4. Never fake OAuth / fake weather. Fitbit is not the primary sync — see `docs/CONNECTORS.md`.  
+5. Fixtures OK if labeled.  
+6. UI ≠ backend ≠ live ≠ E2E.  
+
+---
+
+## Quickstart
+
+```bash
+python3 -m pip install -r requirements.txt
+python3 scripts/validate_product_docs.py
+make os-test
+make os-dev
+make os-health
+```

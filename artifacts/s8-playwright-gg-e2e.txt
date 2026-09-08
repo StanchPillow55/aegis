@@ -1,0 +1,21 @@
+S8 Playwright Goal Graph §12 browser path
+Date: 2026-09-08
+Branch: cursor/s1-background-sync-3696
+
+Covers docs/GOAL_GRAPH.md §12 in Chromium (opt-in):
+1. Create goal in UI
+2. Submit journal via composer → directive
+3–5. Pending suggestions after journal
+6. Edit + approve suggestion (HITL)
+7. Task appears in inbox
+8. Screen-aware Ask about goals dashboard
+
+Also fixed: approved suggestions create inbox tasks (not only planned).
+
+Verify (CI skips without flag):
+  AEGIS_PLAYWRIGHT=1 python3 -m pytest tests/test_s8_playwright_gg_e2e.py -q
+
+Fixture path remains:
+  python3 -m pytest tests/test_gg_e2e.py -q
+.                                                                        [100%]
+1 passed in 5.92s
