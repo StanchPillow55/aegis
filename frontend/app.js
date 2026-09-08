@@ -9,6 +9,7 @@ const speakToggle = document.getElementById("speak-toggle");
 const result = document.getElementById("result");
 const directiveText = document.getElementById("directive-text");
 const disclaimerText = document.getElementById("disclaimer-text");
+const directiveMode = document.getElementById("directive-mode");
 const scoreRow = document.getElementById("score-row");
 const todayPre = document.getElementById("today-pre");
 const historyPre = document.getElementById("history-pre");
@@ -212,6 +213,13 @@ dictateBtn.addEventListener("click", () => {
 function showDirectivePayload(data) {
   directiveText.textContent = data.directive;
   disclaimerText.textContent = data.disclaimer || "";
+  if (directiveMode) {
+    const label =
+      data.output_mode_label ||
+      "Training planning — non-medical decision support (not diagnosis or treatment).";
+    directiveMode.textContent = label;
+    directiveMode.hidden = false;
+  }
   const scores = data.scores || {};
   const selected = (data.signals && data.signals.selected) || [];
   const ev = data.evidence || {};
@@ -325,11 +333,25 @@ function appendBubble(role, content, opts = {}) {
   thread.hidden = false;
   const div = document.createElement("div");
   div.className = `bubble ${role}`;
+  if (opts.modeLabel) {
+    const tag = document.createElement("span");
+    tag.className = "output-mode-tag";
+    tag.textContent = opts.modeLabel;
+    div.appendChild(tag);
+  }
   if (opts.thumb) {
-    div.innerHTML = `<img class="thumb" src="${opts.thumb}" alt="" /><span></span>`;
-    div.querySelector("span").textContent = content;
+    const img = document.createElement("img");
+    img.className = "thumb";
+    img.src = opts.thumb;
+    img.alt = "";
+    const span = document.createElement("span");
+    span.textContent = content;
+    div.appendChild(img);
+    div.appendChild(span);
   } else {
-    div.textContent = content;
+    const span = document.createElement("span");
+    span.textContent = content;
+    div.appendChild(span);
   }
   if (opts.pins?.length) {
     const meta = document.createElement("span");
@@ -422,7 +444,11 @@ async function submitAsk() {
     if (!res.ok) throw new Error(data.detail || res.status);
     chatSessionId = data.session_id || chatSessionId;
     if (chatSessionId) localStorage.setItem("aegis_chat_session_id", chatSessionId);
-    appendBubble("assistant", data.reply);
+    appendBubble("assistant", data.reply, {
+      modeLabel:
+        data.output_mode_label ||
+        "Health analysis — observational / non-prescriptive (not a care plan).",
+    });
     if (data.chart_hints?.length) {
       document.getElementById("chart-metric").value = data.chart_hints[0];
       refreshChart();
@@ -1201,3 +1227,55 @@ document.getElementById("manual-btn").addEventListener("click", async () => {
 refreshDashboard();
 refreshGoalsUi();
 restoreChatSession();
+
+async function refreshGeoStatus() {
+  const el = document.getElementById("geo-status");
+  const toggle = document.getElementById("geo-consent-toggle");
+  if (!el) return;
+  try {
+    const res = await fetch("/api/geo/status");
+    const data = await res.json();
+    el.textContent = `${data.enabled ? "enabled" : "disabled"} · cloud_llm=${data.cloud_llm} · ${data.detail || ""}`;
+    if (toggle) toggle.checked = !!data.enabled;
+  } catch (err) {
+    el.textContent = String(err);
+  }
+}
+
+document.getElementById("geo-consent-toggle")?.addEventListener("change", async (ev) => {
+  const enabled = ev.target.checked;
+  const el = document.getElementById("geo-status");
+  try {
+    const res = await fetch("/api/geo/consent", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ enabled }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || res.status);
+    el.textContent = `${data.enabled ? "enabled" : "disabled"} · ${data.detail || ""}`;
+  } catch (err) {
+    ev.target.checked = !enabled;
+    el.textContent = String(err);
+  }
+});
+
+document.getElementById("geo-revoke-btn")?.addEventListener("click", async () => {
+  const toggle = document.getElementById("geo-consent-toggle");
+  const el = document.getElementById("geo-status");
+  try {
+    const res = await fetch("/api/geo/consent", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ enabled: false }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || res.status);
+    if (toggle) toggle.checked = false;
+    el.textContent = `${data.enabled ? "enabled" : "disabled"} · ${data.detail || ""}`;
+  } catch (err) {
+    if (el) el.textContent = String(err);
+  }
+});
+
+refreshGeoStatus();

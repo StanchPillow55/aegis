@@ -1,8 +1,8 @@
 # Aegis Implementation Plan — Goal Graph era (QA + product revision)
 
 **Canonical branch tip:** `cursor/s1-background-sync-3696` · [PR #31](https://github.com/StanchPillow55/aegis/pull/31) (on #29)  
-**DoD:** `success_criteria.yaml` · Maturity: `docs/SC_MATURITY.md` · Spec: `docs/PRODUCT_SPEC.md` · Goal Graph: `docs/GOAL_GRAPH.md` · Matrix: `docs/FEATURE_MERGE_MATRIX.md`  
-**Date:** 2026-09-08 (Goal Graph + context-aware planning layer added; slices reordered)  
+**DoD:** `success_criteria.yaml` · Maturity: `docs/SC_MATURITY.md` · Spec: `docs/PRODUCT_SPEC.md` · Goal Graph: `docs/GOAL_GRAPH.md` · Connectors: `docs/CONNECTORS.md` · Matrix: `docs/FEATURE_MERGE_MATRIX.md`  
+**Date:** 2026-09-08 (Goal Graph layer + connector policy reframed)  
 
 ---
 
@@ -14,14 +14,25 @@ Aegis is a **local-first** daily training-decision / personal health copilot (Fa
 |---|---|
 | Schema / evidence / directive loop | Working |
 | Sync registry + **required background sync (S1)** | Fixture-verified |
-| Fixture connectors (Fitbit/Calendar/Takeout) | Fixture-verified |
+| Fixture connectors (Calendar / Takeout / Fitbit-legacy / FITINDEX CSV+OCR) | Fixture-verified |
 | Canonical scorers (FR/Sleep/Diet/WP/Overall) | Working as **compat signal layer** |
-| Simple goals API (metric-target + confirm) | Thin — **superseded by Goal Graph plan** |
-| Unified expanding composer + click-to-pin | Working (no floating chat dock) |
-| Live OAuth / Playwright E2E / PWA install | Open |
+| Goal Graph GL0–GL5 + GG-E2E/SAFETY fixtures | Fixture-verified |
+| Unified expanding composer + click-to-pin | Working |
+| Chat SQLite persist/search (S2) | Fixture-verified |
+| Dual safety output modes | Fixture-verified (API + UI labels) |
+| PWA SW + icon | Fixture-verified; install accept operator-owned |
+| Playwright Goal Graph smoke | Opt-in (`AEGIS_PLAYWRIGHT=1`); full §12 browser path open |
+| Live Google Calendar / Google Health OAuth | Open / blocked-on-secrets |
+| Fitbit live API | **Out of primary scope** — legacy fixture only |
 
-**Next major product layer:** **Goal Graph and Context-Aware Planning Layer** (`docs/GOAL_GRAPH.md`).  
-Fixed scores become **optional, goal-relevant signals** — not permanent top-level dashboard categories.
+**Connector policy (non-negotiable):** see **`docs/CONNECTORS.md`**.
+
+| Connector | Policy |
+|---|---|
+| **Google Health / Takeout** | **Primary metric sync** |
+| **Google Calendar OAuth** | **Keep** — intended live calendar auth |
+| **FITINDEX / scale** | **CSV + image OCR + manual only** — scale OAuth never used; do not add |
+| **Fitbit API** | **Not primary** — deprecated for this product; fixture scaffold only |
 
 Treat `pass: true` as automated verify green, not product-complete. See `docs/SC_MATURITY.md`.
 
@@ -41,6 +52,9 @@ Treat `pass: true` as automated verify green, not product-complete. See `docs/SC
 | Feature aggregate + legacy residual ports | #29 | CI green |
 | **S1** Required background sync | #31 | CI green |
 | Unified composer (journal + Ask + pin context) | #31 | CI green |
+| **GL0–GL5** Goal Graph core + signals + HITL + UI + progress + context | #31 | Fixture-verified |
+| **S2** Chat persist/search | #31 | Fixture-verified |
+| **GG-E2E-01 / GG-SAFETY-01** API fixture path | #31 | Fixture-verified |
 
 ---
 
@@ -53,70 +67,63 @@ Dashboard + directive assume permanent top-level: Front-rack / Sleep / Diet / Wo
 1. Those scorers remain as **pluggable signal providers** (backward compatible).  
 2. Dashboard + directive surface **signals relevant to active goals + recent entries**.  
 3. Universal **overall** score is **optional**.  
-4. Existing `MVP-SCORE-01` stays green via compat providers; new `GG-*` criteria own the dynamic contract.
-
-Example journal: *“Ate beef and rice, run was good, averaged 10:30 for 3 miles.”*
-
-| Goal | Contribution |
-|---|---|
-| Conditioning | Positive progress |
-| Nutrition | Protein/meal recorded (partial) |
-| Running task | Suggest pace tracking |
-| Recovery | Insufficient evidence |
-| Body composition | No direct update |
+4. Existing `MVP-SCORE-01` stays green via compat providers; `GG-*` criteria own the dynamic contract.
 
 Details: **`docs/GOAL_GRAPH.md`**.
 
-### Safety dual outputs (unchanged)
-1. **Health analysis** — observational.  
-2. **Training planning (directive)** — labeled non-medical decision support + disclaimer + confirm material plan changes.
+### Safety dual outputs
+1. **Health analysis** (chat) — observational / non-prescriptive.  
+2. **Training planning** (directive) — labeled non-medical decision support + disclaimer + confirm material plan changes.
 
 ---
 
-## 3. Priority backlog (reordered)
+## 3. Priority backlog (current)
+
+### Done (do not restart)
+GL0 · GL1 · GL2 · GL3 · GL4 · GL5 · S1 · S2 · GG-E2E fixture · GG-SAFETY · dual safety labels · geo consent UI · PWA SW/icon smoke
 
 ### P0 — Docs / merge hygiene
-1. Keep Goal Graph docs + SC rows honest (`planned` until path tested).  
+1. Keep connector policy honest (`docs/CONNECTORS.md`).  
 2. Merge hygiene for #22–#31 when ready.
 
-### P1 — Goal Graph core (start here)
-| ID | Work |
-|---|---|
-| **GL0** | Goal/task hierarchy schema, revisions, evidence links, suggestions, audit |
-| **GL1** | Dynamic signal abstraction (preserve scorers as providers) |
-| **GL2** | Journal contribution engine (RAG + classify + suggestions + HITL) |
-| **GL3** | Goal/task UI (tree, inbox, editor, suggestion review) |
+### P1 — Next implementation (no secrets required)
 
-### P1 — Supporting operational (interleave as needed)
 | ID | Work | Notes |
 |---|---|---|
-| **S2** | Chat SQLite persist + search | **DONE fixture** — feeds GL5 |
-| **S5** | Fitbit live metrics + OAuth security | Evidence richness for Goal Graph |
-| Dual safety labels in reasoner/UI | Enforce analysis vs planning |
+| **S8** | Expand Playwright beyond smoke to full Goal Graph §12 browser path | API fixture already green |
+| **S5a** | FITINDEX confirm UX polish | CSV + OCR + manual review only — **no scale OAuth** |
+| **S5b** | Google Takeout / Health import UX | Primary metric path; deepen confirm + provenance |
+| Offline / backup | Local SQLite backup / restore notes | Optional with S8 |
 
-### P2 — Progress surfaces + connectors
-| ID | Work |
-|---|---|
-| **GL4** | Long-term progress dashboards (horizons, bands, explain/create-task) |
-| **GL5** | Context-aware chat (typed screen context, read vs mutate tools) |
-| **S4** | Interactive chart behaviors (absorbed into GL4 where overlapping) |
-| Calendar live OAuth | S6 partial |
-| Geo privacy UI | S6 partial |
-| FITINDEX confirm UI | |
+### P1 — When Google secrets available
 
-### P2/P3 — Remote + verification
-| ID | Work |
+| ID | Work | Notes |
+|---|---|---|
+| **S6** | Live **Google Calendar** read-only OAuth | Calendar Google auth remains the intended live path |
+| **S5** | Live **Google Health API** (beyond Takeout ZIP) | **Primary** wearable/metric sync — **not Fitbit** |
+| **PHC-OAUTH-01** live | Secure local token store for Google tokens | No Fitbit-primary; no scale OAuth |
+
+### P2 — Remote / operator accept
+
+| ID | Work | Notes |
+|---|---|---|
+| **GL6 / S7** | Mobile goal-task polish + Tailscale remote parity | SW/icons fixture done; mesh accept operator-owned |
+
+### Cancelled / out of scope (do not schedule)
+
+| Former idea | Disposition |
 |---|---|
-| **GL6** | Mobile/PWA goal-task views + Tailscale remote parity |
-| **S7** | PWA SW/icons + authenticated remote acceptance |
-| **S8** | Playwright E2E incl. Goal Graph path |
-| Offline / backup / M2 perf | |
+| Fitbit live OAuth as primary sync (old S5) | **Cancelled as primary** — keep legacy fixture only (`docs/CONNECTORS.md`) |
+| FITINDEX / body-scale vendor OAuth | **Never used — do not implement** |
+| Fake OAuth success / silent fake weather | **Forbidden** |
 
 ### Do not do
 - Silent goal/task mutations  
 - Fake OAuth / silent fake weather  
+- Reintroduce Fitbit API as primary metric sync  
+- Add FITINDEX/scale OAuth  
 - Delete score implementations (migrate to providers)  
-- Mark Goal Graph complete from stubs/placeholders  
+- Mark Goal Graph product-complete from fixtures alone (Playwright §12 still open)  
 - Boot-required Redis/Deepgram/Anthropic/Browserbase  
 - Modify remote `legacy-aegis`  
 
@@ -126,13 +133,14 @@ Details: **`docs/GOAL_GRAPH.md`**.
 
 | Slice | Scope | Exit criteria |
 |---|---|---|
-| **GL0** | Model + SQLite schema: goals hierarchy, tasks, revisions, evidence links, journal contributions, suggestions, approval state, audit | **DONE fixture** (`artifacts/gl0-goal-graph-schema.txt`) — UI/E2E still open |
-| **GL1** | Signal provider interface; wrap FR/Sleep/Diet/WP/Overall; dynamic selection API; UI no longer *requires* four fixed cards | **DONE fixture** (`artifacts/gl1-signals.txt`) — compat `score_canonical` preserved |
-| **GL2** | Journal contribution engine: RAG, map to goals, classify effect, task suggestions, evidence/assumptions/confidence, approve/edit/reject/defer | **DONE fixture** (`artifacts/gl2-contributions.txt`) — UI suggestion panel still open (GL3) |
-| **GL3** | Goal tree + task inbox + Today/Upcoming/Completed + editor + suggestion panel + decompose/rewrite/archive | **DONE fixture** (`artifacts/gl3-goal-ui.txt`) — Playwright E2E still open |
-| **GL4** | Progress workspace: horizons, trends, goal bands, milestones, annotations, missing/stale, explain + create-task-from-chart | **DONE fixture** (`artifacts/gl4-progress.txt`) |
-| **GL5** | Typed screen context expansion; read-only tools; mutation preview tools; confirm mutations; searchable chat history; inline charts | **DONE fixture** (`artifacts/gl5-context.txt`) |
-| **GL6** | Responsive goal/task + suggestion review; PWA; Tailscale remote same behavior | Checklist artifact; maturity not `verified` until operator accept |
+| **GL0** | Schema: goals, tasks, revisions, evidence, contributions, suggestions, audit | **DONE fixture** |
+| **GL1** | Pluggable signals; overall optional | **DONE fixture** |
+| **GL2** | Journal contributions + HITL suggestions | **DONE fixture** |
+| **GL3** | Goal tree / task views / editor / suggestion panel | **DONE fixture** |
+| **GL4** | Progress horizons / bands / explain / chart→task | **DONE fixture** |
+| **GL5** | Typed screen context + read vs mutate-preview tools | **DONE fixture** |
+| **GL6** | Responsive + PWA + Tailscale parity | Operator accept still open |
+| **GG-E2E** | §12 path | **DONE API fixture**; Playwright full browser still open |
 
 ### Required E2E story (fixture → then Playwright)
 1. Create goal from conversation  
@@ -144,33 +152,42 @@ Details: **`docs/GOAL_GRAPH.md`**.
 7. Dashboard + history update  
 8. Screen-aware chat about updated dashboard  
 
-**Completion requires this path.** Models/UI placeholders alone are insufficient.
+**API fixture path:** `artifacts/gg-e2e-fixture.txt`.  
+**Browser path:** expand S8 Playwright (smoke exists).
 
 ---
 
-## 5. Operational slices (retained, reordered relative to Goal Graph)
+## 5. Operational slices (connector-aware)
 
 | Slice | Scope | Status / note |
 |---|---|---|
 | **S1** | Background sync | **DONE** |
-| **S2** | Chat SQLite persist + search | **DONE fixture** (`artifacts/s2-chat-persist.txt`) |
-| **S3** | Thin NL goals/alerts (old) | **Superseded by GL0–GL3**; keep alerts work |
-| **S4** | Interactive charts | Prefer implement inside **GL4** |
-| **S5** | Fitbit full metrics + OAuth security | After GL2 or when secrets available |
-| **S6** | Geo UI + Calendar live | After GL4 or with secrets |
-| **S7** | PWA + Tailscale accept | Align with **GL6** |
-| **S8** | Playwright + offline/backup | Include Goal Graph browser E2E; API fixture path already in `GG-E2E-01` |
+| **S2** | Chat SQLite persist + search | **DONE fixture** |
+| **S3** | Thin NL goals (old) | **Superseded by GL0–GL3** |
+| **S4** | Interactive charts | Absorbed into **GL4** |
+| **S5** | **Google Health / Takeout** primary metrics | Takeout verified; live Health API when secrets — **not Fitbit** |
+| **S5a** | FITINDEX CSV + OCR confirm UX | No scale OAuth |
+| **S6** | Geo + **Google Calendar** live OAuth | Geo consent UI present; Calendar OAuth when secrets |
+| **S7** | PWA + Tailscale accept | SW+icons fixture; mesh operator-owned |
+| **S8** | Playwright + offline/backup | Smoke landed; expand to full §12 |
 
-**Recommended start (no secrets):**  
-**GL0 (done fixture) → GL1 → GL2 → GL3 → S2 → GL4 → GL5 → GG-E2E fixture → S8 Playwright**  
-**With Fitbit secrets:** insert **S5** after GL2.  
-**Remote polish:** **GL6 / S7**.
+**Recommended order now:**  
+**S8 Playwright expand → S5a FITINDEX CSV/OCR polish → S5b Takeout/Health UX → (secrets) S6 Calendar + S5 Google Health API → GL6/S7 remote accept**
 
 ---
 
-## 6. Fitbit / OAuth checklist (still required)
+## 6. Connector / OAuth checklist
 
-Full metric list + OAuth security checklist unchanged from QA revision (see prior §4.2). Live path remains `blocked-on-secrets` until clients exist. Goal Graph uses fixture metrics until then.
+Canonical: **`docs/CONNECTORS.md`**.
+
+| Connector | Policy | Next task |
+|---|---|---|
+| Google Health / Takeout | **Primary** metric sync | S5 / S5b |
+| Google Calendar OAuth | **Keep** live path | S6 |
+| FITINDEX / scale | CSV + image OCR only | S5a — never scale OAuth |
+| Fitbit API | Legacy fixture only | No live-primary work |
+
+Do not fake OAuth. Goal Graph may use fixtures / Takeout / manual until Google Health live credentials exist.
 
 ---
 
@@ -183,6 +200,10 @@ python3 scripts/validate_success_criteria.py
 make os-test
 make os-dev          # SAME machine as browser → http://127.0.0.1:8000/
 make os-health
+
+# Optional browser smoke (S8)
+AEGIS_PLAYWRIGHT=1 AEGIS_BASE_URL=http://127.0.0.1:8000 \
+  python3 -m pytest tests/test_remaining_polish.py::test_s8_playwright_goal_graph_smoke -q
 ```
 
 Localhost trap: `docs/bugs/BUG-LOCALHOST-01.md`.
@@ -194,10 +215,12 @@ Localhost trap: `docs/bugs/BUG-LOCALHOST-01.md`.
 | Area | Path |
 |---|---|
 | Goal Graph spec | `docs/GOAL_GRAPH.md` |
+| Connector policy | `docs/CONNECTORS.md` |
 | App | `backend/main.py` |
-| Goals (compat → graph) | `backend/goals/` |
-| Signals / scorers | `backend/scorers/`, future `backend/signals/` |
+| Goals / progress / tools | `backend/goals/` |
+| Signals / scorers | `backend/signals/`, `backend/scorers/` |
 | Sync | `backend/sync/` |
-| Chat / context | `backend/chat/`, `backend/intelligence/context.py` |
-| Frontend composer | `frontend/` |
+| Chat / context | `backend/chat/`, `backend/context/`, `backend/intelligence/context.py` |
+| Takeout / FITINDEX / Calendar | `backend/connectors/` |
+| Frontend | `frontend/` |
 | Maturity | `docs/SC_MATURITY.md` |

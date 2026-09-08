@@ -3,12 +3,13 @@
 **Read first (in order):**
 1. `docs/PRODUCT_SPEC.md` — product + architecture contract  
 2. `docs/GOAL_GRAPH.md` — Goal Graph + context-aware planning (next major layer)  
-3. `docs/IMPLEMENTATION_PLAN.md` — ordered slices (GL0–GL6 + S*)  
-4. `docs/SC_MATURITY.md` — what `pass: true` actually means  
-5. `docs/FEATURE_MERGE_MATRIX.md` — legacy vs canonical feature status  
-6. `success_criteria.yaml` — DoD automation (`GG-*` planned; `MVP-*`/`PHC-*` foundation)  
-7. `CLAUDE.md` — build contract  
-8. `docs/bugs/BUG-LOCALHOST-01.md` — if UI “won’t open” from a Cloud Agent
+3. `docs/CONNECTORS.md` — Google Health primary; Calendar OAuth; no scale/Fitbit-primary OAuth  
+4. `docs/IMPLEMENTATION_PLAN.md` — ordered slices (GL0–GL6 + S*)  
+5. `docs/SC_MATURITY.md` — what `pass: true` actually means  
+6. `docs/FEATURE_MERGE_MATRIX.md` — legacy vs canonical feature status  
+7. `success_criteria.yaml` — DoD automation  
+8. `CLAUDE.md` — build contract  
+9. `docs/bugs/BUG-LOCALHOST-01.md` — if UI “won’t open” from a Cloud Agent
 
 ---
 
@@ -22,7 +23,8 @@ Branch tip: `cursor/s1-background-sync-3696` ([PR #31](https://github.com/Stanch
 
 **Do not** treat SC `pass: true` as product complete. Use `docs/SC_MATURITY.md`.  
 **Do not** mark Goal Graph done from schema/UI placeholders — need journal → evidence → suggestion → approval → dashboard E2E.  
-**Do not** modify remote `legacy-aegis`. **Do not** fake OAuth or silent mutations.
+**Do not** modify remote `legacy-aegis`. **Do not** fake OAuth or silent mutations.  
+**Connectors:** see `docs/CONNECTORS.md` — Google Health primary; Google Calendar OAuth OK; FITINDEX = CSV+image only; Fitbit API not primary.
 
 ---
 
@@ -49,47 +51,37 @@ Branch tip: `cursor/s1-background-sync-3696` ([PR #31](https://github.com/Stanch
 ### Existing working score / directive behavior
 - Text/journal → extract → evidence (today_wins) → directive  
 - Scorers: Front-rack / Sleep / Diet / Workout-prep / Overall (+ Macro Pool, WOD)  
-- Dual safety modes still to enforce more clearly in copy (analysis vs planning)  
-- Background sync; fixture connectors; unified composer + pin context  
-
-### Still thin / planned
-| Layer | Status |
-|---|---|
-| Dynamic signal migration (GL1) | Fixture-verified |
-| Goal/task infrastructure (GL0) | Fixture-verified |
-| Journal contribution + HITL (GL2–GL3) | Fixture-verified (UI + APIs); Playwright E2E pending |
-| Progress dashboards (GL4) | Fixture-verified |
-| Context-aware chat depth (GL5) + S2 persist | Fixture-verified (S2 + GL5) |
-| UI work for goal tree / suggestions | Fixture-verified (GL3) |
-| E2E verification (S8 + Goal Graph story) | Fixture path done (`GG-E2E-01`); Playwright pending |
-| OAuth + remote access (S5–S7 / GL6) | Open / blocked-on-secrets |
+- Dual safety modes: directive=`training_planning`, chat=`health_analysis` (labeled in UI).  
+- Geo consent UI available (default off).  
+- PWA service worker + icon present; install acceptance still operator-owned.  
+- Playwright smoke available behind `AEGIS_PLAYWRIGHT=1`.  
+- **Metric sync policy:** Google Health / Takeout primary; Google Calendar OAuth kept; FITINDEX = CSV + image only; Fitbit API not primary (legacy fixture only).  
+- Full Playwright Goal Graph §12 browser path still open.  
+- `pass: true` ≠ live/E2E complete.
 
 ---
 
 ## Known limitations
 
-- Fixed four-score dashboard still present in UI (compat); not yet dynamic.  
-- Goal Graph APIs + local UI exist (GL0–GL3 fixture); Playwright E2E / remote polish still open.  
-- Chat sessions persist in SQLite (S2); GL5 typed context tools still pending.  
-- Live Fitbit/Calendar OAuth incomplete.  
-- No Playwright Goal Graph E2E yet.  
+- Fixed four-score dashboard still present in UI (compat); dynamic signals preferred when goals exist.  
+- Goal Graph GL0–GL5 + GG-E2E fixture verified; Playwright full §12 browser path still open.  
+- Chat sessions persist in SQLite (S2).  
+- Live Google Calendar / Google Health OAuth still needs operator credentials (Calendar path is the intended live OAuth — not Fitbit).  
+- Fitbit live API intentionally deprioritized (refresh cadence / deprecated for this product).  
 - `pass: true` ≠ live/E2E complete.
 
 ---
 
 ## Next implementation order
 
-1. **GL0** — Goal/task schema, revisions, suggestions, audit (`GG-SCHEMA-01`) — **fixture-verified**  
-2. **GL1** — Pluggable signals; stop treating FR/Sleep/Diet/WP as mandatory cards (`GG-SIGNAL-01`) — **fixture-verified**  
-3. **GL2** — Journal contribution engine + HITL (`GG-CONTRIB-01`, `GG-SUGGEST-01`) — **fixture-verified**  
-4. **GL3** — Goal/task UI + suggestion review (`GG-UI-01`) — **fixture-verified**  
-5. **S2** — Chat SQLite persist/search (supports GL5) — **fixture-verified**  
-6. **GL4** — Progress dashboards / bands / explain (`GG-PROGRESS-01`) — **fixture-verified**  
-7. **GL5** — Typed screen context + read/mutate tools (`GG-CONTEXT-01`) — **fixture-verified**  
-8. **S5/S6** — Fitbit/Calendar/geo when secrets  
-9. **GL6/S7/S8** — Remote/PWA + Playwright Goal Graph path (`GG-E2E-01` fixture done; browser still open)  
+1. **GL0–GL5 + GG-E2E/SAFETY** — **fixture-verified** (done on this branch)  
+2. **S8** — Expand Playwright beyond smoke to full §12 browser path  
+3. **S5 reframed** — Google Health API / Takeout as primary metric sync (not Fitbit)  
+4. **S6** — Live Google Calendar OAuth when secrets available; geo consent UI already present  
+5. **FITINDEX** — deepen CSV + OCR confirm UX only (no scale OAuth)  
+6. **GL6 / S7** — Remote/PWA operator acceptance (Tailscale mesh)  
 
-Details: `docs/IMPLEMENTATION_PLAN.md` · models: `docs/GOAL_GRAPH.md`.
+Details: `docs/IMPLEMENTATION_PLAN.md` · connectors: `docs/CONNECTORS.md` · models: `docs/GOAL_GRAPH.md`.
 
 Historical note: **Slice 0** (schema/evidence) is already done; do not restart it.
 
@@ -125,7 +117,7 @@ Cloud Agent localhost ≠ laptop localhost. See `docs/bugs/BUG-LOCALHOST-01.md`.
 1. Mark complete in prose only when `docs/SC_MATURITY.md` says so.  
 2. Preserve intake/directive behavior while migrating signals.  
 3. Never silent goal/task mutations.  
-4. Never fake OAuth / fake weather.  
+4. Never fake OAuth / fake weather. Fitbit is not the primary sync — see `docs/CONNECTORS.md`.  
 5. Fixtures OK if labeled.  
 6. UI ≠ backend ≠ live ≠ E2E.  
 

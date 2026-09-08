@@ -141,7 +141,7 @@ On new journal / directive intake:
 1. Parse structured observations.  
 2. RAG prior journal entries.  
 3. Load active goals / projects / tasks / suggestions.  
-4. Retrieve relevant health metrics (Fitbit, FITINDEX, Calendar, Takeout, env).  
+4. Retrieve relevant health metrics (Google Health/Takeout primary, FITINDEX CSV/OCR, Calendar, Fitbit-legacy fixture, env).  
 5. Identify affected goals.  
 6. Classify contribution: `positive` \| `negative` \| `neutral` \| `insufficient_evidence` \| `conflicting` (also `partial` when justified).  
 7. Generate progress update draft.  

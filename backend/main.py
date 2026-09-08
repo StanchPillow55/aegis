@@ -20,6 +20,7 @@ from backend.connectors.fitindex_ocr import propose_from_image, propose_from_tex
 from backend.connectors.status import enrich_source_status
 from backend.connectors.takeout import ingest_takeout_bytes
 from backend.environment import fetch_environment
+from backend.geo import GeoConsentStore
 from backend.goals import (
     GoalCreate,
     GoalGraphStore,
@@ -80,6 +81,7 @@ _metrics = HealthMetricsStore()
 _alerts = AlertEngine(metrics=_metrics)
 _goals = GoalStore(metrics=_metrics)
 _goal_graph = GoalGraphStore()
+_geo_consent = GeoConsentStore()
 _chat_store = ChatStore()
 _tools = HealthQueryTools(
     metrics=_metrics,
@@ -116,6 +118,10 @@ class DirectiveResponse(BaseModel):
     log_id: str
     extractor: str
     tts: dict | None = None
+    output_mode: str = "training_planning"
+    output_mode_label: str = (
+        "Training planning — non-medical decision support (not diagnosis or treatment)."
+    )
 
 
 @app.on_event("startup")
@@ -247,6 +253,11 @@ def api_directive(body: TextUpdate) -> DirectiveResponse:
             log_id=log_id,
             extractor=extractor,
             tts=tts_payload,
+            output_mode="training_planning",
+            output_mode_label=(
+                "Training planning — non-medical decision support "
+                "(not diagnosis or treatment)."
+            ),
         )
 
 
@@ -820,14 +831,18 @@ def api_validate_chart(body: dict) -> dict:
 
 @app.get("/api/geo/status")
 def api_geo_status() -> dict:
-    # Location disabled by default; never sent to cloud LLM
-    return {
-        "enabled": False,
-        "default": "off",
-        "revocable": True,
-        "cloud_llm": False,
-        "detail": "Geolocation is opt-in and disabled by default.",
-    }
+    # Location disabled by default; never sent to cloud LLM; no coords persisted
+    return _geo_consent.status()
+
+
+class GeoConsentBody(BaseModel):
+    enabled: bool
+
+
+@app.put("/api/geo/consent")
+def api_geo_consent(body: GeoConsentBody) -> dict:
+    """Opt-in / revoke geolocation preference (boolean only — no coordinates)."""
+    return _geo_consent.set_enabled(body.enabled)
 
 
 @app.get("/api/environment")
@@ -967,6 +982,14 @@ def manifest() -> FileResponse:
     if not path.exists():
         raise HTTPException(status_code=404, detail="manifest missing")
     return FileResponse(path, media_type="application/manifest+json")
+
+
+@app.get("/sw.js")
+def service_worker() -> FileResponse:
+    path = FRONTEND_DIR / "sw.js"
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="service worker missing")
+    return FileResponse(path, media_type="application/javascript")
 
 
 if FRONTEND_DIR.exists():

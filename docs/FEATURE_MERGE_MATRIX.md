@@ -40,20 +40,21 @@
 | Safety language guardrails | older | I | V | Y | Ported `apply_guardrails` into chat | — | `backend/safety/`, `test_legacy_ports` | **Done** |
 | Source registry + 24h staleness | target | I | V (scheduler) | Y | Keep registry; skip APScheduler boot-req | — | PHC-SYNC/STALE | **Keep** |
 | Manual NL intake → directive | both | I | V | Y | Keep | — | `/api/directive` | **Keep** |
-| Fitbit fixture metrics | target | F | — | Y | Keep | — | PHC-FITBIT | **Keep F** |
-| Fitbit live OAuth + API | older | P | V | Y | Scaffold status/auth/callback; live only with secrets | `FITBIT_*` | `/api/fitbit/*`, `fitbit_oauth.py` | **Scaffold Done** |
-| FITINDEX CSV + manual review | target | I | V | Y | Keep | — | PHC-FITINDEX | **Keep** |
-| FITINDEX screenshot OCR | older | I | V | Y | Ported llava OCR → draft (confirm required) | Ollama llava | `/api/fitindex/ocr` | **Done** |
+| Fitbit fixture metrics | target | F | — | Y | Legacy fixture only — **not primary sync** | — | PHC-FITBIT | **Keep F / deprioritize live** |
+| Fitbit live OAuth + API | older | Cancelled-as-primary | V | N | Do not schedule as primary (refresh cadence) | — | scaffold only | **Out of primary scope** |
+| FITINDEX CSV + manual review | target | I | V | Y | Keep — **no scale OAuth** | — | PHC-FITINDEX | **Keep** |
+| FITINDEX screenshot OCR | older | I | V | Y | CSV/image path only | Ollama llava | `/api/fitindex/ocr` | **Done** |
 | FITINDEX NL text extract | older | I | V | Y | Heuristic draft path (no Claude required) | — | `/api/fitindex/text` | **Done** |
-| Google Takeout CSV | target | I | V | Y | Keep | — | takeout CSV | **Keep** |
-| Google Takeout JSON Data Points | older | I | V | Y | Ported into takeout ZIP ingest | — | `test_takeout_json` | **Done** |
+| Google Takeout CSV | target | I | V | Y | **Primary metric import** (w/ JSON) | — | takeout CSV | **Primary** |
+| Google Takeout JSON Data Points | older | I | V | Y | Ported into takeout ZIP ingest | — | `test_takeout_json` | **Primary** |
+| Google Health live API | plan | M/S | — | Y | **Primary** live path when secrets (beyond Takeout) | Google secrets | CONNECTORS.md | **Deferred (primary)** |
 | Calendar fixture | target | F | — | Y | Keep | — | PHC-CALENDAR | **Keep F** |
-| Calendar live Google OAuth | older | M/S | V | Y | Deferred until Google secrets; no fake connected | secrets | — | **Deferred** |
+| Calendar live Google OAuth | older | M/S | V | Y | **Keep** — intended live calendar auth when secrets | Google secrets | — | **Deferred (keep)** |
 | Calendar lifestyle signals | older | I | V | Y | Ported early/late/busy/travel derivation | optional geopy | `/api/calendar/signals` | **Done** |
 | Geolocation privacy default-off | both | I | V | Y | Keep; never cloud LLM | — | `/api/geo/status` | **Keep** |
 | Open-Meteo weather/AQI | both | I | V (fake fallback CONFLICT) | Y | Canonical honest modes win; live verified | network | `mode=live` smoke | **Done** |
 | Front-rack/Sleep/Diet/WP/Overall | target | I | — | Y | Keep as **pluggable signal providers**; dashboard migrates to Goal Graph | — | MVP-SCORE + GG-SIGNAL | **Migrate** |
-| Goal Graph hierarchy + HITL | plan | M | — | Y | New major layer (`docs/GOAL_GRAPH.md`) | GL0–GL5 | GG-* | **Planned** |
+| Goal Graph hierarchy + HITL | plan | I | V (fixture) | Y | GL0–GL5 + GG-E2E fixture on #31; Playwright full path open | — | GG-* | **Fixture** |
 | Hydration + performance factors | older | I | V | Y | Ported as `scores.factors.*` (not top-level) | optional intake fields | `test_legacy_ports` | **Done** |
 | Macro Pool | target | I | — | Y | Keep | — | MVP-MACRO | **Keep** |
 | WOD negotiation | target | I | V (partial) | Y | Keep | — | MVP-WOD | **Keep** |
@@ -68,7 +69,7 @@
 | Vision / llava status + OCR | both | I | V | Y | Status + FITINDEX OCR when model present | Ollama | vision + ocr | **Done** |
 | Rich AIContext / system context | older | I | V | Y | Ported vitals/alerts/goals/stale/calendar | — | `/api/context/screen` | **Done** |
 | Sync/settings/overview UI | target | I light | V (Vite SPA) | Y | Keep static UI; skip SPA rewrite | — | frontend | **Keep light** |
-| PWA | both | P | V | Y | Manifest; SW/icons later | — | PHC-PWA | **Partial** |
+| PWA | both | F | V | Y | Manifest + SW + icon fixture; install accept open | — | PHC-PWA | **Fixture** |
 | Multi-user X-User-ID | older | M | V | N | Skip for local single-user | — | — | **D** |
 | Nested `legacy/` Redis/Deepgram | older | Out | V | N | Quarantine | — | — | **D** |
 | Fake OAuth / silent fake weather | older risk | Forbidden | V (weather fallback) | N | Never port | — | — | **Forbid** |

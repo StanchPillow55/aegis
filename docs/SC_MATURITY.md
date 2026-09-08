@@ -36,12 +36,12 @@
 
 | ID | Maturity | Notes |
 |---|---|---|
-| PHC-FITBIT-01 | `fixture-verified` | Fixture covers metric names; live pull planned |
-| PHC-OAUTH-01 | `fixture-verified` / `blocked-on-secrets` | Live checklist incomplete |
-| PHC-FITINDEX-01 | `implemented-but-not-E2E-tested` | Confirm UI + llava click-path incomplete |
-| PHC-TAKEOUT-01 | `verified` | CSV+JSON parsers + API tests |
-| PHC-CALENDAR-01 | `fixture-verified` | Fixture events; live OAuth planned |
-| PHC-GEO-01 | `fixture-verified` | API default-off; consent UI planned |
+| PHC-FITBIT-01 | `fixture-verified` | Legacy fixture only — **not primary sync** (see CONNECTORS.md) |
+| PHC-OAUTH-01 | `fixture-verified` / `blocked-on-secrets` | Applies to **Google** Calendar/Health tokens; no Fitbit-primary; no scale OAuth |
+| PHC-FITINDEX-01 | `implemented-but-not-E2E-tested` | CSV + screenshot/OCR + manual only — **no scale OAuth** |
+| PHC-TAKEOUT-01 | `verified` | Google Health/Fit Takeout — **primary metric import path** |
+| PHC-CALENDAR-01 | `fixture-verified` | Google Calendar OAuth remains the intended live path |
+| PHC-GEO-01 | `fixture-verified` | Opt-in consent UI + API; no coords persisted; cloud_llm=false |
 | PHC-ENV-01 | `verified` | Live Open-Meteo smoke + offline labeling |
 | PHC-SYNC-01 | `fixture-verified` | Background loop S1 |
 | PHC-STALE-01 | `fixture-verified` | Stale flags + UI/chat hints |
@@ -55,10 +55,10 @@
 | PHC-CHAT-02 | `fixture-verified` | S2 SQLite session/message persist + `/api/chat/search` |
 | PHC-VISION-01 | `implemented-but-not-E2E-tested` | |
 | PHC-CONTEXT-01 | `implemented-but-not-E2E-tested` | Pin context + basic screen API; **typed Goal Graph context → GL5** |
-| PHC-PWA-01 | `planned` / thin | Manifest only |
-| PHC-TAILSCALE-01 | `planned` / docs | Authenticated remote acceptance planned |
+| PHC-PWA-01 | `fixture-verified` | Manifest + SW + icon; operator install accept still open |
+| PHC-TAILSCALE-01 | `planned` / docs | Authenticated remote acceptance planned (operator mesh) |
 | PHC-FALLBACK-01 | `fixture-verified` | |
-| PHC-SAFETY-01 | `implemented-but-not-E2E-tested` | Dual analysis vs planning + HITL suggestions |
+| PHC-SAFETY-01 | `fixture-verified` | Dual modes: training_planning vs health_analysis labeled in API/UI |
 | PHC-DOCS-01 | `verified` | Specs/handoff/Goal Graph docs |
 
 ### Goal Graph (`GG-*`) — all planned until path tested

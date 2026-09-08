@@ -40,6 +40,10 @@ class ChatTurnResponse(BaseModel):
     vision: dict[str, Any] | None = None
     turn_id: str
     session_id: str
+    output_mode: str = "health_analysis"
+    output_mode_label: str = (
+        "Health analysis — observational / non-prescriptive (not a care plan)."
+    )
 
 
 _METRIC_HINTS = {
@@ -259,6 +263,10 @@ class ChatService:
             vision=vision,
             turn_id=str(uuid.uuid4()),
             session_id=session_id,
+            output_mode="health_analysis",
+            output_mode_label=(
+                "Health analysis — observational / non-prescriptive (not a care plan)."
+            ),
         )
 
     def _compose_reply(

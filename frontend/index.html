@@ -73,6 +73,7 @@
   </main>
 
   <section id="result" class="result" hidden data-pin-id="directive" data-pin-label="Today’s directive">
+    <p id="directive-mode" class="output-mode" hidden></p>
     <h2>Today’s directive</h2>
     <p id="directive-text" class="directive"></p>
     <p id="disclaimer-text" class="disclaimer"></p>
@@ -237,14 +238,30 @@
     <h2>Settings &amp; imports</h2>
     <p class="dash-lede">External OAuth stays disabled until credentials exist. Local imports work offline.</p>
     <div class="settings-grid">
-      <div data-pin-id="fitbit" data-pin-label="Fitbit">
-        <h3>Fitbit</h3>
+      <div data-pin-id="google-health" data-pin-label="Google Health">
+        <h3>Google Health / Takeout</h3>
+        <p class="hint">Primary metric sync. Import a Takeout ZIP below. Live Google Health API is future work when credentials exist.</p>
+      </div>
+      <div data-pin-id="fitbit" data-pin-label="Fitbit legacy fixture">
+        <h3>Fitbit (legacy fixture)</h3>
         <p id="fitbit-status" class="hint">Loading…</p>
-        <button type="button" id="fitbit-auth-btn" class="ghost">Check OAuth / get auth URL</button>
+        <p class="hint">Not the primary sync path — Fitbit API refresh is unsuitable here. Fixture sync only for compatibility tests.</p>
+        <button type="button" id="fitbit-auth-btn" class="ghost">Check legacy OAuth scaffold</button>
         <button type="button" id="fitbit-fixture-btn" class="ghost">Run Fitbit fixture sync</button>
       </div>
+      <div data-pin-id="geo" data-pin-label="Geolocation">
+        <h3>Geolocation</h3>
+        <p id="geo-status" class="hint">Loading…</p>
+        <label class="sync-toggle">
+          <input type="checkbox" id="geo-consent-toggle" />
+          Enable device location (opt-in)
+        </label>
+        <p class="hint">Default off. Preference only — coordinates are not stored on the server and never sent to a cloud LLM.</p>
+        <button type="button" id="geo-revoke-btn" class="ghost">Revoke</button>
+      </div>
       <div>
-        <h3>FITINDEX CSV</h3>
+        <h3>FITINDEX (CSV + image — no scale OAuth)</h3>
+        <p class="hint">Scale vendor OAuth is out of scope. Use CSV export or screenshot OCR, then confirm before save.</p>
         <textarea id="fitindex-csv" rows="3" placeholder="date,weight_kg,body_fat_pct&#10;2026-09-07,78.2,18.5"></textarea>
         <button type="button" id="fitindex-upload-btn" class="ghost">Upload CSV draft</button>
         <p id="fitindex-hint" class="hint"></p>
@@ -282,5 +299,10 @@
   </div>
 
   <script src="/static/app.js"></script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    }
+  </script>
 </body>
 </html>

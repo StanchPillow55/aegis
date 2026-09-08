@@ -364,6 +364,23 @@ body.pin-picking [data-pin-id]:hover {
   padding-left: 0.75rem;
 }
 
+.output-mode {
+  margin: 0 0 0.5rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--leaf-deep);
+}
+
+.bubble .output-mode-tag {
+  display: block;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: rgba(26, 36, 33, 0.55);
+  margin-bottom: 0.25rem;
+}
+
 .evidence-panels details {
   margin-bottom: 0.5rem;
 }

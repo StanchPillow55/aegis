@@ -60,10 +60,13 @@ Dashboard and directive surfaces select signals from:
 | Concern | Where it runs |
 |---|---|
 | LLM inference, normalization, scoring, reasoning, storage | **Local** (Apple Silicon M2 home host; Ollama + SQLite) |
-| Fitbit, Google Calendar | **External source connectors** (OAuth); data cached locally |
+| Fitbit (legacy fixture only) | **Not primary** — API deprecated for this product; keep fixtures only |
+| Google Health / Takeout | **Primary metric sync** (ZIP today; live API when credentials exist) |
+| Google Calendar | **External OAuth** (read-only); intended live calendar path |
+| FITINDEX / body scale | **CSV export + screenshot/OCR + manual** — no scale OAuth |
 | Open-Meteo weather / AQI | **Optional external** environmental connector; cached locally |
 | Cloud LLM / cloud DB | **Not required**; not on the core path |
-| Offline / degraded demo | Must work with **fixtures + manual entry** when Fitbit, Calendar, weather, or AQI are unavailable |
+| Offline / degraded demo | Must work with **fixtures + manual entry** when Google Health/Calendar/weather/AQI are unavailable |
 
 **Privacy rules**
 
@@ -120,9 +123,9 @@ Legend: **IT** = Implemented & tested · **IL** = Implemented but limited/incomp
 | Macro Pool ledger | IT | Wired into diet + canonical `macro_pool` |
 | Dictation UI control | IL | Browser API; not E2E verified |
 | Opt-in TTS | IL | Browser SpeechSynthesis when toggled |
-| Fitbit OAuth + metrics | F / NV | Fixture metrics + honest `needs_credentials`; no live OAuth |
-| FITINDEX CSV / OCR / manual | IT / P | CSV + manual review; OCR deferred |
-| Google Takeout import | IT | Production ZIP parser + upload API + fixture sync |
+| Google Health / Takeout | IT / F | **Primary** metric sync (ZIP + fixture); live Health API when secrets |
+| Fitbit OAuth + metrics | F / NV | Legacy fixture only — **not primary**; no live-primary work |
+| FITINDEX CSV / OCR / manual | IT / P | CSV + OCR drafts + manual review; **no scale OAuth** |
 | Google Calendar (read-only) | F | Fixture events; live OAuth deferred |
 | Chat + image + llava | IT / P | Unified composer (Ask + directive); image preview; click-to-pin page context; llava status honest |
 | LLM metric-query tools | IT | Tools + parse_date |
@@ -154,9 +157,11 @@ Still required for MVP completion of the original Aegis identity:
 
 ## 6. Data ingestion requirements
 
-### 6.1 Fitbit (OAuth connector)
+### 6.1 Google Health / Takeout (primary metric sync)
 
-Ingest and normalize at least:
+**Primary** wearable/metric path (see `docs/CONNECTORS.md`).
+
+Ingest and normalize at least (via Takeout ZIP today; live Google Health API when credentials exist):
 
 - Heart rate, HRV, resting heart rate, SpO2  
 - Sleep duration / minutes asleep  
@@ -165,28 +170,34 @@ Ingest and normalize at least:
 - Stress score, breathing rate  
 - Activities  
 
-Requirements: real OAuth (no mock auth backdoor), encrypted/local token storage, graceful failure, fixture mode for demos.
+Requirements: honest fixture/Takeout modes; live Health API only with real credentials (no mock auth backdoor); encrypted/local token storage when OAuth is added; graceful failure.
 
-### 6.2 FITINDEX body composition
+### 6.2 FITINDEX body composition (no scale OAuth)
 
-Supported paths:
+Supported paths **only**:
 
 1. CSV upload  
 2. Screenshot / image OCR (local vision, e.g. Ollama `llava` when available)  
 3. Manual text entry  
 4. **User review and correction before save** (mandatory)
 
-### 6.3 Google Calendar (read-only)
+Scale / FITINDEX vendor OAuth is **never used** and must not be added.
+
+### 6.3 Google Calendar (read-only OAuth — keep)
 
 Ingest: event name, location, description, start/end.  
-Write access: **forbidden**. Revocable OAuth; local cache only.
+Write access: **forbidden**. Revocable OAuth; local cache only.  
+This remains the **intended live calendar auth** path.
 
-### 6.4 Other intake
+### 6.4 Fitbit (legacy fixture only — not primary)
+
+Fitbit API is **not** the primary sync metric (refresh cadence unsuitable). Keep fixture / scaffold for compatibility tests only. Do not schedule live Fitbit OAuth as the main wearable path.
+
+### 6.5 Other intake
 
 - Generic natural-language health logging (`/api/intake` and chat tools)  
 - Generic file drop  
 - Manual text entry  
-- Google Health / Google Fit **Takeout ZIP** as **future-compatible fallback** (not primary)  
 - Opt-in device geolocation (default off)  
 - Environmental context via Open-Meteo weather + AQI  
 
@@ -201,7 +212,7 @@ Write access: **forbidden**. Revocable OAuth; local cache only.
 | Sync history | Last success, last attempt, error state, record counts / coverage |
 | Retry | Bounded retries with backoff; never block local manual use |
 | Staleness | Warn per source when last success > 24h |
-| Degradation | App remains usable with manual entry + fixtures if Fitbit / Calendar / weather / AQI fail |
+| Degradation | App remains usable with manual entry + fixtures if Google Health / Calendar / weather / AQI fail |
 
 ---
 
@@ -353,14 +364,16 @@ External connectors are adapters; core reasoning never hard-depends on them.
 
 ## 14. Implementation order (next)
 
-See **`docs/IMPLEMENTATION_PLAN.md`** for the authoritative ordered slices.
+See **`docs/IMPLEMENTATION_PLAN.md`** + **`docs/CONNECTORS.md`** for the authoritative ordered slices and connector policy.
 
 1. Foundation slices 0–11 + feature aggregate — **done**  
 2. S1 background sync + unified composer — **done**  
-3. **GL0–GL3 Goal Graph core** — **next**  
-4. GL4 progress dashboards · GL5 context-aware chat (S2 chat persist done)  
-5. S5 Fitbit live/OAuth when secrets · S6 geo/calendar · GL6/S7 remote/PWA  
-6. S8 Playwright incl. Goal Graph E2E  
+3. GL0–GL5 Goal Graph + GG-E2E/SAFETY fixtures + S2 chat persist — **done (fixture)**  
+4. **S8** — Expand Playwright beyond smoke to full Goal Graph §12 browser path  
+5. **S5a** — FITINDEX CSV + OCR confirm UX (no scale OAuth)  
+6. **S5b / S5** — Google Health / Takeout UX; live Health API when secrets (**not Fitbit**)  
+7. **S6** — Live Google Calendar OAuth when secrets; geo consent already present  
+8. **GL6 / S7** — Tailscale Funnel + PWA install operator acceptance  
 
 **Dev command:** `make os-dev` (alias: `make dev`).
 
@@ -377,4 +390,4 @@ See **`docs/IMPLEMENTATION_PLAN.md`** for the authoritative ordered slices.
 
 UI presence ≠ backend implementation ≠ live integration ≠ E2E verification.
 
-Requirements that still **lack tests in this repo** (non-exhaustive): Fitbit metric coverage, OAuth security, FITINDEX paths, Calendar, geolocation privacy, sync/staleness, LLM tools, charts, alerts, goals, conversation search, PWA, Tailscale, four-score contract, WOD negotiation, evidence dedup — see `PHC-*` / `MVP-*` rows in `success_criteria.yaml`.
+Requirements that still **lack full live/E2E coverage** (non-exhaustive): Google Health live API, Google Calendar OAuth security, FITINDEX confirm UX depth, Playwright Goal Graph §12, geolocation privacy browser path, Tailscale accept, chart/alert polish — see `PHC-*` / `GG-*` rows in `success_criteria.yaml` and `docs/CONNECTORS.md`.
