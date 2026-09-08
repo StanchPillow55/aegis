@@ -14,11 +14,13 @@
 ## TL;DR for a new agent
 
 You are on **canonical** Aegis `/workspace`, branch  
-`cursor/feature-merge-aggregate-766c` ([PR #29](https://github.com/StanchPillow55/aegis/pull/29), CI green).
+`cursor/s1-background-sync-3696` (S1 on tip of [PR #29](https://github.com/StanchPillow55/aegis/pull/29)).
 
-**Foundation through #29 is shipped and CI-green**, but QA clarified that the **operational completion layer is still open**: required background sync, full Fitbit/Calendar live+OAuth security, persistent chat, interactive charts, geo UI, remote/PWA acceptance, and honest maturity labeling.
+**Foundation through #29 is shipped.** **S1 (required background sync) is implemented** on this branch: interval loop, retries, UI/chat/voice on-demand triggers, fixture-verified via unit/API tests. See `docs/SC_MATURITY.md`.
 
-**Do not** treat `43/43 pass: true` as “product complete.” Use `docs/SC_MATURITY.md`.
+Still open operational layers: full Fitbit/Calendar live+OAuth security, persistent chat, interactive charts, geo UI, remote/PWA acceptance, Playwright E2E.
+
+**Do not** treat SC `pass: true` as “product complete.” Use `docs/SC_MATURITY.md`.
 
 Do **not** modify remote `legacy-aegis`. Do **not** fake OAuth or live weather.
 
@@ -50,9 +52,9 @@ Do **not** modify remote `legacy-aegis`. Do **not** fake OAuth or live weather.
 
 ## What works today (vs what is still planned)
 
-**Works (foundation):** directive loop; canonical scores + Macro Pool; evidence today_wins; SQLite; registry + on-demand sync + stale flags; fixture Fitbit/Calendar/Takeout; FITINDEX CSV/manual/OCR drafts; Takeout CSV+JSON; Open-Meteo honesty; Fitbit OAuth **scaffold**; chat dock (in-memory); tools/patterns APIs; light overview SVG; geo API default-off.
+**Works (foundation + S1):** directive loop; canonical scores + Macro Pool; evidence today_wins; SQLite; registry + **background sync loop** (config interval, retries, fail-soft boot) + on-demand sync via **button / chat / voice**; stale flags + hints; fixture Fitbit/Calendar/Takeout; FITINDEX CSV/manual/OCR drafts; Takeout CSV+JSON; Open-Meteo honesty; Fitbit OAuth **scaffold**; chat dock (in-memory); tools/patterns APIs; light overview SVG; geo API default-off.
 
-**Not complete (QA):** automatic **background sync** (required); full Fitbit metric live map; OAuth security checklist; SQLite chat persist/search; llava E2E; inline chat charts; NL goals + alert proactive/dedupe depth; Grafana-style chart interactions; geo consent UI; authenticated Tailscale remote + PWA install; Playwright E2E.
+**Not complete (QA):** full Fitbit metric live map; OAuth security checklist; SQLite chat persist/search; llava E2E; inline chat charts; NL goals + alert proactive/dedupe depth; Grafana-style chart interactions; geo consent UI; authenticated Tailscale remote + PWA install; Playwright E2E.
 
 ---
 
@@ -89,11 +91,13 @@ git archive origin/legacy-aegis | tar -x -C /workspace/legacy-aegis
 
 ## Next work (QA priority list)
 
-### P1 (start here if not merging)
-- **Required background sync:** interval, per-source toggle, retries, last-success, stale warnings, on-demand via button/chat/voice  
+### P1 (next after S1)
 - **Fitbit:** full metric list (RHR, steps, distance, active minutes, calories, weight, body fat, stress, breathing rate, activities, …) + units/timestamps/source/confidence/provenance; OAuth state/callback/refresh/revoke/encrypt/scopes/no-log-secrets/UI states  
 - **Chat:** SQLite persist, searchable history, image refs, llava click-path, tools from UI, inline charts, context regression tests  
 - **Goals/alerts:** NL goal create; statuses in-progress/completed/abandoned/paused; confirm-before-complete; history; custom alerts; critical dedupe; proactive chat; stale/missing/conflict tests  
+
+### Done this wave
+- **S1 Required background sync:** interval, per-source toggle, retries, last-success, stale warnings, on-demand via button/chat/voice — `artifacts/s1-background-sync.txt`
 
 ### P2
 - Google Calendar live OAuth + read-only ingest  
@@ -111,7 +115,7 @@ git archive origin/legacy-aegis | tar -x -C /workspace/legacy-aegis
 - SQLite backup/export/restore tests  
 
 ### Recommended slice order
-Without secrets: **A (merge) → S1 background sync → S2 chat persist → S3 goals/alerts → S4 interactive charts**  
+Without secrets: **S1 background sync (done) → S2 chat persist → S3 goals/alerts → S4 interactive charts**  
 With secrets: add **S5 Fitbit**, **S6 Calendar/geo**  
 Then **S7 remote/PWA**, **S8 Playwright**.
 

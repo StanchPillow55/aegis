@@ -149,6 +149,34 @@ class HealthQueryTools:
             ]
         }
 
+    def trigger_sync(
+        self,
+        *,
+        source_id: str | None = None,
+        force: bool = False,
+        channel: str = "chat",
+    ) -> dict[str, Any]:
+        """On-demand sync from chat / voice / UI-equivalent channels."""
+        if source_id:
+            result = self.sync.sync_one(source_id, force=force)
+            results = [result]
+        else:
+            results = self.sync.sync_all(only_enabled=not force)
+        return {
+            "channel": channel,
+            "results": [
+                {
+                    "source_id": r.source_id.value,
+                    "success": r.success,
+                    "detail": r.detail,
+                    "error": r.error.model_dump() if r.error else None,
+                    "record_count": r.record_count,
+                }
+                for r in results
+            ],
+            "stale": [s.source_id.value for s in self.sync.stale_sources()],
+        }
+
     def active_alerts(self) -> dict[str, Any]:
         self.alerts.evaluate()
         return {"alerts": [a.model_dump() for a in self.alerts.active()]}

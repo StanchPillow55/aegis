@@ -52,7 +52,7 @@
 | Full Recharts Vite SPA | Conflicts with single-process static serve |
 | ChromaDB | Product chose SQLite memory |
 | Multi-user isolation | Local single-user MVP |
-| APScheduler background jobs | Registry on-demand + config flag sufficient |
+| APScheduler background jobs | Superseded: lightweight daemon `BackgroundSyncLoop` (S1) — no APScheduler dep |
 | Claude-required extraction | Keep Ollama optional + heuristic |
 
 ---

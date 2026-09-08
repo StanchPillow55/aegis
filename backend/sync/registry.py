@@ -65,6 +65,8 @@ class SyncConfig(BaseModel):
     background_enabled: bool = False
     interval_seconds: int = 3600
     sources: dict[str, bool] = Field(default_factory=dict)
+    max_retries: int = 3
+    retry_backoff_seconds: float = 2.0
 
 
 class SyncResult(BaseModel):
@@ -395,6 +397,47 @@ class SourceRegistry:
         self._append_history(entry)
         result.status = status
         return result
+
+    def sync_one_with_retries(
+        self,
+        source_id: SourceId | str,
+        *,
+        force: bool = False,
+        max_retries: int | None = None,
+        backoff_seconds: float | None = None,
+        sleep_fn: Callable[[float], None] | None = None,
+    ) -> SyncResult:
+        """Sync one source with exponential backoff on soft failure.
+
+        Disabled sources are not retried. ``not_configured`` failures are not
+        retried (configuration will not change mid-loop). Transient
+        ``sync_failed`` errors retry up to ``max_retries`` times.
+        """
+        cfg = self.get_config()
+        attempts = max(1, int(max_retries if max_retries is not None else cfg.max_retries))
+        base = float(
+            backoff_seconds
+            if backoff_seconds is not None
+            else cfg.retry_backoff_seconds
+        )
+        sleeper = sleep_fn or time.sleep
+        last: SyncResult | None = None
+        for attempt in range(1, attempts + 1):
+            last = self.sync_one(source_id, force=force)
+            if last.success:
+                last.detail = (last.detail or "") + (
+                    f" (attempt {attempt}/{attempts})" if attempt > 1 else ""
+                )
+                return last
+            code = last.error.code if last.error else ""
+            if code in {"disabled", "not_configured"}:
+                return last
+            if attempt >= attempts:
+                break
+            sleeper(base * (2 ** (attempt - 1)))
+        assert last is not None
+        last.detail = (last.detail or "failed") + f" (exhausted {attempts} attempts)"
+        return last
 
     def sync_all(self, *, only_enabled: bool = True) -> list[SyncResult]:
         results: list[SyncResult] = []

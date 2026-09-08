@@ -1,0 +1,24 @@
+S1 — Required background sync (PHC-SYNC-01)
+Date: 2026-09-08
+Branch: cursor/s1-background-sync-3696
+
+Delivered:
+- backend/sync/background.py — fail-soft daemon BackgroundSyncLoop
+- SyncConfig: max_retries, retry_backoff_seconds; sync_one_with_retries
+- Startup starts loop without blocking boot; /health exposes background_sync
+- APIs: GET/PUT /api/sync/config (wakes loop), GET /api/sync/background,
+  POST /api/sync/background/tick
+- On-demand channels: UI Sync now button, chat "sync now", voice/dictate command
+- Frontend: background enable + interval controls + stale hints
+
+Verify:
+  python3 -m pytest tests/test_phc_sync.py tests/test_phc_sync_background.py -q
+Result: PASS (see CI / local run)
+
+Maturity: fixture-verified for sync contract (unit/API). Playwright E2E still open.
+NOT claimed: live Fitbit/Calendar OAuth sync.
+          
+    @app.on_event("shutdown")
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+17 passed, 6 warnings in 2.55s

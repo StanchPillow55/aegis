@@ -21,6 +21,27 @@ function SpeechRecognitionCtor() {
   return window.SpeechRecognition || window.webkitSpeechRecognition || null;
 }
 
+function isSyncCommand(text) {
+  const t = (text || "").trim().toLowerCase();
+  if (!t) return false;
+  if (["sync", "sync now", "resync", "refresh sources"].includes(t)) return true;
+  return /\b(sync\s+(now|everything|all|sources?|data)|(please\s+)?(run|start|trigger|do)\s+(a\s+)?sync|refresh\s+(sources?|data|sync)|pull\s+(my\s+)?(data|fitbit|sources?))\b/.test(
+    t
+  );
+}
+
+async function runOnDemandSync(channel) {
+  const res = await fetch("/api/sync", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ force: false }),
+  });
+  const data = await res.json();
+  const n = (data.results || []).length;
+  const ok = (data.results || []).filter((r) => r.success).length;
+  return { ok, n, data, channel };
+}
+
 dictateBtn.addEventListener("click", () => {
   const Ctor = SpeechRecognitionCtor();
   if (!Ctor) {
@@ -46,9 +67,21 @@ dictateBtn.addEventListener("click", () => {
       dictateStatus.hidden = false;
       dictateStatus.textContent = "Dictation stopped. You can keep typing.";
     };
-    recognition.onend = () => {
+    recognition.onend = async () => {
       recognizing = false;
       dictateBtn.textContent = "Dictate";
+      const spoken = textarea.value.trim();
+      if (isSyncCommand(spoken)) {
+        dictateStatus.hidden = false;
+        dictateStatus.textContent = "Voice sync command detected — syncing…";
+        try {
+          const { ok, n } = await runOnDemandSync("voice");
+          dictateStatus.textContent = `Voice sync: ${ok}/${n} source(s) succeeded.`;
+          await refreshDashboard();
+        } catch (err) {
+          dictateStatus.textContent = String(err);
+        }
+      }
     };
   }
   if (recognizing) {
@@ -66,6 +99,25 @@ form.addEventListener("submit", async (event) => {
   event.preventDefault();
   const text = textarea.value.trim();
   if (!text) return;
+
+  // Voice/typed sync command on the main intake form.
+  if (isSyncCommand(text)) {
+    submitBtn.disabled = true;
+    try {
+      const { ok, n } = await runOnDemandSync("voice");
+      result.hidden = false;
+      directiveText.textContent = `On-demand sync: ${ok}/${n} source(s) succeeded.`;
+      disclaimerText.textContent =
+        "Sync is a data refresh — not a training directive or medical advice.";
+      await refreshDashboard();
+    } catch (err) {
+      result.hidden = false;
+      directiveText.textContent = String(err);
+    } finally {
+      submitBtn.disabled = false;
+    }
+    return;
+  }
 
   submitBtn.disabled = true;
   submitBtn.textContent = "Composing…";
@@ -146,6 +198,9 @@ async function refreshSources() {
   const list = document.getElementById("source-list");
   const hint = document.getElementById("sync-hint");
   const fitbitStatus = document.getElementById("fitbit-status");
+  const bgEnabled = document.getElementById("bg-sync-enabled");
+  const bgInterval = document.getElementById("bg-sync-interval");
+  const bgStatus = document.getElementById("bg-sync-status");
   try {
     const res = await fetch("/api/sources");
     const data = await res.json();
@@ -162,8 +217,22 @@ async function refreshSources() {
       .join("");
     const staleIds = data.stale || [];
     hint.textContent = staleIds.length
-      ? `Stale sources: ${staleIds.join(", ")}`
+      ? `Stale sources: ${staleIds.join(", ")} — sync or wait for background tick.`
       : "No enabled sources marked stale.";
+    const cfg = data.config || {};
+    if (bgEnabled) bgEnabled.checked = !!cfg.background_enabled;
+    if (bgInterval && cfg.interval_seconds) bgInterval.value = cfg.interval_seconds;
+    try {
+      const bgRes = await fetch("/api/sync/background");
+      const bg = await bgRes.json();
+      if (bgStatus) {
+        bgStatus.textContent = bg.running
+          ? `loop on · ticks=${bg.ticks || 0}`
+          : "loop idle";
+      }
+    } catch {
+      if (bgStatus) bgStatus.textContent = "";
+    }
     const fitbit = sources.find((s) => s.source_id === "fitbit");
     if (fitbit) {
       fitbitStatus.textContent = `${fitbit.integration_state || "unknown"} — ${
@@ -261,17 +330,39 @@ async function refreshDashboard() {
   await Promise.all([refreshSources(), refreshEnvironment(), refreshAlertsGoals(), refreshChart()]);
 }
 
+document.getElementById("bg-sync-save").addEventListener("click", async () => {
+  const hint = document.getElementById("sync-hint");
+  const enabled = document.getElementById("bg-sync-enabled").checked;
+  const interval = Number(document.getElementById("bg-sync-interval").value) || 3600;
+  hint.textContent = "Saving sync config…";
+  try {
+    const res = await fetch("/api/sync/config", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        background_enabled: enabled,
+        interval_seconds: Math.max(5, interval),
+        sources: {},
+        max_retries: 3,
+        retry_backoff_seconds: 2,
+      }),
+    });
+    if (!res.ok) throw new Error(`config ${res.status}`);
+    hint.textContent = enabled
+      ? `Background sync enabled every ${Math.max(5, interval)}s.`
+      : "Background sync disabled (on-demand still works).";
+    await refreshSources();
+  } catch (err) {
+    hint.textContent = String(err);
+  }
+});
+
 document.getElementById("sync-now-btn").addEventListener("click", async () => {
   const hint = document.getElementById("sync-hint");
   hint.textContent = "Syncing…";
   try {
-    const res = await fetch("/api/sync", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ force: false }),
-    });
-    const data = await res.json();
-    hint.textContent = `Synced ${((data.results || []).length)} source(s).`;
+    const { ok, n } = await runOnDemandSync("button");
+    hint.textContent = `Synced ${ok}/${n} source(s).`;
     await refreshDashboard();
   } catch (err) {
     hint.textContent = String(err);

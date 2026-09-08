@@ -189,9 +189,9 @@ criteria:
     criterion: >
       Hybrid sync supports configurable background sync, per-source toggles, on-demand UI/chat/voice
       sync, history, last success/attempt, errors, coverage, and retries.
-    verify: python -m pytest tests/test_phc_sync.py -q
+    verify: python -m pytest tests/test_phc_sync.py tests/test_phc_sync_background.py -q
     pass: true
-    artifact: artifacts/slice1-source-registry.txt
+    artifact: artifacts/s1-background-sync.txt
 
   - id: PHC-STALE-01
     criterion: Per-source staleness warnings fire when last successful sync is older than 24 hours.

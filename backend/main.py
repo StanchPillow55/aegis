@@ -37,13 +37,13 @@ from backend.providers.memory import LocalMemoryProvider
 from backend.providers.speech import LocalSpeechProvider
 from backend.providers.tracing import init_tracing, start_span
 from backend.reasoner import compose_directive
-from backend.sync import SourceRegistry, SyncConfig
+from backend.sync import BackgroundSyncLoop, SourceRegistry, SyncConfig
 from backend.tools import HealthQueryTools
 from backend.tools.dates import parse_date_range
 
 FRONTEND_DIR = Path(__file__).resolve().parents[1] / "frontend"
 
-app = FastAPI(title="aegis", version="0.7.0")
+app = FastAPI(title="aegis", version="0.7.1")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -56,6 +56,7 @@ _llm = LocalLLMProvider()
 _memory = LocalMemoryProvider()
 _speech = LocalSpeechProvider()
 _sync = SourceRegistry()
+_background = BackgroundSyncLoop(_sync)
 _metrics = HealthMetricsStore()
 _alerts = AlertEngine(metrics=_metrics)
 _goals = GoalStore(metrics=_metrics)
@@ -84,6 +85,19 @@ class DirectiveResponse(BaseModel):
 def _startup() -> None:
     get_settings()  # ensure data dir exists
     init_tracing()
+    # Fail-soft: background loop never blocks boot.
+    try:
+        _background.start()
+    except Exception:
+        pass
+
+
+@app.on_event("shutdown")
+def _shutdown() -> None:
+    try:
+        _background.stop(timeout=1.5)
+    except Exception:
+        pass
 
 
 @app.get("/health")
@@ -91,6 +105,7 @@ def health_check() -> dict:
     settings = get_settings()
     stt = _speech.stt_status()
     tts = _speech.tts_status()
+    bg = _background.status()
     return {
         "status": "ok",
         "mode": settings.aegis_mode,
@@ -98,6 +113,13 @@ def health_check() -> dict:
         "voice": {
             "stt": {"enabled": _speech.stt_enabled, "ready": stt.ok, "detail": stt.detail},
             "tts": {"enabled": _speech.tts_enabled, "ready": tts.ok, "detail": tts.detail},
+        },
+        "background_sync": {
+            "running": bg.get("running"),
+            "enabled": bg.get("background_enabled"),
+            "interval_seconds": bg.get("interval_seconds"),
+            "ticks": bg.get("ticks"),
+            "last_tick_at": bg.get("last_tick_at"),
         },
     }
 
@@ -241,7 +263,29 @@ def api_get_sync_config() -> dict:
 
 @app.put("/api/sync/config")
 def api_put_sync_config(body: SyncConfig) -> dict:
-    return _sync.set_config(body).model_dump()
+    saved = _sync.set_config(body)
+    try:
+        _background.wake()
+    except Exception:
+        pass
+    return saved.model_dump()
+
+
+@app.get("/api/sync/background")
+def api_sync_background() -> dict:
+    return _background.status()
+
+
+@app.post("/api/sync/background/tick")
+def api_sync_background_tick(force: bool = False) -> dict:
+    """Run one background tick immediately (tests / operator trigger)."""
+    with start_span("api.sync.background_tick"):
+        results = _background.tick(force=force)
+        return {
+            "results": [r.model_dump() for r in results],
+            "status": _background.status(),
+            "stale": [s.source_id.value for s in _sync.stale_sources()],
+        }
 
 
 @app.post("/api/sync")

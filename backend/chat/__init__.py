@@ -52,6 +52,24 @@ _METRIC_HINTS = {
     "distance": "distance",
 }
 
+_SYNC_TRIGGER_RE = re.compile(
+    r"\b("
+    r"sync\s+(now|everything|all|sources?|data)|"
+    r"(please\s+)?(run|start|trigger|do)\s+(a\s+)?sync|"
+    r"refresh\s+(sources?|data|sync)|"
+    r"pull\s+(my\s+)?(data|fitbit|sources?)"
+    r")\b",
+    re.I,
+)
+
+
+def is_sync_trigger(text: str) -> bool:
+    """True when the user is asking to run an on-demand sync (chat/voice)."""
+    t = (text or "").strip().lower()
+    if t in {"sync", "sync now", "resync", "refresh sources"}:
+        return True
+    return bool(_SYNC_TRIGGER_RE.search(t))
+
 
 def vision_status() -> dict[str, Any]:
     """Honest local vision readiness (Ollama llava optional)."""
@@ -135,15 +153,24 @@ class ChatService:
                 metric = name
                 break
 
+        # On-demand sync via chat (and voice/dictate routed through chat).
+        if is_sync_trigger(req.message):
+            channel = "voice" if (req.screen_context or {}).get("input") == "voice" else "chat"
+            out = self.tools.trigger_sync(channel=channel)
+            tool_results.append({"tool": "trigger_sync", "result": out})
+            # Also report freshness after the pull.
+            out_f = self.tools.source_freshness()
+            tool_results.append({"tool": "source_freshness", "result": out_f})
+        elif any(w in lower for w in ("sync", "stale", "source", "fresh")):
+            out = self.tools.source_freshness()
+            tool_results.append({"tool": "source_freshness", "result": out})
+
         if any(w in lower for w in ("alert", "alerts")):
             out = self.tools.active_alerts()
             tool_results.append({"tool": "active_alerts", "result": out})
         if any(w in lower for w in ("goal", "goals", "progress")):
             out = self.tools.goal_progress()
             tool_results.append({"tool": "goal_progress", "result": out})
-        if any(w in lower for w in ("sync", "stale", "source", "fresh")):
-            out = self.tools.source_freshness()
-            tool_results.append({"tool": "source_freshness", "result": out})
         if any(w in lower for w in ("body fat", "body composition", "weight")):
             out = self.tools.body_composition()
             tool_results.append({"tool": "body_composition", "result": out})
@@ -281,6 +308,15 @@ class ChatService:
                 )
             else:
                 parts.append("No enabled sources are marked stale.")
+
+        sync_run = next((t for t in tool_results if t.get("tool") == "trigger_sync"), None)
+        if sync_run:
+            results = sync_run["result"].get("results") or []
+            ok = sum(1 for r in results if r.get("success"))
+            channel = sync_run["result"].get("channel") or "chat"
+            parts.append(
+                f"On-demand sync via {channel}: {ok}/{len(results)} source(s) succeeded."
+            )
 
         if vision and not vision.get("available") and any(
             t.get("tool") == "vision" for t in tool_results

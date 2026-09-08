@@ -64,11 +64,11 @@ Full ID map: **`docs/SC_MATURITY.md`**. Next agent should update that map when m
 - Durable SQLite memory + health metrics
 
 ### Ingestion & sync (partial vs product requirement)
-- Source registry, per-source enable, on-demand sync, last-success + 24h stale flags — **I**
+- Source registry, per-source enable, on-demand sync, last-success + 24h stale flags — **fixture-verified**
+- **Background scheduled sync:** required loop shipped (S1) — interval, retries, fail-soft boot, UI/chat/voice triggers — **fixture-verified** (Playwright E2E still open)
 - Fixture Fitbit / Calendar / Takeout — **fixture-verified**
 - FITINDEX CSV + manual review API; OCR draft when llava present — **implemented-but-not-E2E**
 - Takeout CSV + JSON Data Points — **I**
-- **Background scheduled sync:** config flag exists; **automatic loop NOT required-complete** → **P1 required** (was wrongly optional)
 
 ### Environment & connectors
 - Geo default-off API contract — **fixture-verified**; **UI consent/revoke/home/threshold missing** → P2
@@ -228,7 +228,7 @@ Not a full Vite/Grafana rewrite, but must include:
 | Slice | Scope | Exit criteria |
 |---|---|---|
 | **A** | Merge hygiene #22–#29 | Single preferred tip green |
-| **S1** | Required background sync loop + tests + UI/chat/voice triggers | Config interval; retries; stale; on-demand three channels |
+| **S1** | Required background sync loop + tests + UI/chat/voice triggers | **DONE** (`artifacts/s1-background-sync.txt`) — config interval; retries; stale; on-demand three channels |
 | **S2** | Chat SQLite persist + search + inline charts + context tests | Restart-durable history; searchable; chart in bubble |
 | **S3** | Goals NL extract + statuses/history + alert custom/dedupe + proactive chat | E2E TestClient + UI path |
 | **S4** | Interactive charts (click/range/tooltip/bands/missing/source) | Manual + automated UI checks |
@@ -237,8 +237,8 @@ Not a full Vite/Grafana rewrite, but must include:
 | **S7** | PWA SW/icons + Tailscale authenticated remote acceptance | Mobile install notes + checklist artifact |
 | **S8** | Playwright + offline/failure + backup/restore | Documented green runs |
 
-**Recommended start without secrets:** **A → S1 → S2 → S3 → S4**.  
-**With Fitbit secrets:** insert **S5** after S1.  
+**Recommended start without secrets:** **S2 → S3 → S4** (S1 done on `cursor/s1-background-sync-3696`).  
+**With Fitbit secrets:** insert **S5** next.  
 **With Google secrets:** **S6**.
 
 ---

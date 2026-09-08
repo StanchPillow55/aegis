@@ -82,6 +82,18 @@
         <h3>Sync status</h3>
         <button type="button" id="sync-now-btn" class="ghost">Sync now</button>
       </div>
+      <div class="sync-config" id="sync-config">
+        <label class="sync-toggle">
+          <input type="checkbox" id="bg-sync-enabled" />
+          Background sync
+        </label>
+        <label class="sync-interval">
+          Interval (sec)
+          <input type="number" id="bg-sync-interval" min="5" step="1" value="3600" />
+        </label>
+        <button type="button" id="bg-sync-save" class="ghost">Save</button>
+        <span id="bg-sync-status" class="muted"></span>
+      </div>
       <ul id="source-list" class="source-list"></ul>
       <p id="sync-hint" class="hint"></p>
     </div>

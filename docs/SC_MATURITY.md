@@ -43,8 +43,8 @@
 | PHC-CALENDAR-01 | `fixture-verified` | Fixture events; **live OAuth planned** |
 | PHC-GEO-01 | `fixture-verified` | API default-off; **consent/revoke/home UI planned** |
 | PHC-ENV-01 | `verified` | Live Open-Meteo smoke + offline labeling |
-| PHC-SYNC-01 | `implemented-but-not-E2E-tested` | On-demand + registry; **required background loop planned (P1)** |
-| PHC-STALE-01 | `fixture-verified` | Stale flags exist; UI/chat warnings incomplete |
+| PHC-SYNC-01 | `fixture-verified` | Background loop + retries + on-demand button/chat/voice unit/API tested (S1). Playwright E2E still open. |
+| PHC-STALE-01 | `fixture-verified` | Stale flags + UI/chat hints; browser E2E thin |
 | PHC-SQLITE-01 | `verified` | |
 | PHC-PROVENANCE-01 | `verified` | |
 | PHC-TOOLS-01 | `implemented-but-not-E2E-tested` | Tools API; chat UI tool use incomplete |
