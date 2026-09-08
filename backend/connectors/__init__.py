@@ -215,7 +215,35 @@ def sync_takeout_fixture(registry: SourceRegistry, source_id: SourceId) -> SyncR
     )
 
 
+def sync_google_health_scaffold(registry: SourceRegistry, source_id: SourceId) -> SyncResult:
+    """Live Google Health API gate — soft-fail until secrets + token exist."""
+    from backend.connectors import google_oauth
+    from backend.sync.registry import SyncError
+
+    pull = google_oauth.health_pull_scaffold()
+    status = registry._load(source_id.value)
+    status.coverage = {**dict(status.coverage or {}), **pull, **google_oauth.status(google_oauth.SOURCE_HEALTH)}
+    if pull.get("mode") in {"needs_credentials", "needs_token"}:
+        err = SyncError(code=str(pull["mode"]), message=str(pull.get("detail") or ""), at=time.time())
+        return SyncResult(
+            source_id=source_id,
+            success=False,
+            record_count=0,
+            detail=str(pull.get("detail") or "Google Health not ready"),
+            error=err,
+            status=status,
+        )
+    return SyncResult(
+        source_id=source_id,
+        success=True,
+        record_count=0,
+        detail=str(pull.get("detail") or "Google Health token ready (dataset sync scaffolded)"),
+        status=status,
+    )
+
+
 def register_fixture_connectors(registry: SourceRegistry) -> None:
     registry.register_handler(SourceId.FITBIT, sync_fitbit_fixture)
     registry.register_handler(SourceId.CALENDAR, sync_calendar_fixture)
     registry.register_handler(SourceId.TAKEOUT, sync_takeout_fixture)
+    registry.register_handler(SourceId.GOOGLE_HEALTH, sync_google_health_scaffold)

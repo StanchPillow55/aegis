@@ -99,9 +99,9 @@ GL0 · GL1 · GL2 · GL3 · GL4 · GL5 · S1 · S2 · GG-E2E fixture · GG-SAFET
 
 | ID | Work | Notes |
 |---|---|---|
-| **S6** | Live **Google Calendar** read-only OAuth | Calendar Google auth remains the intended live path |
-| **S5** | Live **Google Health API** (beyond Takeout ZIP) | **Primary** wearable/metric sync — **not Fitbit** |
-| **PHC-OAUTH-01** live | Secure local token store for Google tokens | No Fitbit-primary; no scale OAuth |
+| **S6** | Live **Google Calendar** read-only OAuth | Scaffold landed (`cursor/scaffolding-up-to-secrets-3696`); exercise callback with real secrets |
+| **S5** | Live **Google Health API** dataset sync | Scaffold + token gate landed; map Fitness datasets after first live token |
+| **PHC-OAUTH-01** live | Secure local token store for Google tokens | Shared `token_store` + Fernet; no Fitbit-primary; no scale OAuth |
 
 ### P2 — Remote / operator accept
 

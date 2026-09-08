@@ -11,8 +11,16 @@ Authoritative product decisions for external health sync. Do **not** reintroduce
 ## Calendar — Google OAuth (keep)
 
 - **Google Calendar read-only OAuth remains the intended live calendar path.**
+- Scaffold: `/api/google/calendar/{status,auth,callback,events,revoke}` — needs `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET`.
 - Fixture calendar events cover offline/demo; live OAuth is still the real calendar connector.
 - Do not replace Calendar with Fitbit calendar hacks.
+
+## Google Health API — live scaffold (primary with Takeout)
+
+- Live Fitness API OAuth scaffold: `/api/google/health/{status,auth,callback,pull,revoke}`.
+- Without secrets → `needs_credentials` (never fake authenticated).
+- With secrets but no token → `configured` + `auth_url`.
+- Bulk/historical import remains Takeout ZIP (preview→confirm).
 
 ## FITINDEX / body scale — no scale OAuth
 

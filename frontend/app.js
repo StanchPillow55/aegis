@@ -583,13 +583,39 @@ async function refreshSources() {
       if (bgStatus) bgStatus.textContent = "";
     }
     const fitbit = sources.find((s) => s.source_id === "fitbit");
-    if (fitbit) {
+    if (fitbit && fitbitStatus) {
       fitbitStatus.textContent = `${fitbit.integration_state || "unknown"} — ${
         fitbit.detail || "OAuth not live in this build."
       } live_oauth=${fitbit.live_oauth === true}`;
     }
+    await refreshGoogleScaffoldStatuses();
   } catch (err) {
     hint.textContent = err.message || "Could not load sources.";
+  }
+}
+
+async function refreshGoogleScaffoldStatuses() {
+  const calEl = document.getElementById("google-calendar-status");
+  const healthEl = document.getElementById("google-health-status");
+  try {
+    if (calEl) {
+      const res = await fetch("/api/google/calendar/status");
+      const data = await res.json();
+      calEl.textContent = `${data.integration_state}: ${data.detail}` +
+        (data.auth_url ? ` · auth ready` : "");
+    }
+  } catch (err) {
+    if (calEl) calEl.textContent = String(err);
+  }
+  try {
+    if (healthEl) {
+      const res = await fetch("/api/google/health/status");
+      const data = await res.json();
+      healthEl.textContent = `${data.integration_state}: ${data.detail}` +
+        (data.auth_url ? ` · auth ready` : "");
+    }
+  } catch (err) {
+    if (healthEl) healthEl.textContent = String(err);
   }
 }
 
@@ -1144,6 +1170,63 @@ document.getElementById("fitbit-auth-btn").addEventListener("click", async () =>
   } catch (err) {
     el.textContent = String(err);
   }
+});
+
+async function googleAuthCheck(kind) {
+  const el = document.getElementById(`google-${kind}-status`);
+  try {
+    const res = await fetch(`/api/google/${kind}/auth`);
+    const data = await res.json();
+    el.textContent = `${data.integration_state}: ${data.detail}` +
+      (data.auth_url ? ` auth_url=${data.auth_url}` : "");
+    if (data.auth_url && data.integration_state === "configured") {
+      // Do not auto-navigate; operator opens auth_url intentionally
+      el.textContent += " — open auth_url in browser when ready.";
+    }
+  } catch (err) {
+    el.textContent = String(err);
+  }
+}
+
+document.getElementById("google-calendar-auth-btn")?.addEventListener("click", () =>
+  googleAuthCheck("calendar")
+);
+document.getElementById("google-health-auth-btn")?.addEventListener("click", () =>
+  googleAuthCheck("health")
+);
+
+document.getElementById("google-calendar-events-btn")?.addEventListener("click", async () => {
+  const el = document.getElementById("google-calendar-status");
+  try {
+    const res = await fetch("/api/google/calendar/events");
+    const data = await res.json();
+    el.textContent = data.ok
+      ? `Live events: ${data.count} (read-only).`
+      : `${data.mode}: ${data.detail}`;
+  } catch (err) {
+    el.textContent = String(err);
+  }
+});
+
+document.getElementById("google-health-pull-btn")?.addEventListener("click", async () => {
+  const el = document.getElementById("google-health-status");
+  try {
+    const res = await fetch("/api/google/health/pull", { method: "POST" });
+    const data = await res.json();
+    el.textContent = `${data.mode}: ${data.detail}`;
+  } catch (err) {
+    el.textContent = String(err);
+  }
+});
+
+document.getElementById("google-calendar-revoke-btn")?.addEventListener("click", async () => {
+  await fetch("/api/google/calendar/revoke", { method: "POST" });
+  await refreshGoogleScaffoldStatuses();
+});
+
+document.getElementById("google-health-revoke-btn")?.addEventListener("click", async () => {
+  await fetch("/api/google/health/revoke", { method: "POST" });
+  await refreshGoogleScaffoldStatuses();
 });
 
 document.getElementById("fitindex-ocr-btn").addEventListener("click", async () => {

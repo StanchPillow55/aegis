@@ -7,3 +7,4 @@ httpx
 pyyaml
 python-multipart
 dateparser
+cryptography

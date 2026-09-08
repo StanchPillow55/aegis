@@ -240,7 +240,23 @@
     <div class="settings-grid">
       <div data-pin-id="google-health" data-pin-label="Google Health">
         <h3>Google Health / Takeout</h3>
-        <p class="hint">Primary metric sync. Import a Takeout ZIP below. Live Google Health API is future work when credentials exist.</p>
+        <p class="hint">Primary metric sync. Takeout ZIP works offline. Live Google Health API OAuth is scaffolded — needs <code>GOOGLE_CLIENT_*</code>.</p>
+        <p id="google-health-status" class="hint">Loading…</p>
+        <div class="hitl-actions">
+          <button type="button" id="google-health-auth-btn" class="ghost">Check Health OAuth scaffold</button>
+          <button type="button" id="google-health-pull-btn" class="ghost">Try live Health pull</button>
+          <button type="button" id="google-health-revoke-btn" class="ghost">Revoke Health token</button>
+        </div>
+      </div>
+      <div data-pin-id="google-calendar" data-pin-label="Google Calendar">
+        <h3>Google Calendar (read-only OAuth)</h3>
+        <p class="hint">Intended live calendar path. Fixture events work without secrets.</p>
+        <p id="google-calendar-status" class="hint">Loading…</p>
+        <div class="hitl-actions">
+          <button type="button" id="google-calendar-auth-btn" class="ghost">Check Calendar OAuth scaffold</button>
+          <button type="button" id="google-calendar-events-btn" class="ghost">Fetch live events</button>
+          <button type="button" id="google-calendar-revoke-btn" class="ghost">Revoke Calendar token</button>
+        </div>
       </div>
       <div data-pin-id="fitbit" data-pin-label="Fitbit legacy fixture">
         <h3>Fitbit (legacy fixture)</h3>
