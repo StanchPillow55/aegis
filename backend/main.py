@@ -32,6 +32,11 @@ from backend.goals import (
     analyze_journal_entry,
     persist_analysis_as_pending,
 )
+from backend.goals.progress import (
+    build_progress_view,
+    explain_progress,
+    propose_task_from_chart,
+)
 from backend.health.evidence import build_evidence_bundle
 from backend.health.schema import SAFETY_DISCLAIMER, DataQuality, DataSource
 from backend.health.store import (
@@ -725,9 +730,75 @@ def api_tool(tool_name: str, body: dict | None = None) -> dict:
 
 
 @app.get("/api/charts/{metric}")
-def api_chart(metric: str) -> dict:
+def api_chart(metric: str, horizon: str = "all") -> dict:
+    if horizon and horizon != "all":
+        view = build_progress_view(
+            metric,
+            horizon=horizon,
+            metrics=_metrics,
+            goals=_goals,
+            graph=_goal_graph,
+            sync=_sync,
+        )
+        return view["chart"]
     spec = build_metric_trend(metric, metrics=_metrics, goals=_goals)
     return spec.model_dump()
+
+
+@app.get("/api/progress/{metric}")
+def api_progress(metric: str, horizon: str = "month") -> dict:
+    try:
+        return build_progress_view(
+            metric,
+            horizon=horizon,
+            metrics=_metrics,
+            goals=_goals,
+            graph=_goal_graph,
+            sync=_sync,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/api/progress/{metric}/explain")
+def api_progress_explain(metric: str, horizon: str = "month") -> dict:
+    try:
+        view = build_progress_view(
+            metric,
+            horizon=horizon,
+            metrics=_metrics,
+            goals=_goals,
+            graph=_goal_graph,
+            sync=_sync,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return explain_progress(view)
+
+
+class ChartTaskBody(BaseModel):
+    horizon: str = "month"
+    goal_id: str | None = None
+    title: str | None = None
+    reason: str | None = None
+
+
+@app.post("/api/progress/{metric}/create-task")
+def api_progress_create_task(metric: str, body: ChartTaskBody | None = None) -> dict:
+    body = body or ChartTaskBody()
+    try:
+        return propose_task_from_chart(
+            graph=_goal_graph,
+            metric=metric,
+            horizon=body.horizon,
+            goal_id=body.goal_id,
+            title=body.title,
+            reason=body.reason,
+        )
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Unknown goal") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.post("/api/charts/validate")

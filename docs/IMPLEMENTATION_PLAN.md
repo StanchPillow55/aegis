@@ -130,7 +130,7 @@ Details: **`docs/GOAL_GRAPH.md`**.
 | **GL1** | Signal provider interface; wrap FR/Sleep/Diet/WP/Overall; dynamic selection API; UI no longer *requires* four fixed cards | **DONE fixture** (`artifacts/gl1-signals.txt`) — compat `score_canonical` preserved |
 | **GL2** | Journal contribution engine: RAG, map to goals, classify effect, task suggestions, evidence/assumptions/confidence, approve/edit/reject/defer | **DONE fixture** (`artifacts/gl2-contributions.txt`) — UI suggestion panel still open (GL3) |
 | **GL3** | Goal tree + task inbox + Today/Upcoming/Completed + editor + suggestion panel + decompose/rewrite/archive | **DONE fixture** (`artifacts/gl3-goal-ui.txt`) — Playwright E2E still open |
-| **GL4** | Progress workspace: horizons, trends, goal bands, milestones, annotations, missing/stale, explain + create-task-from-chart | Fixture charts + goal overlays; explain action returns evidence-bound text |
+| **GL4** | Progress workspace: horizons, trends, goal bands, milestones, annotations, missing/stale, explain + create-task-from-chart | **DONE fixture** (`artifacts/gl4-progress.txt`) |
 | **GL5** | Typed screen context expansion; read-only tools; mutation preview tools; confirm mutations; searchable chat history; inline charts | Context regression tests; no raw HTML to LLM |
 | **GL6** | Responsive goal/task + suggestion review; PWA; Tailscale remote same behavior | Checklist artifact; maturity not `verified` until operator accept |
 

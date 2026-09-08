@@ -586,6 +586,36 @@ pre {
   gap: 0.5rem;
 }
 
+.horizon-views {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0.5rem 0 0.75rem;
+}
+
+.horizon-btn {
+  border: 1px solid var(--line);
+  background: transparent;
+  font: inherit;
+  font-size: 0.82rem;
+  padding: 0.3rem 0.65rem;
+  cursor: pointer;
+  color: rgba(26, 36, 33, 0.75);
+}
+
+.horizon-btn.is-active {
+  border-color: var(--leaf);
+  color: var(--leaf-deep);
+  background: rgba(31, 111, 91, 0.08);
+}
+
+.progress-explain {
+  margin: 0.65rem 0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: rgba(26, 36, 33, 0.85);
+}
+
 .goals {
   max-width: 52rem;
   margin: 0 auto;

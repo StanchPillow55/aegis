@@ -353,8 +353,8 @@ criteria:
       Long-term progress charts support horizons, goal lines/bands, milestones,
       provenance, missing/stale indicators, explain-chart and create-task-from-chart.
     verify: python -m pytest tests/test_gg_progress.py -q
-    pass: false
-    artifact: null
+    pass: true
+    artifact: artifacts/gl4-progress.txt
 
   - id: GG-CONTEXT-01
     criterion: >

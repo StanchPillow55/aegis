@@ -58,7 +58,7 @@ Branch tip: `cursor/s1-background-sync-3696` ([PR #31](https://github.com/Stanch
 | Dynamic signal migration (GL1) | Fixture-verified |
 | Goal/task infrastructure (GL0) | Fixture-verified |
 | Journal contribution + HITL (GL2–GL3) | Fixture-verified (UI + APIs); Playwright E2E pending |
-| Progress dashboards (GL4) | Planned |
+| Progress dashboards (GL4) | Fixture-verified |
 | Context-aware chat depth (GL5) + S2 persist | S2 fixture-verified; GL5 planned |
 | UI work for goal tree / suggestions | Fixture-verified (GL3) |
 | E2E verification (S8 + Goal Graph story) | Planned |
@@ -84,7 +84,7 @@ Branch tip: `cursor/s1-background-sync-3696` ([PR #31](https://github.com/Stanch
 3. **GL2** — Journal contribution engine + HITL (`GG-CONTRIB-01`, `GG-SUGGEST-01`) — **fixture-verified**  
 4. **GL3** — Goal/task UI + suggestion review (`GG-UI-01`) — **fixture-verified**  
 5. **S2** — Chat SQLite persist/search (supports GL5) — **fixture-verified**  
-6. **GL4** — Progress dashboards / bands / explain (`GG-PROGRESS-01`)  
+6. **GL4** — Progress dashboards / bands / explain (`GG-PROGRESS-01`) — **fixture-verified**  
 7. **GL5** — Typed screen context + read/mutate tools (`GG-CONTEXT-01`)  
 8. **S5/S6** — Fitbit/Calendar/geo when secrets  
 9. **GL6/S7/S8** — Remote/PWA + Playwright Goal Graph path  

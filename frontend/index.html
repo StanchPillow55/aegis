@@ -135,7 +135,7 @@
 
     <div class="chart-block" data-pin-id="chart" data-pin-label="Metric trend">
       <div class="panel-head">
-        <h3>Metric trend</h3>
+        <h3>Progress</h3>
         <label class="chart-metric-label">
           <span class="sr-only">Metric</span>
           <select id="chart-metric">
@@ -146,8 +146,22 @@
           </select>
         </label>
       </div>
-      <svg id="chart-svg" viewBox="0 0 320 120" role="img" aria-label="Metric trend chart"></svg>
+      <div class="horizon-views" role="tablist" aria-label="Chart horizon">
+        <button type="button" class="horizon-btn" data-horizon="today">Today</button>
+        <button type="button" class="horizon-btn" data-horizon="week">Week</button>
+        <button type="button" class="horizon-btn is-active" data-horizon="month">Month</button>
+        <button type="button" class="horizon-btn" data-horizon="year">Year</button>
+        <button type="button" class="horizon-btn" data-horizon="all">All</button>
+      </div>
+      <svg id="chart-svg" viewBox="0 0 320 140" role="img" aria-label="Metric trend chart"></svg>
       <p id="chart-note" class="hint"></p>
+      <p id="chart-bands" class="hint"></p>
+      <p id="chart-explain" class="progress-explain" hidden></p>
+      <div class="hitl-actions">
+        <button type="button" id="chart-explain-btn" class="ghost">Explain chart</button>
+        <button type="button" id="chart-task-btn" class="ghost">Suggest task from chart</button>
+      </div>
+      <p id="chart-task-hint" class="hint"></p>
     </div>
   </section>
 

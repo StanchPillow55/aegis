@@ -587,30 +587,60 @@ async function refreshAlertsGoals() {
   }
 }
 
-function renderChart(spec) {
+let chartHorizon = "month";
+
+function renderChart(spec, meta = {}) {
   const svg = document.getElementById("chart-svg");
   const note = document.getElementById("chart-note");
+  const bandsEl = document.getElementById("chart-bands");
   const series = (spec.series && spec.series[0] && spec.series[0].points) || [];
-  note.textContent = spec.source_note || (spec.missing || []).join(", ") || "";
+  const missing = spec.missing || meta.missing || [];
+  note.textContent =
+    [
+      spec.source_note,
+      missing.length ? `Missing: ${missing.join(", ")}` : "",
+      (meta.stale_sources || []).length
+        ? `Stale: ${(meta.stale_sources || []).map((s) => s.source_id).join(", ")}`
+        : "",
+    ]
+      .filter(Boolean)
+      .join(" · ") || "";
+  const bands = spec.goal_bands || meta.goal_bands || [];
+  if (bandsEl) {
+    bandsEl.textContent = bands.length
+      ? "Goal bands: " +
+        bands
+          .map((b) => `${b.title || b.goal_id || b.metric}@${b.target}`)
+          .join("; ")
+      : "No goal bands for this metric.";
+  }
   if (!series.length) {
-    svg.innerHTML = `<text x="12" y="60" fill="#1a2421" font-size="12">No points for ${
+    svg.innerHTML = `<text x="12" y="70" fill="#1a2421" font-size="12">No points for ${
       spec.metric || "metric"
-    }</text>`;
+    } (${chartHorizon})</text>`;
     return;
   }
   const ys = series.map((p) => Number(p.y));
-  const minY = Math.min(...ys);
-  const maxY = Math.max(...ys);
+  const bandYs = bands.map((b) => Number(b.target)).filter((n) => !Number.isNaN(n));
+  const minY = Math.min(...ys, ...(bandYs.length ? bandYs : ys));
+  const maxY = Math.max(...ys, ...(bandYs.length ? bandYs : ys));
   const pad = 12;
   const w = 320;
-  const h = 120;
+  const h = 140;
   const span = maxY - minY || 1;
   const coords = series.map((p, i) => {
     const x = pad + (i / Math.max(1, series.length - 1)) * (w - pad * 2);
     const y = h - pad - ((Number(p.y) - minY) / span) * (h - pad * 2);
     return `${x},${y}`;
   });
+  const bandLines = bandYs
+    .map((target) => {
+      const y = h - pad - ((target - minY) / span) * (h - pad * 2);
+      return `<line x1="${pad}" y1="${y}" x2="${w - pad}" y2="${y}" stroke="#c45c26" stroke-width="1.5" stroke-dasharray="4 3" />`;
+    })
+    .join("");
   svg.innerHTML = `
+    ${bandLines}
     <polyline fill="none" stroke="#0f3d32" stroke-width="2"
       points="${coords.join(" ")}" />
     ${coords
@@ -624,10 +654,18 @@ function renderChart(spec) {
 
 async function refreshChart() {
   const metric = document.getElementById("chart-metric").value;
+  const explainEl = document.getElementById("chart-explain");
+  if (explainEl) {
+    explainEl.hidden = true;
+    explainEl.textContent = "";
+  }
   try {
-    const res = await fetch(`/api/charts/${encodeURIComponent(metric)}`);
-    if (!res.ok) throw new Error(`chart ${res.status}`);
-    renderChart(await res.json());
+    const res = await fetch(
+      `/api/progress/${encodeURIComponent(metric)}?horizon=${encodeURIComponent(chartHorizon)}`
+    );
+    if (!res.ok) throw new Error(`progress ${res.status}`);
+    const view = await res.json();
+    renderChart(view.chart || view, view);
   } catch (err) {
     document.getElementById("chart-note").textContent = String(err);
   }
@@ -985,6 +1023,52 @@ document.getElementById("sync-now-btn").addEventListener("click", async () => {
 });
 
 document.getElementById("chart-metric").addEventListener("change", refreshChart);
+
+document.querySelectorAll(".horizon-btn").forEach((btn) => {
+  btn.addEventListener("click", async () => {
+    chartHorizon = btn.dataset.horizon;
+    document.querySelectorAll(".horizon-btn").forEach((b) => {
+      b.classList.toggle("is-active", b === btn);
+    });
+    await refreshChart();
+  });
+});
+
+document.getElementById("chart-explain-btn")?.addEventListener("click", async () => {
+  const metric = document.getElementById("chart-metric").value;
+  const el = document.getElementById("chart-explain");
+  try {
+    const res = await fetch(
+      `/api/progress/${encodeURIComponent(metric)}/explain?horizon=${encodeURIComponent(chartHorizon)}`,
+      { method: "POST" }
+    );
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || res.status);
+    el.hidden = false;
+    el.textContent = data.explanation || "";
+  } catch (err) {
+    el.hidden = false;
+    el.textContent = String(err);
+  }
+});
+
+document.getElementById("chart-task-btn")?.addEventListener("click", async () => {
+  const metric = document.getElementById("chart-metric").value;
+  const hint = document.getElementById("chart-task-hint");
+  try {
+    const res = await fetch(`/api/progress/${encodeURIComponent(metric)}/create-task`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ horizon: chartHorizon }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || res.status);
+    hint.textContent = data.detail || "Suggestion pending approval.";
+    await refreshSuggestions();
+  } catch (err) {
+    hint.textContent = String(err);
+  }
+});
 
 document.getElementById("fitbit-fixture-btn").addEventListener("click", async () => {
   const el = document.getElementById("fitbit-status");
