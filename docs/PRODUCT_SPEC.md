@@ -109,7 +109,7 @@ Legend: **IT** = Implemented & tested · **IL** = Implemented but limited/incomp
 | FITINDEX CSV / OCR / manual | IT / P | CSV + manual review; OCR deferred |
 | Google Takeout import | IT | Production ZIP parser + upload API + fixture sync |
 | Google Calendar (read-only) | F | Fixture events; live OAuth deferred |
-| Chat + image + llava | IT / P | Chat API + dock + image preview; llava status honest |
+| Chat + image + llava | IT / P | Unified composer (Ask + directive); image preview; click-to-pin page context; llava status honest |
 | LLM metric-query tools | IT | Tools + parse_date |
 | Inline charts | IT | Spec API + SVG renderer in overview |
 | Alerts / custom thresholds | IT / P | Full API; overview panel (not full alert editor UI) |
@@ -280,7 +280,8 @@ Daily directive, health scores, alerts, source freshness, interactive charts, go
 
 ### Conversation
 
-Floating chat; text input; optional Web Speech STT toggle; searchable history; image attachments; inline charts; screen context via `AIContextProvider`.  
+Unified composer (journal + Ask); auto-growing textarea; optional Web Speech STT; image attachments; click-to-pin page sections as context; conversation thread inline; screen context via `AIContextProvider`.  
+Searchable durable history still planned (S2).  
 **Text remains the reliable fallback.** Web Speech is never required.
 
 ### Deployment
@@ -305,7 +306,7 @@ Floating chat; text input; optional Web Speech STT toggle; searchable history; i
 ## 13. Architecture (target modules)
 
 ```
-frontend/          PWA + dashboard + floating chat
+frontend/          PWA + dashboard + unified composer (no floating chat dock)
 backend/
   intake/          NL + image → structured records
   connectors/      fitbit, calendar, fitindex, takeout, weather

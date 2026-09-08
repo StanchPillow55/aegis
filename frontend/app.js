@@ -1,8 +1,10 @@
-const form = document.getElementById("update-form");
-const textarea = document.getElementById("update-text");
-const submitBtn = document.getElementById("submit-btn");
+const form = document.getElementById("compose-form");
+const textarea = document.getElementById("compose-text");
+const directiveBtn = document.getElementById("directive-btn");
+const askBtn = document.getElementById("ask-btn");
 const dictateBtn = document.getElementById("dictate-btn");
 const dictateStatus = document.getElementById("dictate-status");
+const composeHint = document.getElementById("compose-hint");
 const speakToggle = document.getElementById("speak-toggle");
 const result = document.getElementById("result");
 const directiveText = document.getElementById("directive-text");
@@ -12,14 +14,36 @@ const todayPre = document.getElementById("today-pre");
 const historyPre = document.getElementById("history-pre");
 const conflictsPre = document.getElementById("conflicts-pre");
 const evidencePre = document.getElementById("evidence-pre");
+const thread = document.getElementById("thread");
+const threadLog = document.getElementById("thread-log");
+const contextPinsEl = document.getElementById("context-pins");
+const imagePreview = document.getElementById("image-preview");
+const composeImage = document.getElementById("compose-image");
+const attachImgBtn = document.getElementById("attach-img-btn");
+const pinModeBtn = document.getElementById("pin-mode-btn");
+const pinBanner = document.getElementById("pin-banner");
 
 let recognizing = false;
 let recognition = null;
-let chatAttachment = null;
+let imageAttachment = null;
+let pinnedContexts = [];
+let pinPicking = false;
+let chatSessionId = null;
 
 function SpeechRecognitionCtor() {
   return window.SpeechRecognition || window.webkitSpeechRecognition || null;
 }
+
+function autosizeComposer() {
+  textarea.style.height = "auto";
+  const next = Math.min(textarea.scrollHeight, Math.min(window.innerHeight * 0.55, 28 * 16));
+  textarea.style.height = `${Math.max(next, 8 * 16)}px`;
+  textarea.style.overflowY = textarea.scrollHeight > next ? "auto" : "hidden";
+}
+
+textarea.addEventListener("input", autosizeComposer);
+window.addEventListener("resize", autosizeComposer);
+autosizeComposer();
 
 function isSyncCommand(text) {
   const t = (text || "").trim().toLowerCase();
@@ -42,11 +66,100 @@ async function runOnDemandSync(channel) {
   return { ok, n, data, channel };
 }
 
+function renderPins() {
+  contextPinsEl.innerHTML = pinnedContexts
+    .map(
+      (p) =>
+        `<span class="pin-chip" data-id="${p.id}">${escapeHtml(p.label)}` +
+        `<button type="button" aria-label="Remove ${escapeHtml(p.label)}" data-remove="${p.id}">×</button></span>`
+    )
+    .join("");
+  contextPinsEl.querySelectorAll("[data-remove]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      pinnedContexts = pinnedContexts.filter((p) => p.id !== btn.getAttribute("data-remove"));
+      renderPins();
+    });
+  });
+}
+
+function escapeHtml(s) {
+  return String(s)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
+function setPinPicking(on) {
+  pinPicking = on;
+  document.body.classList.toggle("pin-picking", on);
+  pinModeBtn.setAttribute("aria-pressed", String(on));
+  pinBanner.hidden = !on;
+  composeHint.textContent = on
+    ? "Click a highlighted section to pin it. Multiple pins allowed."
+    : "Pin Overview, Sync, Directive, or Settings sections, then Ask — or submit a journal entry for today’s directive.";
+}
+
+pinModeBtn.addEventListener("click", () => setPinPicking(!pinPicking));
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && pinPicking) setPinPicking(false);
+});
+
+document.addEventListener(
+  "click",
+  (event) => {
+    if (!pinPicking) return;
+    if (
+      event.target.closest(
+        "button, a, input, select, textarea, label, .pin-banner, .nav-jump, .actions, .context-pins"
+      )
+    ) {
+      return;
+    }
+    const target = event.target.closest("[data-pin-id]");
+    if (!target) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const id = target.getAttribute("data-pin-id");
+    const label = target.getAttribute("data-pin-label") || id;
+    const snippet = (target.innerText || "").replace(/\s+/g, " ").trim().slice(0, 480);
+    if (!pinnedContexts.some((p) => p.id === id)) {
+      pinnedContexts.push({ id, label, snippet });
+      renderPins();
+    }
+    setPinPicking(false);
+  },
+  true
+);
+
+attachImgBtn.addEventListener("click", () => composeImage.click());
+
+composeImage.addEventListener("change", () => {
+  const file = composeImage.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    imageAttachment = { name: file.name, mime: file.type, data_url: reader.result };
+    imagePreview.hidden = false;
+    imagePreview.innerHTML =
+      `<img src="${reader.result}" alt="attachment preview" />` +
+      `<button type="button" id="clear-img" class="ghost">Clear image</button>`;
+    document.getElementById("clear-img").onclick = () => {
+      imageAttachment = null;
+      imagePreview.hidden = true;
+      imagePreview.innerHTML = "";
+      composeImage.value = "";
+    };
+  };
+  reader.readAsDataURL(file);
+});
+
 dictateBtn.addEventListener("click", () => {
   const Ctor = SpeechRecognitionCtor();
   if (!Ctor) {
     dictateStatus.hidden = false;
-    dictateStatus.textContent = "Browser dictation not supported here. Type your update instead.";
+    dictateStatus.textContent = "Browser dictation not supported here. Type instead.";
     return;
   }
   if (!recognition) {
@@ -60,6 +173,7 @@ dictateBtn.addEventListener("click", () => {
         transcript += event.results[i][0].transcript;
       }
       textarea.value = transcript.trim();
+      autosizeComposer();
     };
     recognition.onerror = () => {
       recognizing = false;
@@ -95,14 +209,49 @@ dictateBtn.addEventListener("click", () => {
   recognition.start();
 });
 
-form.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const text = textarea.value.trim();
-  if (!text) return;
+function showDirectivePayload(data) {
+  directiveText.textContent = data.directive;
+  disclaimerText.textContent = data.disclaimer || "";
+  const scores = data.scores || {};
+  const ev = data.evidence || {};
+  scoreRow.innerHTML = ["front_rack", "sleep", "diet", "workout_preparation", "overall"]
+    .map((key) => {
+      const value = scores[key]?.score ?? "—";
+      const label = key.replaceAll("_", " ");
+      return `<span>${label}<strong>${value}</strong></span>`;
+    })
+    .join("");
+  const wod = data.wod_decision || {};
+  todayPre.textContent = JSON.stringify(
+    { today: ev.today || data.intake, wod_decision: wod, macro_pool: scores.macro_pool },
+    null,
+    2
+  );
+  historyPre.textContent = JSON.stringify(ev.history || [], null, 2);
+  conflictsPre.textContent = JSON.stringify(ev.conflicts || [], null, 2);
+  evidencePre.textContent = JSON.stringify(
+    {
+      extractor: data.extractor,
+      log_id: data.log_id,
+      resolution_policy: ev.resolution_policy,
+      tts: data.tts,
+      scores_note: ev.note,
+    },
+    null,
+    2
+  );
+  result.hidden = false;
+  result.scrollIntoView({ behavior: "smooth", block: "start" });
+}
 
-  // Voice/typed sync command on the main intake form.
+async function submitDirective() {
+  const text = textarea.value.trim();
+  if (!text) {
+    composeHint.textContent = "Write a journal update before getting a directive.";
+    return;
+  }
   if (isSyncCommand(text)) {
-    submitBtn.disabled = true;
+    directiveBtn.disabled = true;
     try {
       const { ok, n } = await runOnDemandSync("voice");
       result.hidden = false;
@@ -114,56 +263,23 @@ form.addEventListener("submit", async (event) => {
       result.hidden = false;
       directiveText.textContent = String(err);
     } finally {
-      submitBtn.disabled = false;
+      directiveBtn.disabled = false;
     }
     return;
   }
 
-  submitBtn.disabled = true;
-  submitBtn.textContent = "Composing…";
+  directiveBtn.disabled = true;
+  askBtn.disabled = true;
+  directiveBtn.textContent = "Composing…";
   try {
     const res = await fetch("/api/directive", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text, speak: speakToggle.checked }),
     });
-    if (!res.ok) {
-      throw new Error(`Request failed (${res.status})`);
-    }
+    if (!res.ok) throw new Error(`Request failed (${res.status})`);
     const data = await res.json();
-    directiveText.textContent = data.directive;
-    disclaimerText.textContent = data.disclaimer || "";
-    const scores = data.scores || {};
-    const ev = data.evidence || {};
-    scoreRow.innerHTML = ["front_rack", "sleep", "diet", "workout_preparation", "overall"]
-      .map((key) => {
-        const value = scores[key]?.score ?? "—";
-        const label = key.replaceAll("_", " ");
-        return `<span>${label}<strong>${value}</strong></span>`;
-      })
-      .join("");
-    const wod = data.wod_decision || {};
-    todayPre.textContent = JSON.stringify(
-      { today: ev.today || data.intake, wod_decision: wod, macro_pool: scores.macro_pool },
-      null,
-      2
-    );
-    historyPre.textContent = JSON.stringify(ev.history || [], null, 2);
-    conflictsPre.textContent = JSON.stringify(ev.conflicts || [], null, 2);
-    evidencePre.textContent = JSON.stringify(
-      {
-        extractor: data.extractor,
-        log_id: data.log_id,
-        resolution_policy: ev.resolution_policy,
-        tts: data.tts,
-        scores_note: ev.note,
-      },
-      null,
-      2
-    );
-    result.hidden = false;
-    result.scrollIntoView({ behavior: "smooth", block: "start" });
-
+    showDirectivePayload(data);
     if (speakToggle.checked && "speechSynthesis" in window) {
       const utter = new SpeechSynthesisUtterance(data.directive);
       window.speechSynthesis.cancel();
@@ -180,8 +296,124 @@ form.addEventListener("submit", async (event) => {
     evidencePre.textContent = "";
     result.hidden = false;
   } finally {
-    submitBtn.disabled = false;
-    submitBtn.textContent = "Get directive";
+    directiveBtn.disabled = false;
+    askBtn.disabled = false;
+    directiveBtn.textContent = "Get directive";
+  }
+}
+
+function appendBubble(role, content, opts = {}) {
+  thread.hidden = false;
+  const div = document.createElement("div");
+  div.className = `bubble ${role}`;
+  if (opts.thumb) {
+    div.innerHTML = `<img class="thumb" src="${opts.thumb}" alt="" /><span></span>`;
+    div.querySelector("span").textContent = content;
+  } else {
+    div.textContent = content;
+  }
+  if (opts.pins?.length) {
+    const meta = document.createElement("span");
+    meta.className = "pins-used";
+    meta.textContent = `Context: ${opts.pins.map((p) => p.label).join(", ")}`;
+    div.appendChild(meta);
+  }
+  threadLog.appendChild(div);
+  threadLog.scrollTop = threadLog.scrollHeight;
+}
+
+async function buildScreenContext() {
+  const primary = pinnedContexts[0]?.id || "overview";
+  let screen = {};
+  try {
+    screen = await (await fetch(`/api/context/screen?panel=${encodeURIComponent(primary)}`)).json();
+  } catch {
+    screen = { panel: primary };
+  }
+  screen.pinned = pinnedContexts.map((p) => ({
+    id: p.id,
+    label: p.label,
+    snippet: p.snippet,
+  }));
+  screen.input = "composer";
+  return screen;
+}
+
+async function submitAsk() {
+  const message = textarea.value.trim();
+  if (!message && !imageAttachment) {
+    composeHint.textContent = "Type a question or attach an image before Ask.";
+    return;
+  }
+  if (isSyncCommand(message)) {
+    const { ok, n } = await runOnDemandSync("chat");
+    appendBubble("user", message);
+    appendBubble("assistant", `On-demand sync: ${ok}/${n} source(s) succeeded.`);
+    await refreshDashboard();
+    return;
+  }
+
+  const pinsSnapshot = [...pinnedContexts];
+  const attachments = imageAttachment
+    ? [{ name: imageAttachment.name, mime: imageAttachment.mime, preview: true }]
+    : [];
+  appendBubble("user", message || "(image)", {
+    thumb: imageAttachment?.data_url,
+    pins: pinsSnapshot,
+  });
+
+  askBtn.disabled = true;
+  directiveBtn.disabled = true;
+  askBtn.textContent = "Asking…";
+  const sentThumb = imageAttachment?.data_url;
+  imageAttachment = null;
+  imagePreview.hidden = true;
+  imagePreview.innerHTML = "";
+  composeImage.value = "";
+
+  try {
+    const screen = await buildScreenContext();
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message: message || "Please review the attached image and pinned page context.",
+        screen_context: screen,
+        attachments,
+        session_id: chatSessionId,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || res.status);
+    chatSessionId = data.session_id || chatSessionId;
+    appendBubble("assistant", data.reply);
+    if (data.chart_hints?.length) {
+      document.getElementById("chart-metric").value = data.chart_hints[0];
+      refreshChart();
+    }
+  } catch (err) {
+    appendBubble("assistant", String(err));
+  } finally {
+    askBtn.disabled = false;
+    directiveBtn.disabled = false;
+    askBtn.textContent = "Ask";
+  }
+  void sentThumb;
+}
+
+form.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  await submitDirective();
+});
+
+askBtn.addEventListener("click", async () => {
+  await submitAsk();
+});
+
+textarea.addEventListener("keydown", (event) => {
+  if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+    event.preventDefault();
+    submitAsk();
   }
 });
 
@@ -481,96 +713,6 @@ document.getElementById("manual-btn").addEventListener("click", async () => {
   } catch (err) {
     hint.textContent = String(err);
   }
-});
-
-/* Chat dock */
-const chatToggle = document.getElementById("chat-toggle");
-const chatPanel = document.getElementById("chat-panel");
-const chatLog = document.getElementById("chat-log");
-const chatForm = document.getElementById("chat-form");
-const chatInput = document.getElementById("chat-input");
-const chatPreview = document.getElementById("chat-preview");
-const chatImage = document.getElementById("chat-image");
-
-chatToggle.addEventListener("click", () => {
-  const open = chatPanel.hidden;
-  chatPanel.hidden = !open;
-  chatToggle.setAttribute("aria-expanded", String(open));
-});
-
-document.getElementById("chat-attach").addEventListener("click", () => chatImage.click());
-
-chatImage.addEventListener("change", () => {
-  const file = chatImage.files?.[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = () => {
-    chatAttachment = {
-      name: file.name,
-      mime: file.type,
-      data_url: reader.result,
-    };
-    chatPreview.hidden = false;
-    chatPreview.innerHTML = `<img src="${reader.result}" alt="preview" /><button type="button" id="chat-clear-img" class="ghost">Clear</button>`;
-    document.getElementById("chat-clear-img").onclick = () => {
-      chatAttachment = null;
-      chatPreview.hidden = true;
-      chatPreview.innerHTML = "";
-      chatImage.value = "";
-    };
-  };
-  reader.readAsDataURL(file);
-});
-
-function appendChatBubble(role, content, thumb) {
-  const div = document.createElement("div");
-  div.className = `bubble ${role}`;
-  if (thumb) {
-    div.innerHTML = `<img class="thumb" src="${thumb}" alt="" /><span></span>`;
-    div.querySelector("span").textContent = content;
-  } else {
-    div.textContent = content;
-  }
-  chatLog.appendChild(div);
-  chatLog.scrollTop = chatLog.scrollHeight;
-}
-
-chatForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const message = chatInput.value.trim();
-  if (!message && !chatAttachment) return;
-  const attachments = chatAttachment
-    ? [{ name: chatAttachment.name, mime: chatAttachment.mime, preview: true }]
-    : [];
-  appendChatBubble("user", message || "(image)", chatAttachment?.data_url);
-  chatInput.value = "";
-  const sentThumb = chatAttachment?.data_url;
-  chatAttachment = null;
-  chatPreview.hidden = true;
-  chatPreview.innerHTML = "";
-  chatImage.value = "";
-  try {
-    const screen = await (await fetch("/api/context/screen")).json();
-    const res = await fetch("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        message: message || "Please review the attached image.",
-        screen_context: screen,
-        attachments,
-      }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || res.status);
-    appendChatBubble("assistant", data.reply);
-    if (data.chart_hints?.length) {
-      document.getElementById("chart-metric").value = data.chart_hints[0];
-      refreshChart();
-    }
-  } catch (err) {
-    appendChatBubble("assistant", String(err));
-  }
-  void sentThumb;
 });
 
 refreshDashboard();

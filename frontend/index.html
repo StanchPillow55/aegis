@@ -17,7 +17,7 @@
   <header class="top">
     <p class="brand">aegis</p>
     <nav class="nav-jump" aria-label="Sections">
-      <a href="#composer">Update</a>
+      <a href="#composer">Compose</a>
       <a href="#dashboard">Overview</a>
       <a href="#settings">Settings</a>
     </nav>
@@ -25,35 +25,50 @@
 
   <main class="hero" id="composer">
     <h1 class="brand-hero">aegis</h1>
-    <p class="lede">One evidence-bound training directive from today’s update.</p>
+    <p class="lede">One place to journal today’s update, ask follow-ups, and pin page context for the agent.</p>
 
-    <form id="update-form" class="composer">
-      <label class="sr-only" for="update-text">Daily update</label>
+    <form id="compose-form" class="composer" data-pin-id="composer" data-pin-label="Composer">
+      <div id="context-pins" class="context-pins" aria-live="polite"></div>
+      <div id="image-preview" class="image-preview" hidden></div>
+
+      <label class="sr-only" for="compose-text">Journal entry or question</label>
       <textarea
-        id="update-text"
+        id="compose-text"
         name="text"
-        rows="5"
-        placeholder="Slept 6 hours, quads sore 3/5, eggs and rice, squats and pull-ups today, feeling moderate."
-        required
+        rows="4"
+        placeholder="Slept 6 hours, quads sore 3/5… or ask: why is sleep score low?"
       ></textarea>
+
       <div class="actions">
         <button type="button" id="dictate-btn" class="ghost" title="Optional browser dictation">Dictate</button>
+        <button type="button" id="attach-img-btn" class="ghost" title="Attach image">Image</button>
+        <button type="button" id="pin-mode-btn" class="ghost" aria-pressed="false" title="Click page sections to attach as context">Pin context</button>
+        <input type="file" id="compose-image" accept="image/*" class="sr-only" />
         <label class="speak-toggle">
           <input type="checkbox" id="speak-toggle" />
           Speak directive
         </label>
-        <button type="submit" id="submit-btn">Get directive</button>
+        <div class="actions-primary">
+          <button type="button" id="ask-btn" class="ghost">Ask</button>
+          <button type="submit" id="directive-btn">Get directive</button>
+        </div>
       </div>
+      <p id="compose-hint" class="hint">Pin Overview, Sync, Directive, or Settings sections, then Ask — or submit a journal entry for today’s directive.</p>
       <p id="dictate-status" class="hint" hidden></p>
     </form>
+
+    <section id="thread" class="thread" hidden aria-label="Conversation">
+      <h2 class="thread-heading">Conversation</h2>
+      <div id="thread-log" class="thread-log"></div>
+    </section>
   </main>
 
-  <section id="result" class="result" hidden>
+  <section id="result" class="result" hidden data-pin-id="directive" data-pin-label="Today’s directive">
     <h2>Today’s directive</h2>
     <p id="directive-text" class="directive"></p>
     <p id="disclaimer-text" class="disclaimer"></p>
-    <div class="score-row" id="score-row"></div>
-    <div class="evidence-panels">
+    <div class="score-row" id="score-row" data-pin-id="scores" data-pin-label="Scores"></div>
+    <div class="evidence-panels" data-pin-id="evidence" data-pin-label="Evidence panels">
       <details open>
         <summary>Today</summary>
         <pre id="today-pre"></pre>
@@ -73,11 +88,11 @@
     </div>
   </section>
 
-  <section id="dashboard" class="dash">
+  <section id="dashboard" class="dash" data-pin-id="overview" data-pin-label="Overview">
     <h2>Overview</h2>
     <p class="dash-lede">Sync freshness, environment, alerts, and a local metric chart.</p>
 
-    <div id="sync-panel" class="sync-panel" aria-live="polite">
+    <div id="sync-panel" class="sync-panel" aria-live="polite" data-pin-id="sync" data-pin-label="Sync status">
       <div class="panel-head">
         <h3>Sync status</h3>
         <button type="button" id="sync-now-btn" class="ghost">Sync now</button>
@@ -99,17 +114,17 @@
     </div>
 
     <div class="dash-grid">
-      <div>
+      <div data-pin-id="environment" data-pin-label="Environment">
         <h3>Environment</h3>
         <pre id="env-pre" class="panel-pre"></pre>
       </div>
-      <div>
+      <div data-pin-id="alerts-goals" data-pin-label="Alerts &amp; goals">
         <h3>Alerts &amp; goals</h3>
         <pre id="alerts-pre" class="panel-pre"></pre>
       </div>
     </div>
 
-    <div class="chart-block">
+    <div class="chart-block" data-pin-id="chart" data-pin-label="Metric trend">
       <div class="panel-head">
         <h3>Metric trend</h3>
         <label class="chart-metric-label">
@@ -127,11 +142,11 @@
     </div>
   </section>
 
-  <section id="settings" class="settings">
+  <section id="settings" class="settings" data-pin-id="settings" data-pin-label="Settings &amp; imports">
     <h2>Settings &amp; imports</h2>
     <p class="dash-lede">External OAuth stays disabled until credentials exist. Local imports work offline.</p>
     <div class="settings-grid">
-      <div>
+      <div data-pin-id="fitbit" data-pin-label="Fitbit">
         <h3>Fitbit</h3>
         <p id="fitbit-status" class="hint">Loading…</p>
         <button type="button" id="fitbit-auth-btn" class="ghost">Check OAuth / get auth URL</button>
@@ -171,20 +186,9 @@
     <span>Local-first · Ollama optional · Text primary · <code>make os-dev</code></span>
   </footer>
 
-  <aside id="chat-dock" class="chat-dock" aria-label="Chat">
-    <button type="button" id="chat-toggle" class="chat-toggle" aria-expanded="false">Chat</button>
-    <div id="chat-panel" class="chat-panel" hidden>
-      <div id="chat-log" class="chat-log"></div>
-      <div id="chat-preview" class="chat-preview" hidden></div>
-      <form id="chat-form" class="chat-form">
-        <input type="file" id="chat-image" accept="image/*" class="sr-only" />
-        <button type="button" id="chat-attach" class="ghost" title="Attach image">Img</button>
-        <input id="chat-input" type="text" placeholder="Ask about sleep, steps, alerts…" autocomplete="off" />
-        <button type="submit">Send</button>
-      </form>
-      <p class="hint chat-disclaimer">Answers cite local sources. Not medical advice.</p>
-    </div>
-  </aside>
+  <div id="pin-banner" class="pin-banner" hidden role="status">
+    Click a highlighted section to pin it. Esc or Pin context again to cancel.
+  </div>
 
   <script src="/static/app.js"></script>
 </body>

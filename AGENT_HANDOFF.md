@@ -52,7 +52,7 @@ Do **not** modify remote `legacy-aegis`. Do **not** fake OAuth or live weather.
 
 ## What works today (vs what is still planned)
 
-**Works (foundation + S1):** directive loop; canonical scores + Macro Pool; evidence today_wins; SQLite; registry + **background sync loop** (config interval, retries, fail-soft boot) + on-demand sync via **button / chat / voice**; stale flags + hints; fixture Fitbit/Calendar/Takeout; FITINDEX CSV/manual/OCR drafts; Takeout CSV+JSON; Open-Meteo honesty; Fitbit OAuth **scaffold**; chat dock (in-memory); tools/patterns APIs; light overview SVG; geo API default-off.
+**Works (foundation + S1 + unified composer):** directive loop; canonical scores + Macro Pool; evidence today_wins; SQLite; registry + **background sync loop** (config interval, retries, fail-soft boot) + on-demand sync via **button / chat / voice**; stale flags + hints; fixture Fitbit/Calendar/Takeout; FITINDEX CSV/manual/OCR drafts; Takeout CSV+JSON; Open-Meteo honesty; Fitbit OAuth **scaffold**; **one expanding composer** for journal + Ask (no floating chat dock) with **click-to-pin** page context; tools/patterns APIs; light overview SVG; geo API default-off.
 
 **Not complete (QA):** full Fitbit metric live map; OAuth security checklist; SQLite chat persist/search; llava E2E; inline chat charts; NL goals + alert proactive/dedupe depth; Grafana-style chart interactions; geo consent UI; authenticated Tailscale remote + PWA install; Playwright E2E.
 
