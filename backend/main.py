@@ -20,7 +20,7 @@ from backend.connectors.fitindex_ocr import propose_from_image, propose_from_tex
 from backend.connectors.status import enrich_source_status
 from backend.connectors.takeout import ingest_takeout_bytes
 from backend.environment import fetch_environment
-from backend.goals import GoalCreate, GoalStore
+from backend.goals import GoalCreate, GoalGraphStore, GoalStore
 from backend.health.evidence import build_evidence_bundle
 from backend.health.schema import SAFETY_DISCLAIMER, DataQuality, DataSource
 from backend.health.store import (
@@ -37,6 +37,7 @@ from backend.providers.memory import LocalMemoryProvider
 from backend.providers.speech import LocalSpeechProvider
 from backend.providers.tracing import init_tracing, start_span
 from backend.reasoner import compose_directive
+from backend.signals import build_context, signals_payload
 from backend.sync import BackgroundSyncLoop, SourceRegistry, SyncConfig
 from backend.tools import HealthQueryTools
 from backend.tools.dates import parse_date_range
@@ -60,6 +61,7 @@ _background = BackgroundSyncLoop(_sync)
 _metrics = HealthMetricsStore()
 _alerts = AlertEngine(metrics=_metrics)
 _goals = GoalStore(metrics=_metrics)
+_goal_graph = GoalGraphStore()
 _tools = HealthQueryTools(metrics=_metrics, alerts=_alerts, goals=_goals, sync=_sync, memory=_memory)
 _chat = ChatService(tools=_tools)
 
@@ -74,6 +76,7 @@ class DirectiveResponse(BaseModel):
     directive: str
     disclaimer: str
     scores: dict
+    signals: dict | None = None
     wod_decision: dict
     evidence: dict
     log_id: str
@@ -165,6 +168,8 @@ def api_directive(body: TextUpdate) -> DirectiveResponse:
             intake,
             context_notes=[h.content for h in hits],
             evidence_bundle=bundle,
+            goal_store=_goal_graph,
+            recent_text=body.text,
         )
         tts_payload = None
         if body.speak:
@@ -188,12 +193,27 @@ def api_directive(body: TextUpdate) -> DirectiveResponse:
             directive=composed["directive"],
             disclaimer=composed.get("disclaimer") or SAFETY_DISCLAIMER,
             scores=composed["scores"],
+            signals=composed.get("signals"),
             wod_decision=composed.get("wod_decision") or {},
             evidence=composed["evidence"],
             log_id=log_id,
             extractor=extractor,
             tts=tts_payload,
         )
+
+
+@app.get("/api/signals")
+def api_signals(text: str = "", view: str = "dashboard", include_overall: bool | None = None) -> dict:
+    """Goal-relevant signal selection (GL1). Compat scores always included."""
+    intake, _ = _llm.extract_intake_with_meta(text or "No journal entry provided.")
+    ctx = build_context(
+        intake,
+        goal_store=_goal_graph,
+        recent_text=text,
+        view=view,
+        include_overall=include_overall,
+    )
+    return signals_payload(ctx)
 
 
 @app.get("/api/logs/recent")

@@ -313,8 +313,8 @@ criteria:
       Fixed scorers are pluggable signal providers; dashboard/directive select
       goal-relevant signals; overall score is optional; FR/Sleep/Diet/WP remain available.
     verify: python -m pytest tests/test_gg_signals.py -q
-    pass: false
-    artifact: null
+    pass: true
+    artifact: artifacts/gl1-signals.txt
 
   - id: GG-CONTRIB-01
     criterion: >

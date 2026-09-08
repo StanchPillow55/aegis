@@ -65,7 +65,7 @@
 | ID | Maturity | Notes |
 |---|---|---|
 | GG-SCHEMA-01 | `fixture-verified` | GL0 SQLite graph store + HITL suggestion apply; UI/E2E still open |
-| GG-SIGNAL-01 | `planned` | GL1 pluggable signals; overall optional |
+| GG-SIGNAL-01 | `fixture-verified` | GL1 providers + selection; UI uses selected signals when present; overall optional with goals |
 | GG-CONTRIB-01 | `planned` | GL2 journal → goal contributions |
 | GG-SUGGEST-01 | `planned` | HITL approve/edit/reject/defer; no silent mutations |
 | GG-UI-01 | `planned` | GL3 tree/inbox/editor/suggestion panel |

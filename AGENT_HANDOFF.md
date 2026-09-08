@@ -80,7 +80,7 @@ Branch tip: `cursor/s1-background-sync-3696` ([PR #31](https://github.com/Stanch
 ## Next implementation order
 
 1. **GL0** — Goal/task schema, revisions, suggestions, audit (`GG-SCHEMA-01`) — **fixture-verified**  
-2. **GL1** — Pluggable signals; stop treating FR/Sleep/Diet/WP as mandatory cards (`GG-SIGNAL-01`)  
+2. **GL1** — Pluggable signals; stop treating FR/Sleep/Diet/WP as mandatory cards (`GG-SIGNAL-01`) — **fixture-verified**  
 3. **GL2** — Journal contribution engine + HITL (`GG-CONTRIB-01`, `GG-SUGGEST-01`)  
 4. **GL3** — Goal/task UI + suggestion review (`GG-UI-01`)  
 5. **S2** — Chat SQLite persist/search (supports GL5)  

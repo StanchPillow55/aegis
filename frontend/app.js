@@ -213,17 +213,35 @@ function showDirectivePayload(data) {
   directiveText.textContent = data.directive;
   disclaimerText.textContent = data.disclaimer || "";
   const scores = data.scores || {};
+  const selected = (data.signals && data.signals.selected) || [];
   const ev = data.evidence || {};
-  scoreRow.innerHTML = ["front_rack", "sleep", "diet", "workout_preparation", "overall"]
-    .map((key) => {
-      const value = scores[key]?.score ?? "—";
-      const label = key.replaceAll("_", " ");
-      return `<span>${label}<strong>${value}</strong></span>`;
-    })
-    .join("");
+  if (selected.length) {
+    scoreRow.innerHTML = selected
+      .map((s) => {
+        const value = s.score ?? "—";
+        const label = s.label || String(s.id || "").replaceAll("_", " ");
+        return `<span title="${(s.relevance || s.rationale || "").replaceAll('"', "&quot;")}">${label}<strong>${value}</strong></span>`;
+      })
+      .join("");
+    scoreRow.style.gridTemplateColumns = `repeat(${Math.min(selected.length, 5)}, minmax(0, 1fr))`;
+  } else {
+    scoreRow.innerHTML = ["front_rack", "sleep", "diet", "workout_preparation", "overall"]
+      .map((key) => {
+        const value = scores[key]?.score ?? "—";
+        const label = key.replaceAll("_", " ");
+        return `<span>${label}<strong>${value}</strong></span>`;
+      })
+      .join("");
+    scoreRow.style.gridTemplateColumns = "";
+  }
   const wod = data.wod_decision || {};
   todayPre.textContent = JSON.stringify(
-    { today: ev.today || data.intake, wod_decision: wod, macro_pool: scores.macro_pool },
+    {
+      today: ev.today || data.intake,
+      wod_decision: wod,
+      macro_pool: scores.macro_pool,
+      signals: data.signals,
+    },
     null,
     2
   );
@@ -236,6 +254,7 @@ function showDirectivePayload(data) {
       resolution_policy: ev.resolution_policy,
       tts: data.tts,
       scores_note: ev.note,
+      signals_selected: ev.signals_selected,
     },
     null,
     2
