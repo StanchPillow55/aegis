@@ -337,8 +337,8 @@ criteria:
       Goal tree, task inbox/today/upcoming/completed, editor, and suggestion review
       panel are usable in the local UI.
     verify: python -m pytest tests/test_gg_ui.py -q
-    pass: false
-    artifact: null
+    pass: true
+    artifact: artifacts/gl3-goal-ui.txt
 
   - id: GG-PROGRESS-01
     criterion: >

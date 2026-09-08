@@ -18,6 +18,7 @@
     <p class="brand">aegis</p>
     <nav class="nav-jump" aria-label="Sections">
       <a href="#composer">Compose</a>
+      <a href="#goals">Goals</a>
       <a href="#dashboard">Overview</a>
       <a href="#settings">Settings</a>
     </nav>
@@ -139,6 +140,74 @@
       </div>
       <svg id="chart-svg" viewBox="0 0 320 120" role="img" aria-label="Metric trend chart"></svg>
       <p id="chart-note" class="hint"></p>
+    </div>
+  </section>
+
+  <section id="goals" class="goals" data-pin-id="goals" data-pin-label="Goals &amp; tasks">
+    <h2>Goals &amp; tasks</h2>
+    <p class="dash-lede">Hierarchy, task buckets, editor, and human review for suggestions — nothing applies silently.</p>
+
+    <div class="goals-layout">
+      <div class="goal-tree-panel">
+        <div class="panel-head">
+          <h3>Goal tree</h3>
+          <button type="button" id="goal-refresh-btn" class="ghost">Refresh</button>
+        </div>
+        <ul id="goal-tree" class="goal-tree" aria-label="Goal hierarchy"></ul>
+        <form id="goal-create-form" class="goal-create">
+          <label class="sr-only" for="goal-new-title">New goal title</label>
+          <input id="goal-new-title" placeholder="New goal title" required />
+          <label class="sr-only" for="goal-new-metric">Metric</label>
+          <input id="goal-new-metric" placeholder="Metric (optional)" />
+          <button type="submit" class="ghost">Add goal</button>
+        </form>
+      </div>
+
+      <div class="goal-editor-panel">
+        <h3>Goal editor</h3>
+        <p id="goal-editor-empty" class="hint">Select a goal in the tree to edit.</p>
+        <form id="goal-editor" class="goal-editor" hidden>
+          <input type="hidden" id="goal-edit-id" />
+          <label>Title <input id="goal-edit-title" required /></label>
+          <label>Description <textarea id="goal-edit-description" rows="3"></textarea></label>
+          <label>Metric <input id="goal-edit-metric" /></label>
+          <label>Success criteria <input id="goal-edit-criteria" /></label>
+          <div class="editor-actions">
+            <button type="submit">Save</button>
+            <button type="button" id="goal-archive-btn" class="ghost">Archive</button>
+          </div>
+          <p id="goal-editor-hint" class="hint"></p>
+        </form>
+      </div>
+    </div>
+
+    <div class="task-panel">
+      <div class="panel-head">
+        <h3>Tasks</h3>
+        <div class="task-views" role="tablist" aria-label="Task views">
+          <button type="button" class="task-view is-active" data-view="inbox" role="tab" aria-selected="true">Inbox</button>
+          <button type="button" class="task-view" data-view="today" role="tab" aria-selected="false">Today</button>
+          <button type="button" class="task-view" data-view="upcoming" role="tab" aria-selected="false">Upcoming</button>
+          <button type="button" class="task-view" data-view="completed" role="tab" aria-selected="false">Completed</button>
+        </div>
+      </div>
+      <ul id="task-list" class="task-list" aria-live="polite"></ul>
+      <form id="task-create-form" class="task-create">
+        <label class="sr-only" for="task-new-title">Task title</label>
+        <input id="task-new-title" placeholder="New task title" required />
+        <label class="sr-only" for="task-new-goal">Goal</label>
+        <select id="task-new-goal" required></select>
+        <button type="submit" class="ghost">Add task</button>
+      </form>
+    </div>
+
+    <div id="suggestion-panel" class="suggestion-panel" data-pin-id="suggestions" data-pin-label="Suggestion review">
+      <div class="panel-head">
+        <h3>Suggestion review</h3>
+        <button type="button" id="suggestion-refresh-btn" class="ghost">Refresh</button>
+      </div>
+      <p class="hint">Approve, edit, reject, or defer — tasks are created only after approval.</p>
+      <ul id="suggestion-list" class="suggestion-list" aria-live="polite"></ul>
     </div>
   </section>
 

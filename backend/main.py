@@ -25,7 +25,10 @@ from backend.goals import (
     GoalGraphStore,
     GoalStore,
     GraphGoalCreate,
+    GraphGoalStatus,
+    GraphTaskCreate,
     SuggestionDecision,
+    TaskStatus,
     analyze_journal_entry,
     persist_analysis_as_pending,
 )
@@ -579,6 +582,70 @@ def api_goal_graph_snapshot() -> dict:
 @app.post("/api/goal-graph/goals")
 def api_goal_graph_create(body: GraphGoalCreate) -> dict:
     return _goal_graph.create_goal(body).model_dump()
+
+
+class GoalGraphUpdateBody(BaseModel):
+    title: str | None = None
+    description: str | None = None
+    metric: str | None = None
+    target: float | None = None
+    unit: str | None = None
+    timeframe: str | None = None
+    success_criteria: str | None = None
+    priority: int | None = None
+    status: GraphGoalStatus | None = None
+    parent_goal_id: str | None = None
+
+
+@app.patch("/api/goal-graph/goals/{goal_id}")
+def api_goal_graph_update_goal(goal_id: str, body: GoalGraphUpdateBody) -> dict:
+    try:
+        return _goal_graph.update_goal(
+            goal_id, **body.model_dump(exclude_unset=True)
+        ).model_dump()
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Unknown goal") from exc
+
+
+@app.get("/api/goal-graph/tasks")
+def api_goal_graph_tasks(view: str = "inbox", goal_id: str | None = None) -> dict:
+    try:
+        if goal_id:
+            tasks = _goal_graph.list_tasks(goal_id=goal_id)
+        else:
+            tasks = _goal_graph.tasks_by_view(view)
+        return {
+            "view": view if not goal_id else "goal",
+            "tasks": [t.model_dump() for t in tasks],
+        }
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/api/goal-graph/tasks")
+def api_goal_graph_create_task(body: GraphTaskCreate) -> dict:
+    try:
+        return _goal_graph.create_task(body).model_dump()
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Unknown goal") from exc
+
+
+class TaskUpdateBody(BaseModel):
+    title: str | None = None
+    description: str | None = None
+    status: TaskStatus | None = None
+    priority: int | None = None
+    due_date: str | None = None
+
+
+@app.patch("/api/goal-graph/tasks/{task_id}")
+def api_goal_graph_update_task(task_id: str, body: TaskUpdateBody) -> dict:
+    try:
+        return _goal_graph.update_task(
+            task_id, **body.model_dump(exclude_unset=True)
+        ).model_dump()
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Unknown task") from exc
 
 
 @app.post("/api/goal-graph/analyze")

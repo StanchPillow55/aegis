@@ -581,6 +581,314 @@ async function refreshDashboard() {
   await Promise.all([refreshSources(), refreshEnvironment(), refreshAlertsGoals(), refreshChart()]);
 }
 
+/* --- Goal Graph UI (GL3) --- */
+let selectedGoalId = null;
+let taskView = "inbox";
+let goalFlatCache = [];
+
+function flattenGoalTree(nodes, depth = 0, out = []) {
+  for (const n of nodes || []) {
+    out.push({ ...n.goal, depth });
+    flattenGoalTree(n.children, depth + 1, out);
+  }
+  return out;
+}
+
+function renderGoalTreeNodes(nodes) {
+  if (!nodes?.length) return `<li class="hint">No goals yet — add one below.</li>`;
+  return nodes
+    .map((n) => {
+      const g = n.goal;
+      const selected = g.id === selectedGoalId ? "is-selected" : "";
+      const kids = n.children?.length
+        ? `<ul>${renderGoalTreeNodes(n.children)}</ul>`
+        : "";
+      return `<li>
+        <button type="button" class="goal-node ${selected}" data-goal-id="${g.id}">
+          ${escapeHtml(g.title)}
+          <span class="goal-meta">${escapeHtml(g.status)}${g.metric ? ` · ${escapeHtml(g.metric)}` : ""}</span>
+        </button>
+        ${kids}
+      </li>`;
+    })
+    .join("");
+}
+
+function escapeHtml(s) {
+  return String(s ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function fillTaskGoalSelect() {
+  const sel = document.getElementById("task-new-goal");
+  if (!sel) return;
+  const prev = sel.value;
+  sel.innerHTML = goalFlatCache
+    .map(
+      (g) =>
+        `<option value="${g.id}">${"· ".repeat(g.depth || 0)}${escapeHtml(g.title)}</option>`
+    )
+    .join("");
+  if (prev && goalFlatCache.some((g) => g.id === prev)) sel.value = prev;
+  else if (selectedGoalId) sel.value = selectedGoalId;
+}
+
+function openGoalEditor(goal) {
+  selectedGoalId = goal.id;
+  document.getElementById("goal-editor-empty").hidden = true;
+  const form = document.getElementById("goal-editor");
+  form.hidden = false;
+  document.getElementById("goal-edit-id").value = goal.id;
+  document.getElementById("goal-edit-title").value = goal.title || "";
+  document.getElementById("goal-edit-description").value = goal.description || "";
+  document.getElementById("goal-edit-metric").value = goal.metric || "";
+  document.getElementById("goal-edit-criteria").value = goal.success_criteria || "";
+  document.getElementById("goal-editor-hint").textContent = "";
+  document.querySelectorAll(".goal-node").forEach((btn) => {
+    btn.classList.toggle("is-selected", btn.dataset.goalId === goal.id);
+  });
+  fillTaskGoalSelect();
+}
+
+async function refreshGoalTree() {
+  const treeEl = document.getElementById("goal-tree");
+  if (!treeEl) return;
+  try {
+    const res = await fetch("/api/goal-graph");
+    if (!res.ok) throw new Error(`goal-graph ${res.status}`);
+    const snap = await res.json();
+    const tree = snap.goal_tree || [];
+    goalFlatCache = flattenGoalTree(tree);
+    treeEl.innerHTML = renderGoalTreeNodes(tree);
+    fillTaskGoalSelect();
+    if (selectedGoalId) {
+      const g = goalFlatCache.find((x) => x.id === selectedGoalId);
+      if (g) openGoalEditor(g);
+    }
+  } catch (err) {
+    treeEl.innerHTML = `<li class="hint">${escapeHtml(String(err))}</li>`;
+  }
+}
+
+async function refreshTaskList() {
+  const list = document.getElementById("task-list");
+  if (!list) return;
+  try {
+    const res = await fetch(`/api/goal-graph/tasks?view=${encodeURIComponent(taskView)}`);
+    if (!res.ok) throw new Error(`tasks ${res.status}`);
+    const data = await res.json();
+    const tasks = data.tasks || [];
+    if (!tasks.length) {
+      list.innerHTML = `<li class="hint">No tasks in ${escapeHtml(taskView)}.</li>`;
+      return;
+    }
+    list.innerHTML = tasks
+      .map((t) => {
+        const goal = goalFlatCache.find((g) => g.id === t.goal_id);
+        return `<li data-task-id="${t.id}">
+          <p class="task-title">${escapeHtml(t.title)}</p>
+          <p class="task-meta">${escapeHtml(t.status)}${goal ? ` · ${escapeHtml(goal.title)}` : ""}${
+            t.due_date ? ` · due ${escapeHtml(t.due_date)}` : ""
+          }</p>
+          ${
+            t.status !== "completed"
+              ? `<div class="hitl-actions">
+                  <button type="button" class="ghost task-complete-btn" data-task-id="${t.id}">Mark done</button>
+                </div>`
+              : ""
+          }
+        </li>`;
+      })
+      .join("");
+  } catch (err) {
+    list.innerHTML = `<li class="hint">${escapeHtml(String(err))}</li>`;
+  }
+}
+
+async function refreshSuggestions() {
+  const list = document.getElementById("suggestion-list");
+  if (!list) return;
+  try {
+    const res = await fetch("/api/goal-graph/suggestions?pending_only=true");
+    if (!res.ok) throw new Error(`suggestions ${res.status}`);
+    const data = await res.json();
+    const items = data.suggestions || [];
+    if (!items.length) {
+      list.innerHTML = `<li class="hint">No pending suggestions.</li>`;
+      return;
+    }
+    list.innerHTML = items
+      .map((s) => {
+        const evidence = (s.evidence || []).map(escapeHtml).join("; ") || "—";
+        const assumptions = (s.assumptions || []).map(escapeHtml).join("; ") || "—";
+        return `<li data-suggestion-id="${s.id}">
+          <p class="sug-title">${escapeHtml(s.title)}</p>
+          <p class="sug-meta">${escapeHtml(s.kind)} · confidence ${escapeHtml(s.confidence)} · ${escapeHtml(s.reason || "")}</p>
+          <details>
+            <summary>Evidence &amp; assumptions</summary>
+            <p>Evidence: ${evidence}</p>
+            <p>Assumptions: ${assumptions}</p>
+          </details>
+          <div class="hitl-actions">
+            <button type="button" class="sug-decide" data-id="${s.id}" data-decision="approved">Approve</button>
+            <button type="button" class="ghost sug-decide" data-id="${s.id}" data-decision="edited">Edit &amp; approve</button>
+            <button type="button" class="ghost sug-decide" data-id="${s.id}" data-decision="rejected">Reject</button>
+            <button type="button" class="ghost sug-decide" data-id="${s.id}" data-decision="deferred">Defer</button>
+          </div>
+        </li>`;
+      })
+      .join("");
+  } catch (err) {
+    list.innerHTML = `<li class="hint">${escapeHtml(String(err))}</li>`;
+  }
+}
+
+async function refreshGoalsUi() {
+  await refreshGoalTree();
+  await Promise.all([refreshTaskList(), refreshSuggestions()]);
+}
+
+document.getElementById("goal-tree")?.addEventListener("click", (ev) => {
+  const btn = ev.target.closest(".goal-node");
+  if (!btn) return;
+  const g = goalFlatCache.find((x) => x.id === btn.dataset.goalId);
+  if (g) openGoalEditor(g);
+});
+
+document.getElementById("goal-create-form")?.addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  const title = document.getElementById("goal-new-title").value.trim();
+  const metric = document.getElementById("goal-new-metric").value.trim();
+  if (!title) return;
+  const res = await fetch("/api/goal-graph/goals", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ title, metric: metric || null }),
+  });
+  if (!res.ok) {
+    document.getElementById("goal-editor-hint").textContent = `Create failed ${res.status}`;
+    return;
+  }
+  document.getElementById("goal-new-title").value = "";
+  document.getElementById("goal-new-metric").value = "";
+  await refreshGoalsUi();
+});
+
+document.getElementById("goal-editor")?.addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  const id = document.getElementById("goal-edit-id").value;
+  const hint = document.getElementById("goal-editor-hint");
+  const body = {
+    title: document.getElementById("goal-edit-title").value.trim(),
+    description: document.getElementById("goal-edit-description").value.trim(),
+    metric: document.getElementById("goal-edit-metric").value.trim() || null,
+    success_criteria: document.getElementById("goal-edit-criteria").value.trim() || null,
+  };
+  const res = await fetch(`/api/goal-graph/goals/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  hint.textContent = res.ok ? "Saved." : `Save failed ${res.status}`;
+  if (res.ok) await refreshGoalTree();
+});
+
+document.getElementById("goal-archive-btn")?.addEventListener("click", async () => {
+  const id = document.getElementById("goal-edit-id").value;
+  if (!id || !confirm("Archive this goal?")) return;
+  const res = await fetch(`/api/goal-graph/goals/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status: "abandoned" }),
+  });
+  document.getElementById("goal-editor-hint").textContent = res.ok
+    ? "Archived."
+    : `Archive failed ${res.status}`;
+  if (res.ok) {
+    selectedGoalId = null;
+    document.getElementById("goal-editor").hidden = true;
+    document.getElementById("goal-editor-empty").hidden = false;
+    await refreshGoalsUi();
+  }
+});
+
+document.querySelectorAll(".task-view").forEach((btn) => {
+  btn.addEventListener("click", async () => {
+    taskView = btn.dataset.view;
+    document.querySelectorAll(".task-view").forEach((b) => {
+      const on = b === btn;
+      b.classList.toggle("is-active", on);
+      b.setAttribute("aria-selected", on ? "true" : "false");
+    });
+    await refreshTaskList();
+  });
+});
+
+document.getElementById("task-create-form")?.addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  const title = document.getElementById("task-new-title").value.trim();
+  const goal_id = document.getElementById("task-new-goal").value;
+  if (!title || !goal_id) return;
+  const res = await fetch("/api/goal-graph/tasks", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ title, goal_id, status: "inbox" }),
+  });
+  if (res.ok) {
+    document.getElementById("task-new-title").value = "";
+    taskView = "inbox";
+    document.querySelectorAll(".task-view").forEach((b) => {
+      const on = b.dataset.view === "inbox";
+      b.classList.toggle("is-active", on);
+      b.setAttribute("aria-selected", on ? "true" : "false");
+    });
+    await refreshTaskList();
+  }
+});
+
+document.getElementById("task-list")?.addEventListener("click", async (ev) => {
+  const btn = ev.target.closest(".task-complete-btn");
+  if (!btn) return;
+  await fetch(`/api/goal-graph/tasks/${encodeURIComponent(btn.dataset.taskId)}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status: "completed" }),
+  });
+  await refreshTaskList();
+});
+
+document.getElementById("suggestion-list")?.addEventListener("click", async (ev) => {
+  const btn = ev.target.closest(".sug-decide");
+  if (!btn) return;
+  const id = btn.dataset.id;
+  const decision = btn.dataset.decision;
+  let edited_payload = null;
+  if (decision === "edited") {
+    const title = prompt("Edited task title (required):");
+    if (!title) return;
+    edited_payload = { title, description: "Edited in suggestion review" };
+  }
+  const res = await fetch(`/api/goal-graph/suggestions/${encodeURIComponent(id)}/decide`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      decision: decision === "edited" ? "approved" : decision,
+      edited_payload,
+    }),
+  });
+  if (!res.ok) {
+    console.warn("decide failed", res.status);
+    return;
+  }
+  await Promise.all([refreshSuggestions(), refreshTaskList()]);
+});
+
+document.getElementById("goal-refresh-btn")?.addEventListener("click", refreshGoalsUi);
+document.getElementById("suggestion-refresh-btn")?.addEventListener("click", refreshSuggestions);
+
 document.getElementById("bg-sync-save").addEventListener("click", async () => {
   const hint = document.getElementById("sync-hint");
   const enabled = document.getElementById("bg-sync-enabled").checked;
@@ -735,3 +1043,4 @@ document.getElementById("manual-btn").addEventListener("click", async () => {
 });
 
 refreshDashboard();
+refreshGoalsUi();

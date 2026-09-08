@@ -1,6 +1,6 @@
 # Aegis Goal Graph and Context-Aware Planning Layer
 
-**Status:** In progress (GL0–GL2 fixture-verified 2026-09-08) · **Do not mark complete** without the tested path:  
+**Status:** In progress (GL0–GL3 fixture-verified 2026-09-08) · **Do not mark complete** without the tested path:  
 `journal → evidence → suggestion → human approval → dashboard update`
 
 **Related:** `docs/PRODUCT_SPEC.md` · `docs/IMPLEMENTATION_PLAN.md` · `docs/SC_MATURITY.md` · `success_criteria.yaml` (`GG-*`)

@@ -486,6 +486,138 @@ class GoalGraphStore:
             status=TaskStatus.PROPOSED
         )
 
+    def get_task(self, task_id: str) -> GraphTask:
+        with self._connect() as conn:
+            row = conn.execute(
+                "SELECT payload_json FROM graph_tasks WHERE id = ?", (task_id,)
+            ).fetchone()
+        if not row:
+            raise KeyError(task_id)
+        return GraphTask.model_validate_json(row["payload_json"])
+
+    def update_goal(self, goal_id: str, **fields: Any) -> GraphGoal:
+        before = self.get_goal(goal_id)
+        allowed = {
+            "title",
+            "description",
+            "original_wording",
+            "goal_type",
+            "status",
+            "parent_goal_id",
+            "metric",
+            "target",
+            "unit",
+            "direction",
+            "timeframe",
+            "success_criteria",
+            "priority",
+        }
+        updates = {k: v for k, v in fields.items() if k in allowed and v is not None}
+        if "goal_type" in updates and not isinstance(updates["goal_type"], GoalType):
+            updates["goal_type"] = GoalType(updates["goal_type"])
+        if "status" in updates and not isinstance(updates["status"], GraphGoalStatus):
+            updates["status"] = GraphGoalStatus(updates["status"])
+        if "direction" in updates and updates["direction"] is not None and not isinstance(
+            updates["direction"], GoalDirection
+        ):
+            updates["direction"] = GoalDirection(updates["direction"])
+        updates["updated_at"] = time.time()
+        after = before.model_copy(update=updates)
+        with self._connect() as conn:
+            conn.execute(
+                "UPDATE graph_goals SET payload_json = ? WHERE id = ?",
+                (after.model_dump_json(), goal_id),
+            )
+            conn.commit()
+        self._audit(
+            entity_type="goal",
+            entity_id=goal_id,
+            action="updated",
+            before=before.model_dump(),
+            after=after.model_dump(),
+        )
+        return after
+
+    def update_task(self, task_id: str, **fields: Any) -> GraphTask:
+        before = self.get_task(task_id)
+        allowed = {
+            "title",
+            "description",
+            "status",
+            "priority",
+            "due_date",
+            "recurrence",
+            "estimated_effort",
+            "parent_task_id",
+            "task_type",
+        }
+        updates = {k: v for k, v in fields.items() if k in allowed}
+        if "status" in updates and updates["status"] is not None and not isinstance(
+            updates["status"], TaskStatus
+        ):
+            updates["status"] = TaskStatus(updates["status"])
+        if "task_type" in updates and updates["task_type"] is not None and not isinstance(
+            updates["task_type"], TaskType
+        ):
+            updates["task_type"] = TaskType(updates["task_type"])
+        updates["updated_at"] = time.time()
+        if updates.get("status") == TaskStatus.COMPLETED and before.completed_at is None:
+            updates["completed_at"] = time.time()
+        after = before.model_copy(update=updates)
+        with self._connect() as conn:
+            conn.execute(
+                "UPDATE graph_tasks SET payload_json = ?, goal_id = ? WHERE id = ?",
+                (after.model_dump_json(), after.goal_id, task_id),
+            )
+            conn.commit()
+        self._audit(
+            entity_type="task",
+            entity_id=task_id,
+            action="updated",
+            before=before.model_dump(),
+            after=after.model_dump(),
+        )
+        return after
+
+    def tasks_by_view(self, view: str) -> list[GraphTask]:
+        """Bucket tasks for Inbox / Today / Upcoming / Completed UI."""
+        from datetime import date
+
+        today = date.today().isoformat()
+        all_tasks = self.list_tasks()
+        view = (view or "inbox").lower()
+
+        def open_task(t: GraphTask) -> bool:
+            return t.status not in {
+                TaskStatus.COMPLETED,
+                TaskStatus.SKIPPED,
+                TaskStatus.CANCELED,
+            }
+
+        if view == "inbox":
+            return [t for t in all_tasks if t.status in {TaskStatus.INBOX, TaskStatus.PROPOSED}]
+        if view == "today":
+            return [
+                t
+                for t in all_tasks
+                if open_task(t)
+                and (
+                    t.status == TaskStatus.IN_PROGRESS
+                    or (t.due_date is not None and t.due_date <= today)
+                )
+            ]
+        if view == "upcoming":
+            return [
+                t
+                for t in all_tasks
+                if open_task(t)
+                and t.status == TaskStatus.PLANNED
+                and (t.due_date is None or t.due_date > today)
+            ]
+        if view == "completed":
+            return [t for t in all_tasks if t.status == TaskStatus.COMPLETED]
+        raise ValueError(f"Unknown task view: {view}")
+
     # --- Evidence / contributions / suggestions ---
     def add_evidence_link(
         self,

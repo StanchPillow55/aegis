@@ -68,7 +68,7 @@
 | GG-SIGNAL-01 | `fixture-verified` | GL1 providers + selection; UI uses selected signals when present; overall optional with goals |
 | GG-CONTRIB-01 | `fixture-verified` | GL2 journal→goal contributions (beef/rice/run); UI review still open |
 | GG-SUGGEST-01 | `fixture-verified` | HITL approve/edit/reject/defer; no silent task creation; UI panel still open |
-| GG-UI-01 | `planned` | GL3 tree/inbox/editor/suggestion panel |
+| GG-UI-01 | `fixture-verified` | GL3 tree/inbox/today/upcoming/completed + editor + HITL suggestion panel; Playwright E2E still open |
 | GG-PROGRESS-01 | `planned` | GL4 long-term progress workspace |
 | GG-CONTEXT-01 | `planned` | GL5 typed screen context + tools |
 | GG-E2E-01 | `planned` | Full journal→approval→dashboard→chat path |

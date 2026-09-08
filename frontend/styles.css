@@ -548,6 +548,167 @@ pre {
   gap: 0.5rem;
 }
 
+.goals {
+  max-width: 52rem;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 3rem;
+  border-top: 1px solid var(--line);
+  animation: rise 900ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.goals-layout {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 1.5rem;
+  margin-bottom: 1.75rem;
+}
+
+.goal-tree {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.goal-tree li {
+  margin: 0.35rem 0;
+}
+
+.goal-tree button.goal-node {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 1px solid transparent;
+  background: transparent;
+  font: inherit;
+  padding: 0.45rem 0.55rem;
+  cursor: pointer;
+  color: var(--ink);
+  transition: border-color 140ms ease, background 140ms ease;
+}
+
+.goal-tree button.goal-node:hover,
+.goal-tree button.goal-node.is-selected {
+  border-color: var(--line);
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.goal-tree .goal-meta {
+  display: block;
+  font-size: 0.8rem;
+  color: rgba(26, 36, 33, 0.62);
+}
+
+.goal-tree ul {
+  list-style: none;
+  margin: 0.15rem 0 0.35rem 0.9rem;
+  padding: 0;
+  border-left: 1px solid var(--line);
+  padding-left: 0.65rem;
+}
+
+.goal-create,
+.task-create,
+.goal-editor label {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.75rem;
+}
+
+.goal-create input,
+.task-create input,
+.task-create select,
+.goal-editor input,
+.goal-editor textarea {
+  width: 100%;
+  font: inherit;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.7);
+  padding: 0.55rem 0.65rem;
+}
+
+.goal-editor label {
+  font-size: 0.85rem;
+  color: rgba(26, 36, 33, 0.72);
+}
+
+.editor-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.task-panel,
+.suggestion-panel {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.task-views {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.task-view {
+  border: 1px solid var(--line);
+  background: transparent;
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 0.35rem 0.7rem;
+  cursor: pointer;
+  color: rgba(26, 36, 33, 0.75);
+}
+
+.task-view.is-active {
+  border-color: var(--leaf);
+  color: var(--leaf-deep);
+  background: rgba(31, 111, 91, 0.08);
+}
+
+.task-list,
+.suggestion-list {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+}
+
+.task-list li,
+.suggestion-list li {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.task-list .task-title,
+.suggestion-list .sug-title {
+  font-weight: 600;
+  margin: 0 0 0.25rem;
+}
+
+.task-list .task-meta,
+.suggestion-list .sug-meta {
+  margin: 0;
+  font-size: 0.85rem;
+  color: rgba(26, 36, 33, 0.65);
+}
+
+.hitl-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.55rem;
+}
+
+.suggestion-list details {
+  margin-top: 0.35rem;
+  font-size: 0.85rem;
+}
+
+.suggestion-list summary {
+  cursor: pointer;
+  color: var(--leaf-deep);
+}
+
 @media (max-width: 640px) {
   .hero { padding-top: 8vh; }
   .score-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -556,5 +717,6 @@ pre {
   .actions-primary button { flex: 1; }
   .dash-grid { grid-template-columns: 1fr; }
   .manual-row { grid-template-columns: 1fr; }
+  .goals-layout { grid-template-columns: 1fr; }
 }
 
