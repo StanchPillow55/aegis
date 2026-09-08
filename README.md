@@ -10,8 +10,9 @@ Still centered on one evidence-bound daily training directive:
 1. [`docs/PRODUCT_SPEC.md`](docs/PRODUCT_SPEC.md) — canonical product + architecture spec  
 2. [`success_criteria.yaml`](success_criteria.yaml) — Definition of Done  
 3. [`AGENT_HANDOFF.md`](AGENT_HANDOFF.md) — current state + next slice  
-4. [`docs/FEATURE_MERGE_MATRIX.md`](docs/FEATURE_MERGE_MATRIX.md) — cross-prototype feature status  
-5. [`CLAUDE.md`](CLAUDE.md) — build contract  
+4. [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) — next-agent implementation plan  
+5. [`docs/FEATURE_MERGE_MATRIX.md`](docs/FEATURE_MERGE_MATRIX.md) — cross-prototype feature status  
+6. [`CLAUDE.md`](CLAUDE.md) — build contract  
 
 ## Quickstart (Apple Silicon M2 or Linux)
 ```bash
