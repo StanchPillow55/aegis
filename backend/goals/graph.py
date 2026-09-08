@@ -786,7 +786,7 @@ class GoalGraphStore:
                         goal_id=after.affected_goal_id,
                         description=str(after.payload.get("description") or after.reason),
                         source="suggestion",
-                        status=TaskStatus.PLANNED,
+                        status=TaskStatus.INBOX,
                         user_approved=True,
                     )
                 )

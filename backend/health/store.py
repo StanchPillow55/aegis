@@ -287,6 +287,16 @@ class HealthMetricsStore:
             conn.commit()
         return FitindexReview(draft_id=draft_id, proposed=proposed, confirmed=False)
 
+    def fitindex_discard(self, draft_id: str) -> dict[str, Any]:
+        with self._connect() as conn:
+            cur = conn.execute(
+                "DELETE FROM fitindex_drafts WHERE draft_id = ?", (draft_id,)
+            )
+            conn.commit()
+            if cur.rowcount < 1:
+                raise KeyError(draft_id)
+        return {"draft_id": draft_id, "discarded": True}
+
     def fitindex_confirm(self, draft_id: str, edits: FitindexManualIn | None = None) -> dict[str, Any]:
         with self._connect() as conn:
             row = conn.execute(

@@ -369,11 +369,11 @@ See **`docs/IMPLEMENTATION_PLAN.md`** + **`docs/CONNECTORS.md`** for the authori
 1. Foundation slices 0–11 + feature aggregate — **done**  
 2. S1 background sync + unified composer — **done**  
 3. GL0–GL5 Goal Graph + GG-E2E/SAFETY fixtures + S2 chat persist — **done (fixture)**  
-4. **S8** — Expand Playwright beyond smoke to full Goal Graph §12 browser path  
-5. **S5a** — FITINDEX CSV + OCR confirm UX (no scale OAuth)  
-6. **S5b / S5** — Google Health / Takeout UX; live Health API when secrets (**not Fitbit**)  
-7. **S6** — Live Google Calendar OAuth when secrets; geo consent already present  
-8. **GL6 / S7** — Tailscale Funnel + PWA install operator acceptance  
+4. **S8** Playwright Goal Graph §12 browser — **done** (opt-in)  
+5. **S5a / S5b** FITINDEX confirm + Takeout preview/provenance — **done**  
+6. **(secrets) S6** Live Google Calendar OAuth; geo consent already present  
+7. **(secrets) S5** Live Google Health API (**not Fitbit**)  
+8. **GL6 / S7** Tailscale Funnel + PWA install operator acceptance  
 
 **Dev command:** `make os-dev` (alias: `make dev`).
 

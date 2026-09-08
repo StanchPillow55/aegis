@@ -80,7 +80,7 @@ Details: **`docs/GOAL_GRAPH.md`**.
 ## 3. Priority backlog (current)
 
 ### Done (do not restart)
-GL0 · GL1 · GL2 · GL3 · GL4 · GL5 · S1 · S2 · GG-E2E fixture · GG-SAFETY · dual safety labels · geo consent UI · PWA SW/icon smoke
+GL0 · GL1 · GL2 · GL3 · GL4 · GL5 · S1 · S2 · GG-E2E fixture · GG-SAFETY · dual safety labels · geo consent UI · PWA SW/icon smoke · **S8 Playwright §12 browser** · **S5a FITINDEX confirm UX** · **S5b Takeout preview/provenance**
 
 ### P0 — Docs / merge hygiene
 1. Keep connector policy honest (`docs/CONNECTORS.md`).  
@@ -90,10 +90,7 @@ GL0 · GL1 · GL2 · GL3 · GL4 · GL5 · S1 · S2 · GG-E2E fixture · GG-SAFET
 
 | ID | Work | Notes |
 |---|---|---|
-| **S8** | Expand Playwright beyond smoke to full Goal Graph §12 browser path | API fixture already green |
-| **S5a** | FITINDEX confirm UX polish | CSV + OCR + manual review only — **no scale OAuth** |
-| **S5b** | Google Takeout / Health import UX | Primary metric path; deepen confirm + provenance |
-| Offline / backup | Local SQLite backup / restore notes | Optional with S8 |
+| Offline / backup | Local SQLite backup / restore notes | Optional polish |
 
 ### P1 — When Google secrets available
 
@@ -140,7 +137,7 @@ GL0 · GL1 · GL2 · GL3 · GL4 · GL5 · S1 · S2 · GG-E2E fixture · GG-SAFET
 | **GL4** | Progress horizons / bands / explain / chart→task | **DONE fixture** |
 | **GL5** | Typed screen context + read vs mutate-preview tools | **DONE fixture** |
 | **GL6** | Responsive + PWA + Tailscale parity | Operator accept still open |
-| **GG-E2E** | §12 path | **DONE API fixture**; Playwright full browser still open |
+| **GG-E2E** | §12 path | **DONE** API fixture + Playwright browser (`AEGIS_PLAYWRIGHT=1`) |
 
 ### Required E2E story (fixture → then Playwright)
 1. Create goal from conversation  
@@ -165,14 +162,15 @@ GL0 · GL1 · GL2 · GL3 · GL4 · GL5 · S1 · S2 · GG-E2E fixture · GG-SAFET
 | **S2** | Chat SQLite persist + search | **DONE fixture** |
 | **S3** | Thin NL goals (old) | **Superseded by GL0–GL3** |
 | **S4** | Interactive charts | Absorbed into **GL4** |
-| **S5** | **Google Health / Takeout** primary metrics | Takeout verified; live Health API when secrets — **not Fitbit** |
-| **S5a** | FITINDEX CSV + OCR confirm UX | No scale OAuth |
+| **S5** | **Google Health / Takeout** primary metrics | Takeout preview+confirm UX done; live Health API when secrets — **not Fitbit** |
+| **S5a** | FITINDEX CSV + OCR confirm UX | **DONE** — no scale OAuth |
+| **S5b** | Takeout preview + provenance | **DONE** |
 | **S6** | Geo + **Google Calendar** live OAuth | Geo consent UI present; Calendar OAuth when secrets |
 | **S7** | PWA + Tailscale accept | SW+icons fixture; mesh operator-owned |
-| **S8** | Playwright + offline/backup | Smoke landed; expand to full §12 |
+| **S8** | Playwright + offline/backup | **DONE** §12 browser path (opt-in `AEGIS_PLAYWRIGHT=1`) |
 
 **Recommended order now:**  
-**S8 Playwright expand → S5a FITINDEX CSV/OCR polish → S5b Takeout/Health UX → (secrets) S6 Calendar + S5 Google Health API → GL6/S7 remote accept**
+**(secrets) S6 Calendar + S5 Google Health API → GL6/S7 remote accept · optional offline/backup notes**
 
 ---
 

@@ -454,6 +454,14 @@ def api_fitindex_confirm(draft_id: str, body: FitindexManualIn | None = None) ->
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
+@app.post("/api/fitindex/discard/{draft_id}")
+def api_fitindex_discard(draft_id: str) -> dict:
+    try:
+        return _metrics.fitindex_discard(draft_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Unknown draft") from exc
+
+
 @app.post("/api/fitindex/csv")
 def api_fitindex_csv(body: dict) -> dict:
     """CSV text → review draft (must confirm before save)."""
@@ -508,16 +516,28 @@ def api_fitbit_callback(code: str, redirect_uri: str | None = None) -> dict:
     return result
 
 
+@app.post("/api/takeout/preview")
+async def api_takeout_preview(file: UploadFile = File(...)) -> dict:
+    """Parse a Google Takeout ZIP without writing (confirm UX)."""
+    if not file.filename or not file.filename.lower().endswith(".zip"):
+        raise HTTPException(status_code=400, detail="Expected a .zip Takeout archive")
+    data = await file.read()
+    if not data:
+        raise HTTPException(status_code=400, detail="Empty upload")
+    with start_span("api.takeout.preview", bytes=len(data)):
+        return ingest_takeout_bytes(_metrics, data, dry_run=True)
+
+
 @app.post("/api/takeout/zip")
 async def api_takeout_zip(file: UploadFile = File(...)) -> dict:
-    """Upload a Google Takeout ZIP (future-compatible fallback)."""
+    """Confirm import of a Google Health / Takeout ZIP (primary metric path)."""
     if not file.filename or not file.filename.lower().endswith(".zip"):
         raise HTTPException(status_code=400, detail="Expected a .zip Takeout archive")
     data = await file.read()
     if not data:
         raise HTTPException(status_code=400, detail="Empty upload")
     with start_span("api.takeout.zip", bytes=len(data)):
-        result = ingest_takeout_bytes(_metrics, data)
+        result = ingest_takeout_bytes(_metrics, data, dry_run=False)
         try:
             _sync.set_enabled("takeout", True)
             _sync.sync_one("takeout", force=True)

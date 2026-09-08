@@ -74,12 +74,12 @@ Branch tip: `cursor/s1-background-sync-3696` ([PR #31](https://github.com/Stanch
 
 ## Next implementation order
 
-1. **GL0–GL5 + GG-E2E/SAFETY** — **fixture-verified** (done on this branch)  
-2. **S8** — Expand Playwright beyond smoke to full §12 browser path  
-3. **S5 reframed** — Google Health API / Takeout as primary metric sync (not Fitbit)  
-4. **S6** — Live Google Calendar OAuth when secrets available; geo consent UI already present  
-5. **FITINDEX** — deepen CSV + OCR confirm UX only (no scale OAuth)  
-6. **GL6 / S7** — Remote/PWA operator acceptance (Tailscale mesh)  
+1. **GL0–GL5 + GG-E2E/SAFETY + S8 Playwright §12** — **done** (Playwright opt-in `AEGIS_PLAYWRIGHT=1`)  
+2. **S5a / S5b** — FITINDEX confirm UX + Takeout preview/provenance — **done**  
+3. **(secrets) S6** — Live Google Calendar OAuth; geo consent UI already present  
+4. **(secrets) S5** — Live Google Health API beyond Takeout (**not Fitbit**)  
+5. **GL6 / S7** — Remote/PWA operator acceptance (Tailscale mesh)  
+6. Optional: offline SQLite backup/restore notes  
 
 Details: `docs/IMPLEMENTATION_PLAN.md` · connectors: `docs/CONNECTORS.md` · models: `docs/GOAL_GRAPH.md`.
 

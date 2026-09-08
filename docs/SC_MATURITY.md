@@ -38,8 +38,8 @@
 |---|---|---|
 | PHC-FITBIT-01 | `fixture-verified` | Legacy fixture only — **not primary sync** (see CONNECTORS.md) |
 | PHC-OAUTH-01 | `fixture-verified` / `blocked-on-secrets` | Applies to **Google** Calendar/Health tokens; no Fitbit-primary; no scale OAuth |
-| PHC-FITINDEX-01 | `implemented-but-not-E2E-tested` | CSV + screenshot/OCR + manual only — **no scale OAuth** |
-| PHC-TAKEOUT-01 | `verified` | Google Health/Fit Takeout — **primary metric import path** |
+| PHC-FITINDEX-01 | `fixture-verified` | CSV + screenshot/OCR + manual + **confirm/discard UI** — **no scale OAuth** |
+| PHC-TAKEOUT-01 | `verified` | Google Health/Fit Takeout — **primary**; preview dry-run + confirm + provenance |
 | PHC-CALENDAR-01 | `fixture-verified` | Google Calendar OAuth remains the intended live path |
 | PHC-GEO-01 | `fixture-verified` | Opt-in consent UI + API; no coords persisted; cloud_llm=false |
 | PHC-ENV-01 | `verified` | Live Open-Meteo smoke + offline labeling |
@@ -72,7 +72,7 @@
 | GG-UI-01 | `fixture-verified` | GL3 tree/inbox/today/upcoming/completed + editor + HITL suggestion panel; Playwright E2E still open |
 | GG-PROGRESS-01 | `fixture-verified` | GL4 horizons/bands/explain/create-task-from-chart (HITL); Playwright still open |
 | GG-CONTEXT-01 | `fixture-verified` | GL5 typed ScreenContext + read vs mutate-preview tools; no HTML dumps |
-| GG-E2E-01 | `fixture-verified` | API fixture path for §12 story; Playwright/browser E2E still open |
+| GG-E2E-01 | `fixture-verified` (+ Playwright when `AEGIS_PLAYWRIGHT=1`) | API fixture + Chromium §12 browser path |
 | GG-SAFETY-01 | `fixture-verified` | Observation vs interpretation; insufficient evidence; no-goals directive |
 
 ## Rule for next agents

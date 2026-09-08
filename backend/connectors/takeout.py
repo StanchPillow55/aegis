@@ -16,7 +16,7 @@ import time
 import zipfile
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import BinaryIO
+from typing import Any, BinaryIO
 
 from backend.health.schema import DataQuality, DataSource, Provenance
 from backend.health.store import HealthMetricsStore, _day_to_epoch
@@ -116,11 +116,17 @@ def ingest_takeout_zip(
     store: HealthMetricsStore,
     zip_path: Path | str | BinaryIO,
     *,
-    notes: str = "Takeout ZIP fallback import",
+    notes: str = "Google Health / Takeout primary import",
+    dry_run: bool = False,
 ) -> dict:
-    """Ingest CSV + Google Fit JSON from a Takeout ZIP into the metrics store."""
+    """Ingest CSV + Google Fit JSON from a Takeout ZIP into the metrics store.
+
+    When ``dry_run=True``, parse and summarize without writing points (preview/confirm UX).
+    """
     written = 0
+    would_write = 0
     metrics_seen: set[str] = set()
+    sample_rows: list[dict[str, Any]] = []
     files_parsed = 0
     json_files = 0
     now = time.time()
@@ -145,6 +151,28 @@ def ingest_takeout_zip(
             lower = name.lower()
             if lower.endswith(".json"):
                 raw = zf.read(name)
+                if dry_run:
+                    mapped = _json_metric_for_name(name)
+                    if mapped is None:
+                        continue
+                    metric, _unit = mapped
+                    try:
+                        data = json.loads(raw.decode("utf-8", errors="replace"))
+                    except json.JSONDecodeError:
+                        continue
+                    points = data.get("Data Points") or data.get("dataPoints") or []
+                    if not isinstance(points, list) or not points:
+                        continue
+                    json_files += 1
+                    files_parsed += 1
+                    metrics_seen.add(metric)
+                    n = len(points)
+                    would_write += n
+                    if len(sample_rows) < 5:
+                        sample_rows.append(
+                            {"file": name, "metric": metric, "points": n, "mode": "json"}
+                        )
+                    continue
                 w, ms = _ingest_json_member(store, name=name, raw=raw, prov=prov)
                 if w:
                     json_files += 1
@@ -176,6 +204,20 @@ def ingest_takeout_zip(
                         value = float(str(raw_val).replace(",", ""))
                     except ValueError:
                         continue
+                    would_write += 1
+                    metrics_seen.add(metric)
+                    if dry_run:
+                        if len(sample_rows) < 8:
+                            sample_rows.append(
+                                {
+                                    "file": name,
+                                    "metric": metric,
+                                    "value": value,
+                                    "day": day,
+                                    "mode": "csv",
+                                }
+                            )
+                        continue
                     store.upsert_point(
                         metric=metric,
                         value=value,
@@ -185,17 +227,28 @@ def ingest_takeout_zip(
                         meta={"takeout_file": name, "column": col},
                     )
                     written += 1
-                    metrics_seen.add(metric)
 
     return {
         "written": written,
+        "would_write": would_write if dry_run else written,
         "metrics": sorted(metrics_seen),
         "files_parsed": files_parsed,
         "json_files": json_files,
-        "mode": "takeout_zip",
+        "mode": "takeout_zip_preview" if dry_run else "takeout_zip",
+        "dry_run": dry_run,
         "quality": DataQuality.LOW.value,
+        "provenance": {
+            "source": DataSource.TAKEOUT.value,
+            "extractor": "takeout_zip",
+            "primary_metric_path": True,
+            "quality": DataQuality.LOW.value,
+            "notes": notes,
+        },
+        "sample": sample_rows if dry_run else [],
     }
 
 
-def ingest_takeout_bytes(store: HealthMetricsStore, data: bytes) -> dict:
-    return ingest_takeout_zip(store, io.BytesIO(data))
+def ingest_takeout_bytes(
+    store: HealthMetricsStore, data: bytes, *, dry_run: bool = False
+) -> dict:
+    return ingest_takeout_zip(store, io.BytesIO(data), dry_run=dry_run)

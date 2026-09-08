@@ -603,6 +603,38 @@ pre {
   gap: 0.5rem;
 }
 
+.review-panel {
+  margin-top: 0.75rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.review-panel h4 {
+  margin: 0 0 0.5rem;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+}
+
+.review-panel label {
+  display: block;
+  margin: 0.35rem 0;
+  font-size: 0.9rem;
+}
+
+.review-panel label input {
+  display: block;
+  width: 100%;
+  margin-top: 0.2rem;
+}
+
+.import-summary {
+  margin: 0;
+  white-space: pre-wrap;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
 .horizon-views {
   display: flex;
   flex-wrap: wrap;

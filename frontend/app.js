@@ -1162,11 +1162,36 @@ document.getElementById("fitindex-ocr-btn").addEventListener("click", async () =
       hint.textContent = data.detail || "OCR unavailable";
       return;
     }
-    hint.textContent = `Draft ${data.draft?.draft_id} — confirm via API before save.`;
+    hint.textContent = "OCR draft ready — review and confirm below.";
+    showFitindexDraft(data.draft);
   } catch (err) {
     hint.textContent = String(err);
   }
 });
+
+function showFitindexDraft(draft) {
+  const panel = document.getElementById("fitindex-draft");
+  if (!panel || !draft) return;
+  const proposed = draft.proposed || {};
+  document.getElementById("fitindex-draft-id").value = draft.draft_id || "";
+  document.getElementById("fitindex-edit-weight").value =
+    proposed.weight_kg ?? "";
+  document.getElementById("fitindex-edit-bf").value =
+    proposed.body_fat_pct ?? "";
+  document.getElementById("fitindex-edit-day").value = proposed.day || "";
+  document.getElementById("fitindex-edit-notes").value = proposed.notes || "";
+  panel.hidden = false;
+  document.getElementById("fitindex-review-hint").textContent =
+    "Edit if needed, then Confirm save. Nothing is stored until you confirm.";
+  document.getElementById("fitindex-hint").textContent =
+    `Draft ${draft.draft_id} ready for review.`;
+}
+
+function clearFitindexDraft() {
+  const panel = document.getElementById("fitindex-draft");
+  if (panel) panel.hidden = true;
+  document.getElementById("fitindex-draft-id").value = "";
+}
 
 document.getElementById("fitindex-upload-btn").addEventListener("click", async () => {
   const hint = document.getElementById("fitindex-hint");
@@ -1179,7 +1204,126 @@ document.getElementById("fitindex-upload-btn").addEventListener("click", async (
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.detail || res.status);
-    hint.textContent = `Draft ${data.draft_id || "ok"} — confirm via API before save.`;
+    showFitindexDraft(data);
+  } catch (err) {
+    hint.textContent = String(err);
+  }
+});
+
+document.getElementById("fitindex-manual-btn")?.addEventListener("click", async () => {
+  const hint = document.getElementById("fitindex-hint");
+  const weight = document.getElementById("fitindex-manual-weight").value;
+  const bf = document.getElementById("fitindex-manual-bf").value;
+  try {
+    const res = await fetch("/api/fitindex/manual", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        weight_kg: weight === "" ? null : Number(weight),
+        body_fat_pct: bf === "" ? null : Number(bf),
+        notes: "manual_ui",
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || res.status);
+    showFitindexDraft(data);
+  } catch (err) {
+    hint.textContent = String(err);
+  }
+});
+
+document.getElementById("fitindex-confirm-btn")?.addEventListener("click", async () => {
+  const hint = document.getElementById("fitindex-review-hint");
+  const draftId = document.getElementById("fitindex-draft-id").value;
+  if (!draftId) {
+    hint.textContent = "No draft to confirm.";
+    return;
+  }
+  const body = {
+    confirmed: true,
+    weight_kg: Number(document.getElementById("fitindex-edit-weight").value) || null,
+    body_fat_pct: Number(document.getElementById("fitindex-edit-bf").value) || null,
+    day: document.getElementById("fitindex-edit-day").value.trim() || null,
+    notes: document.getElementById("fitindex-edit-notes").value.trim() || null,
+  };
+  try {
+    const res = await fetch(`/api/fitindex/confirm/${encodeURIComponent(draftId)}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || res.status);
+    hint.textContent = `Saved: ${(data.written || []).join(", ") || "ok"}`;
+    clearFitindexDraft();
+    document.getElementById("fitindex-hint").textContent = "Confirmed and saved.";
+    await refreshDashboard();
+  } catch (err) {
+    hint.textContent = String(err);
+  }
+});
+
+document.getElementById("fitindex-discard-btn")?.addEventListener("click", async () => {
+  const hint = document.getElementById("fitindex-review-hint");
+  const draftId = document.getElementById("fitindex-draft-id").value;
+  if (!draftId) {
+    clearFitindexDraft();
+    return;
+  }
+  try {
+    await fetch(`/api/fitindex/discard/${encodeURIComponent(draftId)}`, { method: "POST" });
+  } catch (_) {
+    /* ignore network */
+  }
+  clearFitindexDraft();
+  document.getElementById("fitindex-hint").textContent = "Draft discarded.";
+  hint.textContent = "";
+});
+
+function showTakeoutSummary(data, phase) {
+  const panel = document.getElementById("takeout-summary");
+  const body = document.getElementById("takeout-summary-body");
+  if (!panel || !body) return;
+  const prov = data.provenance || {};
+  const lines = [
+    `Phase: ${phase}`,
+    `Mode: ${data.mode || "—"}`,
+    `Primary metric path: ${prov.primary_metric_path ? "yes" : "no"}`,
+    `Source: ${prov.source || "takeout"}`,
+    `Quality: ${prov.quality || data.quality || "—"}`,
+    `Files parsed: ${data.files_parsed ?? 0}`,
+    `Metrics: ${(data.metrics || []).join(", ") || "—"}`,
+    phase === "preview"
+      ? `Would write: ${data.would_write ?? 0} points`
+      : `Written: ${data.written ?? 0} points`,
+  ];
+  if ((data.sample || []).length) {
+    lines.push("Sample:");
+    for (const row of data.sample.slice(0, 5)) {
+      lines.push(
+        `  · ${row.metric}${row.value != null ? "=" + row.value : ""} (${row.day || row.file || ""})`
+      );
+    }
+  }
+  body.textContent = lines.join("\n");
+  panel.hidden = false;
+}
+
+document.getElementById("takeout-preview-btn")?.addEventListener("click", async () => {
+  const hint = document.getElementById("takeout-hint");
+  const fileInput = document.getElementById("takeout-file");
+  if (!fileInput.files?.length) {
+    hint.textContent = "Choose a .zip first.";
+    return;
+  }
+  const fd = new FormData();
+  fd.append("file", fileInput.files[0]);
+  try {
+    const res = await fetch("/api/takeout/preview", { method: "POST", body: fd });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || res.status);
+    hint.textContent = "Preview only — nothing written yet. Confirm import to save.";
+    showTakeoutSummary(data, "preview");
   } catch (err) {
     hint.textContent = String(err);
   }
@@ -1198,7 +1342,8 @@ document.getElementById("takeout-upload-btn").addEventListener("click", async ()
     const res = await fetch("/api/takeout/zip", { method: "POST", body: fd });
     const data = await res.json();
     if (!res.ok) throw new Error(data.detail || res.status);
-    hint.textContent = `Wrote ${data.written} points (${(data.metrics || []).join(", ")}).`;
+    hint.textContent = `Imported ${data.written} points (${(data.metrics || []).join(", ")}).`;
+    showTakeoutSummary(data, "confirmed");
     await refreshDashboard();
   } catch (err) {
     hint.textContent = String(err);

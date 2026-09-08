@@ -259,12 +259,30 @@
         <p class="hint">Default off. Preference only — coordinates are not stored on the server and never sent to a cloud LLM.</p>
         <button type="button" id="geo-revoke-btn" class="ghost">Revoke</button>
       </div>
-      <div>
+      <div data-pin-id="fitindex" data-pin-label="FITINDEX review">
         <h3>FITINDEX (CSV + image — no scale OAuth)</h3>
-        <p class="hint">Scale vendor OAuth is out of scope. Use CSV export or screenshot OCR, then confirm before save.</p>
+        <p class="hint">Scale vendor OAuth is out of scope. Draft first, edit, then confirm before save.</p>
         <textarea id="fitindex-csv" rows="3" placeholder="date,weight_kg,body_fat_pct&#10;2026-09-07,78.2,18.5"></textarea>
-        <button type="button" id="fitindex-upload-btn" class="ghost">Upload CSV draft</button>
+        <button type="button" id="fitindex-upload-btn" class="ghost">Parse CSV → draft</button>
+        <div class="manual-row" style="margin-top:0.6rem">
+          <input id="fitindex-manual-weight" placeholder="weight kg" type="number" step="any" />
+          <input id="fitindex-manual-bf" placeholder="body fat %" type="number" step="any" />
+        </div>
+        <button type="button" id="fitindex-manual-btn" class="ghost">Manual → draft</button>
         <p id="fitindex-hint" class="hint"></p>
+        <div id="fitindex-draft" class="review-panel" hidden>
+          <h4>Review draft before save</h4>
+          <input type="hidden" id="fitindex-draft-id" />
+          <label>Weight (kg) <input id="fitindex-edit-weight" type="number" step="any" /></label>
+          <label>Body fat % <input id="fitindex-edit-bf" type="number" step="any" /></label>
+          <label>Day <input id="fitindex-edit-day" placeholder="YYYY-MM-DD" /></label>
+          <label>Notes <input id="fitindex-edit-notes" /></label>
+          <div class="hitl-actions">
+            <button type="button" id="fitindex-confirm-btn">Confirm save</button>
+            <button type="button" id="fitindex-discard-btn" class="ghost">Discard</button>
+          </div>
+          <p id="fitindex-review-hint" class="hint"></p>
+        </div>
       </div>
       <div>
         <h3>FITINDEX screenshot OCR</h3>
@@ -272,11 +290,19 @@
         <button type="button" id="fitindex-ocr-btn" class="ghost">OCR → draft</button>
         <p id="fitindex-ocr-hint" class="hint"></p>
       </div>
-      <div>
-        <h3>Google Takeout ZIP</h3>
+      <div data-pin-id="takeout" data-pin-label="Google Takeout">
+        <h3>Google Health / Takeout ZIP</h3>
+        <p class="hint">Primary metric import. Preview first, then confirm write with provenance.</p>
         <input type="file" id="takeout-file" accept=".zip,application/zip" />
-        <button type="button" id="takeout-upload-btn" class="ghost">Import ZIP</button>
+        <div class="hitl-actions">
+          <button type="button" id="takeout-preview-btn" class="ghost">Preview ZIP</button>
+          <button type="button" id="takeout-upload-btn">Confirm import</button>
+        </div>
         <p id="takeout-hint" class="hint"></p>
+        <div id="takeout-summary" class="review-panel" hidden>
+          <h4>Import provenance</h4>
+          <pre id="takeout-summary-body" class="import-summary"></pre>
+        </div>
       </div>
       <div>
         <h3>Add log (manual metric)</h3>
