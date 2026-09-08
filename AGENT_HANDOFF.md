@@ -61,7 +61,7 @@ Branch tip: `cursor/s1-background-sync-3696` ([PR #31](https://github.com/Stanch
 | Progress dashboards (GL4) | Fixture-verified |
 | Context-aware chat depth (GL5) + S2 persist | Fixture-verified (S2 + GL5) |
 | UI work for goal tree / suggestions | Fixture-verified (GL3) |
-| E2E verification (S8 + Goal Graph story) | Planned |
+| E2E verification (S8 + Goal Graph story) | Fixture path done (`GG-E2E-01`); Playwright pending |
 | OAuth + remote access (S5–S7 / GL6) | Open / blocked-on-secrets |
 
 ---
@@ -87,7 +87,7 @@ Branch tip: `cursor/s1-background-sync-3696` ([PR #31](https://github.com/Stanch
 6. **GL4** — Progress dashboards / bands / explain (`GG-PROGRESS-01`) — **fixture-verified**  
 7. **GL5** — Typed screen context + read/mutate tools (`GG-CONTEXT-01`) — **fixture-verified**  
 8. **S5/S6** — Fitbit/Calendar/geo when secrets  
-9. **GL6/S7/S8** — Remote/PWA + Playwright Goal Graph path (`GG-E2E-01`)  
+9. **GL6/S7/S8** — Remote/PWA + Playwright Goal Graph path (`GG-E2E-01` fixture done; browser still open)  
 
 Details: `docs/IMPLEMENTATION_PLAN.md` · models: `docs/GOAL_GRAPH.md`.
 

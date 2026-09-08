@@ -159,10 +159,10 @@ Details: **`docs/GOAL_GRAPH.md`**.
 | **S5** | Fitbit full metrics + OAuth security | After GL2 or when secrets available |
 | **S6** | Geo UI + Calendar live | After GL4 or with secrets |
 | **S7** | PWA + Tailscale accept | Align with **GL6** |
-| **S8** | Playwright + offline/backup | Include Goal Graph E2E |
+| **S8** | Playwright + offline/backup | Include Goal Graph browser E2E; API fixture path already in `GG-E2E-01` |
 
 **Recommended start (no secrets):**  
-**GL0 (done fixture) → GL1 → GL2 → GL3 → S2 → GL4 → GL5 → S8(partial)**  
+**GL0 (done fixture) → GL1 → GL2 → GL3 → S2 → GL4 → GL5 → GG-E2E fixture → S8 Playwright**  
 **With Fitbit secrets:** insert **S5** after GL2.  
 **Remote polish:** **GL6 / S7**.
 

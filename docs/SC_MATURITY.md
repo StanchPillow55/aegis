@@ -72,7 +72,8 @@
 | GG-UI-01 | `fixture-verified` | GL3 tree/inbox/today/upcoming/completed + editor + HITL suggestion panel; Playwright E2E still open |
 | GG-PROGRESS-01 | `fixture-verified` | GL4 horizons/bands/explain/create-task-from-chart (HITL); Playwright still open |
 | GG-CONTEXT-01 | `fixture-verified` | GL5 typed ScreenContext + read vs mutate-preview tools; no HTML dumps |
-| GG-E2E-01 | `planned` | Full journal→approval→dashboard→chat path |
+| GG-E2E-01 | `fixture-verified` | API fixture path for §12 story; Playwright/browser E2E still open |
+| GG-SAFETY-01 | `fixture-verified` | Observation vs interpretation; insufficient evidence; no-goals directive |
 
 ## Rule for next agents
 

@@ -369,13 +369,13 @@ criteria:
       Fixture or Playwright path: create goal from conversation → journal → evidence →
       contribution suggestion → edit/approve → dashboard/history update → screen-aware chat.
     verify: python -m pytest tests/test_gg_e2e.py -q
-    pass: false
-    artifact: null
+    pass: true
+    artifact: artifacts/gg-e2e-fixture.txt
 
   - id: GG-SAFETY-01
     criterion: >
       Progress language distinguishes observations vs interpretations; insufficient
       evidence is explicit; intake/directive behavior preserved for users with no goals.
     verify: python -m pytest tests/test_gg_safety.py -q
-    pass: false
-    artifact: null
+    pass: true
+    artifact: artifacts/gg-e2e-fixture.txt

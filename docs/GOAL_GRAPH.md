@@ -1,6 +1,6 @@
 # Aegis Goal Graph and Context-Aware Planning Layer
 
-**Status:** In progress (GL0–GL5 + S1/S2 fixture-verified 2026-09-08) · **Do not mark complete** without the tested path:  
+**Status:** Core fixture path green (GL0–GL5 + GG-E2E/SAFETY 2026-09-08) · Playwright/browser E2E + remote still open · **Do not call product-complete** without operator-accepted browser path:  
 `journal → evidence → suggestion → human approval → dashboard update`
 
 **Related:** `docs/PRODUCT_SPEC.md` · `docs/IMPLEMENTATION_PLAN.md` · `docs/SC_MATURITY.md` · `success_criteria.yaml` (`GG-*`)
